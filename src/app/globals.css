@@ -118,9 +118,9 @@
   --secondary-foreground: #44403c;
   --muted: #f5f5f4;
   --muted-foreground: #78716c;
-  /* 强调色：朱砂红 - 中国传统色 */
-  --accent: #dc2626;
-  --accent-foreground: #fafaf9;
+  /* 强调色：温暖中灰 - Notion 风格 */
+  --accent: #787774;
+  --accent-foreground: #ffffff;
   --destructive: #b91c1c;
   /* 边框：淡墨灰 */
   --border: #e7e5e4;
@@ -131,7 +131,7 @@
   --chart-2: #57534e;
   --chart-3: #78716c;
   --chart-4: #a8a29e;
-  --chart-5: #dc2626;
+  --chart-5: #91918e;
   /* Sidebar：淡雅宣纸 */
   --sidebar: #faf8f5;
   --sidebar-foreground: #1c1917;
@@ -143,7 +143,7 @@
   --sidebar-ring: #78716c;
   /* 特效色适配 */
   --neon-green: #292524;
-  --neon-purple: #dc2626;
+  --neon-purple: #787774;
   --neon-cyan: #78716c;
   --terminal: #faf8f5;
 }

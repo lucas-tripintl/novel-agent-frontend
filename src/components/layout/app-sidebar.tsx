@@ -12,6 +12,14 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   BookOpen,
@@ -28,6 +36,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useThemeStore, themes } from "@/stores/theme-store";
+import { cn } from "@/lib/utils";
 
 const mainNavItems = [
   {
@@ -73,14 +82,6 @@ const analysisNavItems = [
 export function AppSidebar() {
   const pathname = usePathname();
   const { theme, setTheme } = useThemeStore();
-
-  // 循环切换主题
-  const cycleTheme = () => {
-    const themeOrder = ["cyberpunk", "ink", "bamboo"] as const;
-    const currentIndex = themeOrder.indexOf(theme);
-    const nextIndex = (currentIndex + 1) % themeOrder.length;
-    setTheme(themeOrder[nextIndex]);
-  };
 
   const currentTheme = themes.find((t) => t.id === theme);
 
@@ -154,13 +155,66 @@ export function AppSidebar() {
         <SidebarMenu>
           {/* 主题切换 */}
           <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={cycleTheme}
-              className="hover:bg-accent/50 cursor-pointer"
-            >
-              <Palette className="h-4 w-4" />
-              <span>{currentTheme?.name}</span>
-            </SidebarMenuButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton className="hover:bg-accent/50 cursor-pointer">
+                  <Palette className="h-4 w-4" />
+                  <span>{currentTheme?.name}</span>
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" align="end" className="w-64">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  选择主题
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {themes.map((t) => (
+                  <DropdownMenuItem
+                    key={t.id}
+                    onClick={() => setTheme(t.id)}
+                    className={cn(
+                      "flex items-start gap-3 p-3 cursor-pointer rounded-md hover:bg-transparent focus:bg-transparent focus:text-foreground",
+                      theme === t.id && "border-2 border-primary"
+                    )}
+                  >
+                    <div
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-lg"
+                      style={{ backgroundColor: t.preview.bg }}
+                    >
+                      <div
+                        className="h-4 w-4 rounded-full"
+                        style={{ backgroundColor: t.preview.primary }}
+                      />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{t.name}</span>
+                        {theme === t.id && (
+                          <span className="text-xs text-primary">✓ 当前</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{t.description}</p>
+                      <div className="flex gap-1.5 pt-1">
+                        <div
+                          className="h-3 w-3 rounded-full border"
+                          style={{ backgroundColor: t.preview.bg }}
+                          title="背景色"
+                        />
+                        <div
+                          className="h-3 w-3 rounded-full"
+                          style={{ backgroundColor: t.preview.primary }}
+                          title="主色"
+                        />
+                        <div
+                          className="h-3 w-3 rounded-full"
+                          style={{ backgroundColor: t.preview.accent }}
+                          title="强调色"
+                        />
+                      </div>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
           {/* 设置 */}
           <SidebarMenuItem>

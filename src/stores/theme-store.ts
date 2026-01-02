@@ -28,11 +28,11 @@ export const themes: ThemeInfo[] = [
   {
     id: "ink",
     name: "墨韵白",
-    description: "宣纸质感，水墨灰 + 朱砂红",
+    description: "宣纸质感，水墨灰调",
     preview: {
       bg: "#faf8f5",
       primary: "#292524",
-      accent: "#dc2626",
+      accent: "#787774",
     },
   },
   {

@@ -38,7 +38,7 @@ export function ThemeSwitcher() {
           className="gap-2 text-muted-foreground hover:text-foreground"
         >
           <Palette className="h-4 w-4" />
-          <span className="hidden sm:inline">{currentTheme?.icon} {currentTheme?.name}</span>
+          <span className="hidden sm:inline">{currentTheme?.name}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
@@ -60,7 +60,10 @@ export function ThemeSwitcher() {
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-lg"
               style={{ backgroundColor: t.preview.bg }}
             >
-              {t.icon}
+              <div
+                className="h-4 w-4 rounded-full"
+                style={{ backgroundColor: t.preview.primary }}
+              />
             </div>
             <div className="flex-1 space-y-1">
               <div className="flex items-center gap-2">
@@ -117,7 +120,7 @@ export function ThemeSwitcherCompact() {
       className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
     >
       <div className="flex items-center gap-2">
-        <span>{currentTheme?.icon}</span>
+        <Palette className="h-4 w-4" />
         <span>{currentTheme?.name}</span>
       </div>
     </Button>
