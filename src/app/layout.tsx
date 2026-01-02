@@ -9,6 +9,27 @@ export const metadata: Metadata = {
   description: "AI 驱动的小说分析与世界观提取工具",
 };
 
+// 内联脚本：在 HTML 解析时立即应用主题，避免闪烁
+const themeInitScript = `
+(function() {
+  try {
+    var stored = localStorage.getItem('novel-agent-theme');
+    if (stored) {
+      var parsed = JSON.parse(stored);
+      var theme = parsed.state && parsed.state.theme;
+      if (theme && ['cyberpunk', 'ink', 'bamboo'].includes(theme)) {
+        document.documentElement.setAttribute('data-theme', theme);
+        if (theme === 'cyberpunk') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+    }
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -16,6 +37,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" data-theme="cyberpunk" className="dark" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
       >
