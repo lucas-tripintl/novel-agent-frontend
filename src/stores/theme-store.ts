@@ -7,7 +7,6 @@ export interface ThemeInfo {
   id: ThemeType;
   name: string;
   description: string;
-  icon: string;
   preview: {
     bg: string;
     primary: string;
@@ -20,7 +19,6 @@ export const themes: ThemeInfo[] = [
     id: "cyberpunk",
     name: "科技黑",
     description: "深色科技风，荧光绿 + 电光紫",
-    icon: "🌙",
     preview: {
       bg: "#000000",
       primary: "#22c55e",
@@ -31,7 +29,6 @@ export const themes: ThemeInfo[] = [
     id: "ink",
     name: "墨韵白",
     description: "宣纸质感，水墨灰 + 朱砂红",
-    icon: "📜",
     preview: {
       bg: "#faf8f5",
       primary: "#292524",
@@ -42,7 +39,6 @@ export const themes: ThemeInfo[] = [
     id: "bamboo",
     name: "竹青绿",
     description: "护眼舒适，竹青绿 + 金秋橙",
-    icon: "🌿",
     preview: {
       bg: "#f6faf6",
       primary: "#16a34a",
@@ -59,7 +55,7 @@ interface ThemeState {
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
-      theme: "cyberpunk",
+      theme: "ink",
       setTheme: (theme) => {
         set({ theme });
         // 更新 DOM

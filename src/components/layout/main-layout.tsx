@@ -1,8 +1,7 @@
 "use client";
 
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./app-sidebar";
-import { TerminalLog } from "./terminal-log";
 import { ThemeSwitcher } from "@/components/theme/theme-switcher";
 
 interface MainLayoutProps {
@@ -24,6 +23,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           {/* 顶部区域 */}
           <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-border/50 bg-background/80 backdrop-blur-sm px-6">
             <div className="flex items-center gap-2">
+              <SidebarTrigger className="-ml-2" />
               <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
               <span className="text-sm text-muted-foreground">系统就绪</span>
             </div>
@@ -37,9 +37,6 @@ export function MainLayout({ children }: MainLayoutProps) {
           <main className="flex-1 overflow-auto p-6 scrollbar-thin">
             {children}
           </main>
-
-          {/* 底部终端日志 */}
-          <TerminalLog />
         </SidebarInset>
       </div>
     </SidebarProvider>

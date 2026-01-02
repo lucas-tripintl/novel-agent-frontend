@@ -31,19 +31,19 @@ import { useThemeStore, themes } from "@/stores/theme-store";
 
 const mainNavItems = [
   {
-    title: "项目中心",
+    title: "作品",
     icon: FolderOpen,
     href: "/",
   },
   {
-    title: "上传小说",
-    icon: Upload,
-    href: "/upload",
+    title: "拆书",
+    icon: Zap,
+    href: "/analyze",
   },
   {
-    title: "拆书进度",
-    icon: Zap,
-    href: "/progress",
+    title: "创意",
+    icon: Sparkles,
+    href: "/ideas",
   },
 ];
 
@@ -85,13 +85,13 @@ export function AppSidebar() {
   const currentTheme = themes.find((t) => t.id === theme);
 
   return (
-    <Sidebar className="border-r border-border/50">
+    <Sidebar collapsible="icon" className="border-r border-border/50">
       <SidebarHeader className="border-b border-border/50 px-4 py-4">
         <Link href="/" className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 glow-primary">
             <BookOpen className="h-5 w-5 text-primary" />
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <span className="font-semibold text-foreground">Novel Agent</span>
             <span className="text-xs text-muted-foreground">智能拆书助手</span>
           </div>
@@ -110,6 +110,7 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.href}
+                    tooltip={item.title}
                     className="transition-colors hover:bg-accent/50"
                   >
                     <Link href={item.href}>
@@ -125,7 +126,7 @@ export function AppSidebar() {
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-medium text-muted-foreground">
-            分析结果
+            设定集
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -134,6 +135,7 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.href}
+                    tooltip={item.title}
                     className="transition-colors hover:bg-accent/50"
                   >
                     <Link href={item.href}>
@@ -157,10 +159,7 @@ export function AppSidebar() {
               className="hover:bg-accent/50 cursor-pointer"
             >
               <Palette className="h-4 w-4" />
-              <span className="flex items-center gap-2">
-                <span>{currentTheme?.icon}</span>
-                <span>{currentTheme?.name}</span>
-              </span>
+              <span>{currentTheme?.name}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           {/* 设置 */}
@@ -173,7 +172,7 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <div className="mt-3 flex items-center gap-3 rounded-lg bg-card/50 p-3">
+        <div className="mt-3 flex items-center gap-3 rounded-lg bg-card/50 p-3 group-data-[collapsible=icon]:hidden">
           <Avatar className="h-8 w-8">
             <AvatarFallback className="bg-primary/20 text-primary text-sm">
               U
