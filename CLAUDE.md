@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-Novel Agent 是一个智能小说分析 (拆书) 工具的前端应用，用于 AI 驱动的小说世界观提取、人物分析和章节解析。
+Astra Codex 是一个智能小说分析 (拆书) 工具的前端应用，用于 AI 驱动的小说世界观提取、人物分析和章节解析。
 
 技术栈: Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS 4 + shadcn/ui
 

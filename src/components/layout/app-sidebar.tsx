@@ -21,9 +21,9 @@ import {
   Palette,
   Settings,
   Sparkles,
-  Upload,
   Users,
   Zap,
+  Earth
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -31,17 +31,17 @@ import { useThemeStore, themes } from "@/stores/theme-store";
 
 const mainNavItems = [
   {
-    title: "作品",
+    title: "作品中心",
     icon: FolderOpen,
     href: "/",
   },
   {
-    title: "拆书",
+    title: "设定提取",
     icon: Zap,
     href: "/analyze",
   },
   {
-    title: "创意",
+    title: "创意工具",
     icon: Sparkles,
     href: "/ideas",
   },
@@ -50,7 +50,7 @@ const mainNavItems = [
 const analysisNavItems = [
   {
     title: "世界观",
-    icon: Sparkles,
+    icon: Earth,
     href: "/worldview",
   },
   {
@@ -64,9 +64,9 @@ const analysisNavItems = [
     href: "/relations",
   },
   {
-    title: "章节概要",
+    title: "剧情线",
     icon: FileText,
-    href: "/chapters",
+    href: "/storylines",
   },
 ];
 
@@ -92,8 +92,8 @@ export function AppSidebar() {
             <BookOpen className="h-5 w-5 text-primary" />
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="font-semibold text-foreground">Novel Agent</span>
-            <span className="text-xs text-muted-foreground">智能拆书助手</span>
+            <span className="font-semibold text-foreground">Astra Codex</span>
+            <span className="text-xs text-muted-foreground">智能写文助手</span>
           </div>
         </Link>
       </SidebarHeader>

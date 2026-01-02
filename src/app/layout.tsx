@@ -5,7 +5,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
-  title: "Novel Agent - 智能拆书助手",
+  title: "Astra Codex - 智能写文助手",
   description: "AI 驱动的小说分析与世界观提取工具",
 };
 
