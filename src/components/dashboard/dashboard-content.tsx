@@ -6,12 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   BookOpen,
-  Clock,
   FileText,
   Plus,
   Sparkles,
   TrendingUp,
   Settings2,
+  Upload,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -20,31 +20,28 @@ const recentProjects = [
   {
     id: "1",
     title: "斗破苍穹",
-    author: "天蚕土豆",
     progress: 100,
     status: "completed" as const,
     chaptersAnalyzed: 1648,
-    charactersFound: 342,
+    settingsCount: 342,
     updatedAt: "2024-01-15",
   },
   {
     id: "2",
     title: "遮天",
-    author: "辰东",
     progress: 67,
     status: "processing" as const,
     chaptersAnalyzed: 1200,
-    charactersFound: 189,
+    settingsCount: 189,
     updatedAt: "2024-01-14",
   },
   {
     id: "3",
     title: "完美世界",
-    author: "辰东",
     progress: 23,
     status: "processing" as const,
     chaptersAnalyzed: 450,
-    charactersFound: 78,
+    settingsCount: 78,
     updatedAt: "2024-01-14",
   },
 ];
@@ -102,17 +99,25 @@ export function DashboardContent() {
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">项目中心</h1>
+          <h1 className="text-2xl font-bold tracking-tight">作品中心</h1>
           <p className="text-muted-foreground mt-1">
             管理你的小说分析项目
           </p>
         </div>
-        <Button asChild className="glow-green">
-          <Link href="/upload">
-            <Plus className="mr-2 h-4 w-4" />
-            新建项目
-          </Link>
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" asChild>
+            <Link href="/import">
+              <Upload className="mr-2 h-4 w-4" />
+              导入书籍
+            </Link>
+          </Button>
+          <Button asChild className="glow-green">
+            <Link href="/upload">
+              <Plus className="mr-2 h-4 w-4" />
+              新建小说
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* 统计卡片 */}
@@ -141,75 +146,61 @@ export function DashboardContent() {
         ))}
       </div>
 
-      {/* 最近项目 */}
+      {/* 作品列表 */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Clock className="h-5 w-5 text-muted-foreground" />
-            最近项目
+            <BookOpen className="h-5 w-5 text-muted-foreground" />
+            作品列表
           </h2>
           <Button variant="ghost" size="sm" className="text-muted-foreground">
             查看全部
           </Button>
         </div>
 
-        <div className="grid gap-4">
+        <div className="grid gap-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {recentProjects.map((project) => (
             <Card
               key={project.id}
-              className="bg-card/50 border-border/50 backdrop-blur-sm hover:border-primary/30 transition-all group cursor-pointer"
+              className="bg-card/50 border-border/50 backdrop-blur-sm hover:border-primary/30 transition-all group cursor-pointer overflow-hidden p-0 gap-0"
             >
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-3 flex-1">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 group-hover:glow-green transition-shadow">
-                        <Sparkles className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold group-hover:text-primary transition-colors">
-                          {project.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {project.author}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-6 text-sm">
-                      <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <FileText className="h-4 w-4" />
-                        <span className="font-mono">{project.chaptersAnalyzed}</span>
-                        <span>章节</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <Users className="h-4 w-4" />
-                        <span className="font-mono">{project.charactersFound}</span>
-                        <span>人物</span>
-                      </div>
-                    </div>
-
-                    {project.status === "processing" && (
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">分析进度</span>
-                          <span className="font-mono text-primary">
-                            {project.progress}%
-                          </span>
-                        </div>
-                        <Progress
-                          value={project.progress}
-                          className="h-1.5 bg-muted"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col items-end gap-2">
+              {/* 书籍封面 */}
+              <div className="aspect-[4/5] bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 relative flex items-center justify-center group-hover:from-primary/30 group-hover:to-accent/30 transition-all">
+                <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.03)_50%,transparent_100%)]" />
+                <Sparkles className="h-12 w-12 text-primary/40 group-hover:text-primary/60 transition-colors" />
+                {/* 状态徽章 - 只在分析中显示 */}
+                {project.status === "processing" && (
+                  <div className="absolute top-2 right-2">
                     <StatusBadge status={project.status} />
-                    <span className="text-xs text-muted-foreground">
-                      {project.updatedAt}
+                  </div>
+                )}
+                {/* 进度条 */}
+                {project.status === "processing" && (
+                  <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-background/80 to-transparent">
+                    <Progress
+                      value={project.progress}
+                      className="h-1 bg-muted/50"
+                    />
+                    <span className="text-[10px] font-mono text-primary mt-1 block text-center">
+                      {project.progress}%
                     </span>
+                  </div>
+                )}
+              </div>
+
+              {/* 书籍信息 */}
+              <CardContent className="p-3 space-y-1.5">
+                <h3 className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
+                  {project.title}
+                </h3>
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <FileText className="h-3 w-3" />
+                    <span className="font-mono">{project.chaptersAnalyzed}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Settings2 className="h-3 w-3" />
+                    <span className="font-mono">{project.settingsCount || 0}</span>
                   </div>
                 </div>
               </CardContent>
