@@ -5,8 +5,8 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
-  title: "Astra Codex - 智能写文助手",
-  description: "AI 驱动的小说分析与世界观提取工具",
+  title: "Astra Codex - 创作星图",
+  description: "从爆款中学习，在创作中积累，设定即灵感",
 };
 
 // 内联脚本：在 HTML 解析时立即应用主题，避免闪烁

@@ -93,7 +93,7 @@ export function AppSidebar() {
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <span className="font-semibold text-foreground">Astra Codex</span>
-            <span className="text-xs text-muted-foreground">智能写文助手</span>
+            <span className="text-xs text-muted-foreground">创作星图</span>
           </div>
         </Link>
       </SidebarHeader>
