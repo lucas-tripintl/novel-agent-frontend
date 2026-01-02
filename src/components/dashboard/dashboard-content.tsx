@@ -11,8 +11,7 @@ import {
   Plus,
   Sparkles,
   TrendingUp,
-  Users,
-  Zap,
+  Settings2,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -52,32 +51,25 @@ const recentProjects = [
 
 const stats = [
   {
-    title: "已分析小说",
+    title: "作品数",
     value: "12",
     icon: BookOpen,
     change: "+2",
     changeType: "increase" as const,
   },
   {
-    title: "总章节数",
-    value: "15,847",
+    title: "字数",
+    value: "1,580万",
     icon: FileText,
-    change: "+1,200",
+    change: "+120万",
     changeType: "increase" as const,
   },
   {
-    title: "识别人物",
+    title: "设定数量",
     value: "2,341",
-    icon: Users,
+    icon: Settings2,
     change: "+156",
     changeType: "increase" as const,
-  },
-  {
-    title: "处理中",
-    value: "3",
-    icon: Zap,
-    change: "",
-    changeType: "neutral" as const,
   },
 ];
 
@@ -124,7 +116,7 @@ export function DashboardContent() {
       </div>
 
       {/* 统计卡片 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         {stats.map((stat) => (
           <Card
             key={stat.title}
