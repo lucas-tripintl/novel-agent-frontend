@@ -1,0 +1,332 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  /* 特殊颜色 */
+  --color-neon-green: var(--neon-green);
+  --color-neon-purple: var(--neon-purple);
+  --color-neon-cyan: var(--neon-cyan);
+  --color-terminal: var(--terminal);
+}
+
+/* ============================================
+   🌙 Theme: Cyberpunk (深色科技风)
+   适合：技术展示、酷炫效果
+   ============================================ */
+:root[data-theme="cyberpunk"],
+:root:not([data-theme]) {
+  --radius: 0.5rem;
+  --background: #000000;
+  --foreground: #e4e4e7;
+  --card: #09090b;
+  --card-foreground: #fafafa;
+  --popover: #09090b;
+  --popover-foreground: #fafafa;
+  --primary: #22c55e;
+  --primary-foreground: #000000;
+  --secondary: #18181b;
+  --secondary-foreground: #a1a1aa;
+  --muted: #18181b;
+  --muted-foreground: #71717a;
+  --accent: #a855f7;
+  --accent-foreground: #fafafa;
+  --destructive: #ef4444;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: #22c55e;
+  --chart-1: #22c55e;
+  --chart-2: #a855f7;
+  --chart-3: #06b6d4;
+  --chart-4: #f97316;
+  --chart-5: #ec4899;
+  --sidebar: #09090b;
+  --sidebar-foreground: #e4e4e7;
+  --sidebar-primary: #22c55e;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #18181b;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #22c55e;
+  --neon-green: #22c55e;
+  --neon-purple: #a855f7;
+  --neon-cyan: #06b6d4;
+  --terminal: #0a0a0a;
+}
+
+/* ============================================
+   📜 Theme: Ink (白灰墨韵)
+   灵感：宣纸、水墨画、古籍
+   适合：沉浸写作、传统文学创作
+   ============================================ */
+:root[data-theme="ink"] {
+  --radius: 0.375rem;
+  /* 米白纸张色 - 护眼暖色调 */
+  --background: #faf8f5;
+  --foreground: #1c1917;
+  /* 卡片：略带暖灰的白 */
+  --card: #ffffff;
+  --card-foreground: #1c1917;
+  --popover: #ffffff;
+  --popover-foreground: #1c1917;
+  /* 主色：墨黑 - 稳重内敛 */
+  --primary: #292524;
+  --primary-foreground: #fafaf9;
+  /* 次要色：温暖灰 */
+  --secondary: #f5f5f4;
+  --secondary-foreground: #44403c;
+  --muted: #f5f5f4;
+  --muted-foreground: #78716c;
+  /* 强调色：朱砂红 - 中国传统色 */
+  --accent: #dc2626;
+  --accent-foreground: #fafaf9;
+  --destructive: #b91c1c;
+  /* 边框：淡墨灰 */
+  --border: #e7e5e4;
+  --input: #e7e5e4;
+  --ring: #78716c;
+  /* 图表色：水墨渐变 */
+  --chart-1: #292524;
+  --chart-2: #57534e;
+  --chart-3: #78716c;
+  --chart-4: #a8a29e;
+  --chart-5: #dc2626;
+  /* Sidebar：淡雅宣纸 */
+  --sidebar: #faf8f5;
+  --sidebar-foreground: #1c1917;
+  --sidebar-primary: #292524;
+  --sidebar-primary-foreground: #fafaf9;
+  --sidebar-accent: #f5f5f4;
+  --sidebar-accent-foreground: #1c1917;
+  --sidebar-border: #e7e5e4;
+  --sidebar-ring: #78716c;
+  /* 特效色适配 */
+  --neon-green: #292524;
+  --neon-purple: #dc2626;
+  --neon-cyan: #78716c;
+  --terminal: #faf8f5;
+}
+
+/* ============================================
+   🌿 Theme: Bamboo (白绿竹韵)
+   灵感：竹林、绿茶、自然书房
+   适合：清新写作、长时间创作护眼
+   ============================================ */
+:root[data-theme="bamboo"] {
+  --radius: 0.5rem;
+  /* 淡绿护眼底色 */
+  --background: #f6faf6;
+  --foreground: #1a2e1a;
+  /* 卡片：清透白 */
+  --card: #ffffff;
+  --card-foreground: #1a2e1a;
+  --popover: #ffffff;
+  --popover-foreground: #1a2e1a;
+  /* 主色：竹青绿 - 生机盎然 */
+  --primary: #16a34a;
+  --primary-foreground: #ffffff;
+  /* 次要色：薄荷绿 */
+  --secondary: #ecfdf5;
+  --secondary-foreground: #166534;
+  --muted: #f0fdf4;
+  --muted-foreground: #4d7c0f;
+  /* 强调色：金秋橙 - 点缀活力 */
+  --accent: #ea580c;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  /* 边框：浅竹绿 */
+  --border: #d1fae5;
+  --input: #d1fae5;
+  --ring: #16a34a;
+  /* 图表色：自然渐变 */
+  --chart-1: #16a34a;
+  --chart-2: #22c55e;
+  --chart-3: #4ade80;
+  --chart-4: #86efac;
+  --chart-5: #ea580c;
+  /* Sidebar：淡竹青 */
+  --sidebar: #f0fdf4;
+  --sidebar-foreground: #1a2e1a;
+  --sidebar-primary: #16a34a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #dcfce7;
+  --sidebar-accent-foreground: #1a2e1a;
+  --sidebar-border: #bbf7d0;
+  --sidebar-ring: #16a34a;
+  /* 特效色适配 */
+  --neon-green: #16a34a;
+  --neon-purple: #ea580c;
+  --neon-cyan: #22c55e;
+  --terminal: #f0fdf4;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  code, pre, .font-mono {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+  }
+}
+
+/* 自定义滚动条 */
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--muted-foreground);
+    opacity: 0.3;
+    border-radius: 3px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    opacity: 0.5;
+  }
+}
+
+/* 发光效果 - 根据主题自适应 */
+@layer utilities {
+  .glow-primary {
+    box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 30%, transparent),
+                0 0 40px color-mix(in srgb, var(--primary) 10%, transparent);
+  }
+  .glow-accent {
+    box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 30%, transparent),
+                0 0 40px color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+  /* 兼容旧的 glow-green */
+  .glow-green {
+    box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 30%, transparent),
+                0 0 40px color-mix(in srgb, var(--primary) 10%, transparent);
+  }
+  .glow-purple {
+    box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 30%, transparent),
+                0 0 40px color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+  .text-glow-primary {
+    text-shadow: 0 0 10px color-mix(in srgb, var(--primary) 50%, transparent);
+  }
+}
+
+/* 边框动画 */
+@keyframes border-beam {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.border-beam {
+  background: linear-gradient(90deg, 
+    transparent, 
+    var(--primary), 
+    var(--accent), 
+    var(--primary), 
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: border-beam 3s linear infinite;
+}
+
+/* 打字效果 */
+@keyframes typing {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@keyframes blink-caret {
+  from, to { border-color: transparent; }
+  50% { border-color: var(--primary); }
+}
+
+.typing-effect {
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid var(--primary);
+  animation: 
+    typing 2s steps(40, end),
+    blink-caret 0.75s step-end infinite;
+}
+
+/* Grid 背景 - 根据主题自适应 */
+.bg-grid {
+  background-image: 
+    linear-gradient(color-mix(in srgb, var(--foreground) 3%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--foreground) 3%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* 渐变背景 */
+.bg-gradient-radial {
+  background: radial-gradient(
+    ellipse at top,
+    color-mix(in srgb, var(--primary) 8%, transparent) 0%,
+    transparent 50%
+  );
+}
+
+/* 写作专用：柔和纸张纹理（仅限 ink 主题） */
+:root[data-theme="ink"] .paper-texture {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-blend-mode: soft-light;
+  opacity: 0.03;
+}
+
+/* 写作专用：阅读舒适的行高 */
+.prose-writer {
+  line-height: 1.9;
+  letter-spacing: 0.02em;
+}
+
+/* 主题切换动画 */
+[data-theme] * {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+}

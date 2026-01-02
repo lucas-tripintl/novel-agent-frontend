@@ -1,0 +1,190 @@
+"use client";
+
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  BookOpen,
+  FileText,
+  FolderOpen,
+  Network,
+  Palette,
+  Settings,
+  Sparkles,
+  Upload,
+  Users,
+  Zap,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useThemeStore, themes } from "@/stores/theme-store";
+
+const mainNavItems = [
+  {
+    title: "项目中心",
+    icon: FolderOpen,
+    href: "/",
+  },
+  {
+    title: "上传小说",
+    icon: Upload,
+    href: "/upload",
+  },
+  {
+    title: "拆书进度",
+    icon: Zap,
+    href: "/progress",
+  },
+];
+
+const analysisNavItems = [
+  {
+    title: "世界观",
+    icon: Sparkles,
+    href: "/worldview",
+  },
+  {
+    title: "人物图谱",
+    icon: Users,
+    href: "/characters",
+  },
+  {
+    title: "关系网络",
+    icon: Network,
+    href: "/relations",
+  },
+  {
+    title: "章节概要",
+    icon: FileText,
+    href: "/chapters",
+  },
+];
+
+export function AppSidebar() {
+  const pathname = usePathname();
+  const { theme, setTheme } = useThemeStore();
+
+  // 循环切换主题
+  const cycleTheme = () => {
+    const themeOrder = ["cyberpunk", "ink", "bamboo"] as const;
+    const currentIndex = themeOrder.indexOf(theme);
+    const nextIndex = (currentIndex + 1) % themeOrder.length;
+    setTheme(themeOrder[nextIndex]);
+  };
+
+  const currentTheme = themes.find((t) => t.id === theme);
+
+  return (
+    <Sidebar className="border-r border-border/50">
+      <SidebarHeader className="border-b border-border/50 px-4 py-4">
+        <Link href="/" className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 glow-primary">
+            <BookOpen className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-semibold text-foreground">Novel Agent</span>
+            <span className="text-xs text-muted-foreground">智能拆书助手</span>
+          </div>
+        </Link>
+      </SidebarHeader>
+
+      <SidebarContent className="scrollbar-thin">
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground">
+            工作区
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {mainNavItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.href}
+                    className="transition-colors hover:bg-accent/50"
+                  >
+                    <Link href={item.href}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground">
+            分析结果
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {analysisNavItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.href}
+                    className="transition-colors hover:bg-accent/50"
+                  >
+                    <Link href={item.href}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter className="border-t border-border/50 p-4">
+        <SidebarMenu>
+          {/* 主题切换 */}
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={cycleTheme}
+              className="hover:bg-accent/50 cursor-pointer"
+            >
+              <Palette className="h-4 w-4" />
+              <span className="flex items-center gap-2">
+                <span>{currentTheme?.icon}</span>
+                <span>{currentTheme?.name}</span>
+              </span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          {/* 设置 */}
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild className="hover:bg-accent/50">
+              <Link href="/settings">
+                <Settings className="h-4 w-4" />
+                <span>设置</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <div className="mt-3 flex items-center gap-3 rounded-lg bg-card/50 p-3">
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="bg-primary/20 text-primary text-sm">
+              U
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">用户</span>
+            <span className="text-xs text-muted-foreground">免费版</span>
+          </div>
+        </div>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
