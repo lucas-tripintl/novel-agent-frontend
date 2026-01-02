@@ -59,14 +59,14 @@ const analysisNavItems = [
     href: "/characters",
   },
   {
+    title: "剧情大纲",
+    icon: FileText,
+    href: "/storylines",
+  },
+  {
     title: "关系网络",
     icon: Network,
     href: "/relations",
-  },
-  {
-    title: "剧情线",
-    icon: FileText,
-    href: "/storylines",
   },
 ];
 
