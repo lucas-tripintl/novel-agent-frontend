@@ -51,7 +51,7 @@ export function ProjectStatusBadge({
       status={status}
       variants={projectStatusVariants}
       labels={projectStatusLabels}
-      pulseStatuses={["importing", "analyzing"]}
+      pulseStatuses={["in_progress"]}
       className={className}
     />
   );

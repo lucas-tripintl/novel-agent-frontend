@@ -39,8 +39,11 @@ export interface TaskCreateResponse {
 
 // ============ 项目相关 ============
 
+// API 返回的项目状态
 export type ProjectStatus = "draft" | "in_progress" | "completed" | "paused" | "archived" | "deleted";
-export type ProjectType = "original" | "imported" | "continuation" | "fusion";
+
+// API 返回的项目类型
+export type ProjectType = "original" | "continuation";
 
 export interface ProjectImportResponse {
   project_id: string;
@@ -65,12 +68,10 @@ export interface ProjectRead {
 export interface ProjectList {
   id: string;
   name: string;
-  type: ProjectType;
+  project_type: ProjectType;
   status: ProjectStatus;
+  current_chapter: number;
   total_chapters: number;
-  analyzed_chapters: number;
-  created_at: string;
-  updated_at: string;
 }
 
 // ============ 章节相关 ============

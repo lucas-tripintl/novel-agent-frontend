@@ -1,12 +1,13 @@
-// 项目类型定义
-export type ProjectType = "original" | "imported" | "continuation" | "fusion";
+// 项目类型定义（与 API 对齐）
+export type ProjectType = "original" | "continuation";
 
 export type ProjectStatus =
   | "draft"
-  | "importing"
-  | "analyzing"
+  | "in_progress"
   | "completed"
-  | "failed";
+  | "paused"
+  | "archived"
+  | "deleted";
 
 export interface ProjectStats {
   characters: number;
@@ -55,24 +56,24 @@ export interface GoldenFinger {
 // 项目状态样式
 export const projectStatusVariants: Record<ProjectStatus, string> = {
   draft: "bg-muted text-muted-foreground border-border",
-  importing: "bg-neon-cyan/20 text-neon-cyan border-neon-cyan/30",
-  analyzing: "bg-neon-purple/20 text-neon-purple border-neon-purple/30",
+  in_progress: "bg-neon-purple/20 text-neon-purple border-neon-purple/30",
   completed: "bg-primary/20 text-primary border-primary/30",
-  failed: "bg-destructive/20 text-destructive border-destructive/30",
+  paused: "bg-yellow-500/20 text-yellow-500 border-yellow-500/30",
+  archived: "bg-muted text-muted-foreground border-border",
+  deleted: "bg-destructive/20 text-destructive border-destructive/30",
 };
 
 export const projectStatusLabels: Record<ProjectStatus, string> = {
   draft: "草稿",
-  importing: "导入中",
-  analyzing: "分析中",
+  in_progress: "进行中",
   completed: "已完成",
-  failed: "失败",
+  paused: "已暂停",
+  archived: "已归档",
+  deleted: "已删除",
 };
 
 // 项目类型标签
 export const projectTypeLabels: Record<ProjectType, string> = {
   original: "原创",
-  imported: "拆书",
   continuation: "续写",
-  fusion: "融合",
 };

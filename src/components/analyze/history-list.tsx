@@ -82,8 +82,7 @@ export function HistoryList() {
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {project.analyzed_chapters} / {project.total_chapters} 章 ·{" "}
-                  {new Date(project.created_at).toLocaleDateString()}
+                  {project.current_chapter} / {project.total_chapters} 章
                 </p>
               </div>
 

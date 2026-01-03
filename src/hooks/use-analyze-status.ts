@@ -1,10 +1,10 @@
 "use client";
 
 import { usePolling } from "./use-polling";
-import type { ProjectStatus } from "@/types/project";
+import type { TaskStatus } from "@/types/api";
 
 export interface AnalyzeStatus {
-  status: ProjectStatus;
+  status: TaskStatus;
   progress: number;
   currentChapter: number;
   totalChapters: number;
@@ -71,7 +71,7 @@ export function useMockAnalyzeStatus({
       const currentChapter = Math.floor((progress / 100) * totalChapters);
 
       return {
-        status: progress >= 100 ? "completed" : "analyzing",
+        status: progress >= 100 ? "completed" : "running",
         progress,
         currentChapter,
         totalChapters,

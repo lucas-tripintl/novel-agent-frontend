@@ -53,7 +53,7 @@ import {
 const mockProject: Project = {
   id: "1",
   name: "斗破苍穹",
-  type: "imported",
+  type: "original",
   status: "completed",
   progress: 100,
   totalChapters: 1648,
@@ -222,8 +222,8 @@ export default function ProjectDetailPage() {
               <StatCard title="伏笔" value={project.stats.foreshadowing} icon={Bookmark} />
             </div>
 
-            {/* 分析进度（如果正在分析）*/}
-            {project.status === "analyzing" && (
+            {/* 分析进度（如果正在进行）*/}
+            {project.status === "in_progress" && (
               <Card className="bg-card/50 border-primary/30">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
