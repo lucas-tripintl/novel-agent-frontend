@@ -101,7 +101,7 @@ export function DashboardContent() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">作品中心</h1>
           <p className="text-muted-foreground mt-1">
-            管理你的小说分析项目
+            管理你的作品
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -114,7 +114,7 @@ export function DashboardContent() {
           <Button asChild className="glow-green">
             <Link href="/upload">
               <Plus className="mr-2 h-4 w-4" />
-              新建小说
+              新建作品
             </Link>
           </Button>
         </div>

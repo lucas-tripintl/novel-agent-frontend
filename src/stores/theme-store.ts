@@ -14,17 +14,7 @@ export interface ThemeInfo {
   };
 }
 
-export const themes: ThemeInfo[] = [
-  {
-    id: "cyberpunk",
-    name: "科技黑",
-    description: "深色科技风，荧光绿 + 电光紫",
-    preview: {
-      bg: "#000000",
-      primary: "#22c55e",
-      accent: "#a855f7",
-    },
-  },
+export const themes: ThemeInfo[] = [ 
   {
     id: "ink",
     name: "墨韵白",
@@ -33,6 +23,16 @@ export const themes: ThemeInfo[] = [
       bg: "#faf8f5",
       primary: "#292524",
       accent: "#787774",
+    },
+  },
+  {
+    id: "cyberpunk",
+    name: "科技黑",
+    description: "深色科技风，荧光绿 + 电光紫",
+    preview: {
+      bg: "#000000",
+      primary: "#22c55e",
+      accent: "#a855f7",
     },
   },
   {

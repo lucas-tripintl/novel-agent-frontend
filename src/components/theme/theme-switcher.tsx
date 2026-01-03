@@ -104,7 +104,7 @@ export function ThemeSwitcherCompact() {
   const { theme, setTheme } = useThemeStore();
 
   const cycleTheme = () => {
-    const themeOrder: ThemeType[] = ["cyberpunk", "ink", "bamboo"];
+    const themeOrder: ThemeType[] = ["ink", "cyberpunk", "bamboo"];
     const currentIndex = themeOrder.indexOf(theme);
     const nextIndex = (currentIndex + 1) % themeOrder.length;
     setTheme(themeOrder[nextIndex]);
