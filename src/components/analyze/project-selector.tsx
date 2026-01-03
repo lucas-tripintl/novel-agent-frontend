@@ -19,12 +19,10 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
-  Clock,
   FileText,
   Search,
 } from "lucide-react";
 import { listProjects } from "@/lib/api/projects";
-import { cn } from "@/lib/utils";
 import type { ProjectList, ProjectStatus } from "@/types/api";
 
 const PAGE_SIZE = 10;
@@ -39,10 +37,9 @@ const STATUS_OPTIONS: { value: ProjectStatus | "all"; label: string }[] = [
 
 interface ProjectSelectorProps {
   onSelect: (project: ProjectList) => void;
-  selectedId?: string;
 }
 
-export function ProjectSelector({ onSelect, selectedId }: ProjectSelectorProps) {
+export function ProjectSelector({ onSelect }: ProjectSelectorProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | "all">("all");
   const [page, setPage] = useState(0);
@@ -136,12 +133,11 @@ export function ProjectSelector({ onSelect, selectedId }: ProjectSelectorProps) 
           </Card>
         ) : (
           <ScrollArea className="h-full -mr-3 pr-3">
-            <div className="space-y-2">
+            <div className="space-y-2 p-0.5">
               {filteredProjects.map((project) => (
                 <ProjectCard
                   key={project.id}
                   project={project}
-                  isSelected={project.id === selectedId}
                   onSelect={() => onSelect(project)}
                 />
               ))}
@@ -187,11 +183,10 @@ export function ProjectSelector({ onSelect, selectedId }: ProjectSelectorProps) 
 
 interface ProjectCardProps {
   project: ProjectList;
-  isSelected: boolean;
   onSelect: () => void;
 }
 
-function ProjectCard({ project, isSelected, onSelect }: ProjectCardProps) {
+function ProjectCard({ project, onSelect }: ProjectCardProps) {
   const statusConfig: Record<
     string,
     { label: string; variant: "default" | "secondary" | "outline" }
@@ -209,10 +204,7 @@ function ProjectCard({ project, isSelected, onSelect }: ProjectCardProps) {
 
   return (
     <Card
-      className={cn(
-        "bg-card/50 cursor-pointer transition-all hover:bg-card/70 !py-0 !gap-0",
-        isSelected && "ring-2 ring-primary bg-card/70"
-      )}
+      className="bg-card/50 cursor-pointer transition-all hover:bg-card/70 hover:ring-2 hover:ring-primary/50 !py-0 !gap-0"
       onClick={onSelect}
     >
       <CardContent className="p-2.5 !px-3">
@@ -227,18 +219,9 @@ function ProjectCard({ project, isSelected, onSelect }: ProjectCardProps) {
             </div>
             <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
               <span>{project.total_chapters} 章</span>
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {new Date(project.created_at).toLocaleDateString()}
-              </span>
             </div>
           </div>
-          <ChevronRight
-            className={cn(
-              "h-4 w-4 text-muted-foreground transition-colors shrink-0",
-              isSelected && "text-primary"
-            )}
-          />
+          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
         </div>
       </CardContent>
     </Card>

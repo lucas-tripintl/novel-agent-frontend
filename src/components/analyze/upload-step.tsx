@@ -26,12 +26,10 @@ interface UploadStepProps {
 export function UploadStep({ onSuccess }: UploadStepProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<ProjectList | null>(null);
   const { mutate: importProject, isPending, error, reset } = useProjectImport();
 
   const handleFileSelect = useCallback((file: File) => {
     setSelectedFile(file);
-    setSelectedProject(null);
     setDialogOpen(true);
     reset();
   }, [reset]);
@@ -60,22 +58,15 @@ export function UploadStep({ onSuccess }: UploadStepProps) {
   }, [selectedFile, importProject, onSuccess]);
 
   const handleProjectSelect = useCallback((project: ProjectList) => {
-    setSelectedProject(project);
-    setSelectedFile(null);
-    reset();
-  }, [reset]);
-
-  const handleContinueWithProject = useCallback(() => {
-    if (!selectedProject) return;
-
+    // 直接进入下一页
     onSuccess({
-      project_id: selectedProject.id,
-      project_name: selectedProject.name,
-      total_chapters: selectedProject.total_chapters,
-      imported_chapters: selectedProject.total_chapters,
+      project_id: project.id,
+      project_name: project.name,
+      total_chapters: project.total_chapters,
+      imported_chapters: project.total_chapters,
       message: "从已有作品继续",
     });
-  }, [selectedProject, onSuccess]);
+  }, [onSuccess]);
 
   return (
     <>
@@ -93,26 +84,8 @@ export function UploadStep({ onSuccess }: UploadStepProps) {
             <div className="flex-1 min-h-0">
               <ProjectSelector
                 onSelect={handleProjectSelect}
-                selectedId={selectedProject?.id}
               />
             </div>
-
-            {selectedProject && (
-              <div className="mt-4 pt-4 border-t border-border/50 shrink-0">
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{selectedProject.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedProject.total_chapters} 章 · 已分析 {selectedProject.analyzed_chapters} 章
-                    </p>
-                  </div>
-                  <Button onClick={handleContinueWithProject} className="shrink-0 ml-3">
-                    继续分析
-                    <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
 
