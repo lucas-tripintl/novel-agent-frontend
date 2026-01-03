@@ -1,12 +1,11 @@
 "use client";
 
 import { MainLayout } from "@/components/layout/main-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -21,8 +20,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  BookOpen,
   ChevronLeft,
   FileText,
   Users,
@@ -30,34 +29,74 @@ import {
   Zap,
   GitBranch,
   Bookmark,
-  Sparkles,
   MoreHorizontal,
   Download,
   Trash2,
   Loader2,
   Network,
+  PenLine,
+  MapPin,
+  Shield,
+  Sparkles,
+  Package,
+  Eye,
+  Wand2,
+  ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ProjectStatusBadge } from "@/components/common/status-badge";
-import { StatCard, StatCardHorizontal } from "@/components/common/stat-card";
+import { StatCard } from "@/components/common/stat-card";
 import {
-  type Project,
-  type Chapter,
-  type GoldenFinger,
   projectTypeLabels,
 } from "@/types/project";
+import type { EntityType, EntityRead } from "@/types/api";
 
 import {
   useProject,
   useProjectChapters,
-  useProjectGoldenFingers,
 } from "@/hooks/use-projects";
-import { useAnalysisStats } from "@/hooks/use-analysis-results";
+import { useEntitiesOverview } from "@/hooks/use-analysis-results";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+// 设定分类配置
+const categoryConfig: {
+  type: EntityType;
+  label: string;
+  icon: typeof Users;
+  color: string;
+  href: string;
+}[] = [
+  { type: "character", label: "人物角色", icon: Users, color: "text-blue-500", href: "/characters" },
+  { type: "location", label: "地理区域", icon: MapPin, color: "text-green-500", href: "/worldview" },
+  { type: "worldview", label: "世界观", icon: Earth, color: "text-cyan-500", href: "/worldview" },
+  { type: "faction", label: "势力组织", icon: Shield, color: "text-orange-500", href: "/worldview" },
+  { type: "power_system", label: "力量体系", icon: Sparkles, color: "text-purple-500", href: "/worldview" },
+  { type: "item", label: "物品道具", icon: Package, color: "text-amber-500", href: "/worldview" },
+  { type: "skill", label: "技能功法", icon: Zap, color: "text-red-500", href: "/worldview" },
+  { type: "plotline", label: "剧情线", icon: FileText, color: "text-indigo-500", href: "/storylines" },
+  { type: "foreshadowing", label: "伏笔悬念", icon: Eye, color: "text-pink-500", href: "/storylines" },
+  { type: "golden_finger", label: "金手指", icon: Wand2, color: "text-yellow-500", href: "/worldview" },
+];
+
+// 解析实体内容
+function parseEntityContent(entity: EntityRead): { name: string; description: string } {
+  try {
+    const content = JSON.parse(entity.content || "{}");
+    return {
+      name: entity.name || content.name || "未命名",
+      description: content.description || content.content || "",
+    };
+  } catch {
+    return {
+      name: entity.name || "未命名",
+      description: entity.content || "",
+    };
+  }
+}
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -72,18 +111,32 @@ export default function ProjectDetailPage() {
 
   const {
     data: chaptersData,
-    isLoading: isChaptersLoading,
-  } = useProjectChapters(projectId, { limit: 100 }); // Initially load 100, needing pagination in future
+  } = useProjectChapters(projectId, { limit: 100 });
 
-  const {
-    data: goldenFingersData,
-    isLoading: isGoldenFingersLoading,
-  } = useProjectGoldenFingers(projectId, { limit: 100 });
-
-  const { stats, isLoading: isStatsLoading } = useAnalysisStats(projectId);
+  // 使用 useEntitiesOverview 获取所有设定信息
+  const { stats, total: totalEntities, isLoading: isEntitiesLoading, entities } = useEntitiesOverview(
+    [projectId],
+    { enabled: !!projectId }
+  );
 
   const chapters = chaptersData?.items ?? [];
-  const goldenFingers = goldenFingersData?.items ?? [];
+
+  // 从已获取的实体中取最近的 6 个用于预览
+  const recentEntities = useMemo(() => {
+    if (!entities || entities.length === 0) return [];
+    return [...entities]
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+      .slice(0, 6);
+  }, [entities]);
+
+  // 计算各分类的统计
+  const categoryStats = categoryConfig.map((cat) => ({
+    ...cat,
+    count: stats[cat.type] || 0,
+  }));
+
+  // 找出最多的分类（用于进度条）
+  const maxCount = Math.max(...categoryStats.map((c) => c.count), 1);
 
   const filteredChapters = chapters.filter((ch) => {
     if (statusFilter === "all") return true;
@@ -167,25 +220,18 @@ export default function ProjectDetailPage() {
                 <ProjectStatusBadge status={project.status} />
               </div>
               <p className="text-muted-foreground mt-1">
-                {project.total_chapters} 章 · {stats.characters} 角色 · {stats.worldview} 世界观设定
+                {project.total_chapters} 章 · {stats.character} 角色 · {stats.worldview} 世界观设定
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {project.status === "completed" && (
-              <>
-                <Button variant="outline">
-                  <GitBranch className="mr-2 h-4 w-4" />
-                  创建续写
-                </Button>
-                <Button variant="outline">
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  提取元素
-                </Button>
-              </>
-            )}
+            {/* 核心入口：开始写作 */}
+            <Button className="glow-primary">
+              <PenLine className="mr-2 h-4 w-4" />
+              开始写作
+            </Button>
             {project.status === "draft" && (
-              <Button className="glow-green">
+              <Button variant="outline">
                 <Zap className="mr-2 h-4 w-4" />
                 开始分析
               </Button>
@@ -216,31 +262,10 @@ export default function ProjectDetailPage() {
           <TabsList className="bg-card/50 border border-border/50">
             <TabsTrigger value="overview">概览</TabsTrigger>
             <TabsTrigger value="chapters">章节</TabsTrigger>
-            <TabsTrigger value="characters">角色</TabsTrigger>
-            <TabsTrigger value="worldview">世界观</TabsTrigger>
-            <TabsTrigger value="golden-fingers">金手指</TabsTrigger>
-            <TabsTrigger value="plotlines">剧情线</TabsTrigger>
-            <TabsTrigger value="foreshadowing">伏笔</TabsTrigger>
           </TabsList>
 
           {/* 概览 Tab */}
           <TabsContent value="overview" className="space-y-6">
-            {/* 统计卡片 */}
-            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-              {isStatsLoading ? (
-                Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
-              ) : (
-                <>
-                  <StatCard title="章节" value={project.total_chapters} icon={FileText} />
-                  <StatCard title="角色" value={stats.characters} icon={Users} />
-                  <StatCard title="世界观" value={stats.worldview} icon={Earth} />
-                  <StatCard title="金手指" value={stats.goldenFingers} icon={Zap} />
-                  <StatCard title="剧情线" value={stats.plotlines} icon={GitBranch} />
-                  <StatCard title="伏笔" value={stats.foreshadowing} icon={Bookmark} />
-                </>
-              )}
-            </div>
-
             {/* 分析进度（如果正在进行）*/}
             {project.status === "in_progress" && (
               <Card className="bg-card/50 border-primary/30">
@@ -260,41 +285,137 @@ export default function ProjectDetailPage() {
               </Card>
             )}
 
-            {/* 快捷入口 */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Link href={`/characters?novel=${project.id}`}>
-                <StatCardHorizontal
-                  title="查看角色"
-                  value={stats.characters}
-                  icon={Users}
-                  description={`${stats.characters} 个角色`}
-                />
-              </Link>
-              <Link href={`/worldview?novel=${project.id}`}>
-                <StatCardHorizontal
-                  title="查看世界观"
-                  value={stats.worldview}
-                  icon={Earth}
-                  description={`${stats.worldview} 个设定`}
-                />
-              </Link>
-              <Link href={`/storylines?novel=${project.id}`}>
-                <StatCardHorizontal
-                  title="查看剧情线"
-                  value={stats.plotlines}
-                  icon={GitBranch}
-                  description={`${stats.plotlines} 条剧情线`}
-                />
-              </Link>
-              <Link href={`/relations?novel=${project.id}`}>
-                <StatCardHorizontal
-                  title="查看关系网络"
-                  value={stats.characters}
-                  icon={Network}
-                  description="角色关系图"
-                />
-              </Link>
-            </div>
+            {/* 设定分类统计网格 */}
+            {isEntitiesLoading ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <Skeleton key={i} className="h-24" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                {categoryStats.map((cat) => {
+                  const Icon = cat.icon;
+                  const percentage = (cat.count / maxCount) * 100;
+
+                  return (
+                    <Link key={cat.type} href={`${cat.href}?novel=${project.id}`}>
+                      <Card className="bg-card/50 border-border/50 hover:border-primary/50 hover:bg-accent/30 transition-all cursor-pointer group h-full">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className={`p-2 rounded-lg bg-muted/50 ${cat.color}`}>
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <Badge variant="secondary" className="text-xs">
+                              {cat.count}
+                            </Badge>
+                          </div>
+                          <h3 className="font-medium text-sm mb-1 group-hover:text-primary transition-colors">
+                            {cat.label}
+                          </h3>
+                          <Progress value={percentage} className="h-1 mt-2" />
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* 最近设定预览 */}
+            {recentEntities.length > 0 && (
+              <Card className="bg-card/50 border-border/50">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg">最近设定</CardTitle>
+                      <CardDescription>最新添加或更新的设定</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[280px] pr-4">
+                    <div className="space-y-3">
+                      {recentEntities.map((entity) => {
+                        const parsed = parseEntityContent(entity);
+                        const catConfig = categoryConfig.find((c) => c.type === entity.entity_type);
+                        const Icon = catConfig?.icon || FileText;
+
+                        return (
+                          <div
+                            key={entity.id}
+                            className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                          >
+                            <div className={`p-2 rounded-lg bg-background ${catConfig?.color || "text-muted-foreground"}`}>
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium truncate">{parsed.name}</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                {parsed.description || "暂无描述"}
+                              </p>
+                            </div>
+                            <Badge variant="secondary" className="text-[10px] shrink-0">
+                              {catConfig?.label || entity.entity_type}
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 快速导航 */}
+            <Card className="bg-card/50 border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">快速导航</CardTitle>
+                <CardDescription>跳转到各设定集页面查看详情</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                  <Link href={`/characters?novel=${project.id}`}>
+                    <Button variant="outline" className="w-full justify-between h-auto py-3">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-blue-500" />
+                        <span>人物图谱</span>
+                      </div>
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link href={`/worldview?novel=${project.id}`}>
+                    <Button variant="outline" className="w-full justify-between h-auto py-3">
+                      <div className="flex items-center gap-2">
+                        <Earth className="h-4 w-4 text-cyan-500" />
+                        <span>世界观</span>
+                      </div>
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link href={`/storylines?novel=${project.id}`}>
+                    <Button variant="outline" className="w-full justify-between h-auto py-3">
+                      <div className="flex items-center gap-2">
+                        <GitBranch className="h-4 w-4 text-indigo-500" />
+                        <span>剧情大纲</span>
+                      </div>
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link href={`/relations?novel=${project.id}`}>
+                    <Button variant="outline" className="w-full justify-between h-auto py-3">
+                      <div className="flex items-center gap-2">
+                        <Network className="h-4 w-4 text-pink-500" />
+                        <span>关系网络</span>
+                      </div>
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* 章节 Tab */}
@@ -367,110 +488,6 @@ export default function ProjectDetailPage() {
                 </Card>
               ))}
             </div>
-          </TabsContent>
-
-          {/* 角色 Tab */}
-          <TabsContent value="characters">
-            <Card className="bg-card/50 border-border/50">
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">
-                  请前往{" "}
-                  <Link
-                    href={`/characters?novel=${project.id}`}
-                    className="text-primary hover:underline"
-                  >
-                    人物图谱
-                  </Link>{" "}
-                  查看完整角色列表
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* 世界观 Tab */}
-          <TabsContent value="worldview">
-            <Card className="bg-card/50 border-border/50">
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                <Earth className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">
-                  请前往{" "}
-                  <Link
-                    href={`/worldview?novel=${project.id}`}
-                    className="text-primary hover:underline"
-                  >
-                    世界观
-                  </Link>{" "}
-                  查看完整设定
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* 金手指 Tab */}
-          <TabsContent value="golden-fingers" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {goldenFingers.map((gf) => (
-                <Card key={gf.id} className="bg-card/50 border-border/50 hover:border-primary/30">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-primary" />
-                        {gf.name}
-                      </CardTitle>
-                      <Badge variant="outline" className="font-mono">
-                        Lv.{gf.level}
-                      </Badge>
-                    </div>
-                    <Badge variant="secondary" className="w-fit text-xs">
-                      {gf.type}
-                    </Badge>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {/* API 列表接口暂不返回详细信息，如需展示详情需单独获取 */}
-
-                    <div className="py-4 text-center text-sm text-muted-foreground">
-                      点击查看详情
-                    </div>
-
-                    <Button variant="outline" size="sm" className="w-full">
-                      查看状态历史
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* 剧情线 Tab */}
-          <TabsContent value="plotlines">
-            <Card className="bg-card/50 border-border/50">
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                <GitBranch className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">
-                  请前往{" "}
-                  <Link
-                    href={`/storylines?novel=${project.id}`}
-                    className="text-primary hover:underline"
-                  >
-                    剧情大纲
-                  </Link>{" "}
-                  查看完整剧情线
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* 伏笔 Tab */}
-          <TabsContent value="foreshadowing">
-            <Card className="bg-card/50 border-border/50">
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                <Bookmark className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">
-                  伏笔追踪功能即将上线
-                </p>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
