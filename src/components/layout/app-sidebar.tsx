@@ -27,6 +27,7 @@ import {
   FileText,
   FolderOpen,
   Library,
+  LogOut,
   Network,
   Palette,
   Settings,
@@ -36,8 +37,9 @@ import {
   Earth
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useThemeStore, themes } from "@/stores/theme-store";
+import { useAuthStore } from "@/stores/auth-store";
 import { cn } from "@/lib/utils";
 
 const mainNavItems = [
@@ -96,9 +98,19 @@ const creationNavItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, setTheme } = useThemeStore();
+  const { user, isAuthenticated, logout } = useAuthStore();
 
   const currentTheme = themes.find((t) => t.id === theme);
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
+
+  // 获取用户首字母
+  const userInitial = user?.nickname?.[0] || user?.email?.[0]?.toUpperCase() || "U";
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/50">
@@ -266,17 +278,46 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <div className="mt-3 flex items-center gap-3 rounded-lg bg-card/50 p-3 group-data-[collapsible=icon]:hidden">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-primary/20 text-primary text-sm">
-              U
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">用户</span>
-            <span className="text-xs text-muted-foreground">免费版</span>
+        {isAuthenticated && user ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="mt-3 flex items-center gap-3 rounded-lg bg-card/50 p-3 cursor-pointer hover:bg-accent/50 transition-colors group-data-[collapsible=icon]:hidden">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-primary/20 text-primary text-sm">
+                    {userInitial}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col flex-1 min-w-0">
+                  <span className="text-sm font-medium truncate">
+                    {user.nickname || user.email}
+                  </span>
+                  <span className="text-xs text-muted-foreground truncate">
+                    {user.email}
+                  </span>
+                </div>
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="end" className="w-48">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                账户
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
+                <LogOut className="mr-2 h-4 w-4" />
+                退出登录
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <div className="mt-3 group-data-[collapsible=icon]:hidden">
+            <Link
+              href="/login"
+              className="flex items-center justify-center gap-2 rounded-lg bg-primary/10 p-3 text-sm text-primary hover:bg-primary/20 transition-colors"
+            >
+              登录
+            </Link>
           </div>
-        </div>
+        )}
       </SidebarFooter>
     </Sidebar>
   );
