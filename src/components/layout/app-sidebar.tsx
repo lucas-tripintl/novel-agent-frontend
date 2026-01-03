@@ -22,9 +22,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
+  Blend,
   BookOpen,
   FileText,
   FolderOpen,
+  Library,
   Network,
   Palette,
   Settings,
@@ -76,6 +78,19 @@ const analysisNavItems = [
     title: "关系网络",
     icon: Network,
     href: "/relations",
+  },
+];
+
+const creationNavItems = [
+  {
+    title: "元素融合",
+    icon: Blend,
+    href: "/fusion",
+  },
+  {
+    title: "元素库",
+    icon: Library,
+    href: "/elements",
   },
 ];
 
@@ -136,6 +151,31 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.href}
+                    tooltip={item.title}
+                    className="transition-colors hover:bg-accent/50"
+                  >
+                    <Link href={item.href}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground">
+            创作工坊
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {creationNavItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
                     tooltip={item.title}
                     className="transition-colors hover:bg-accent/50"
                   >
