@@ -26,6 +26,7 @@ import {
   BookOpen,
   FileText,
   FolderOpen,
+  Layers,
   Library,
   LogOut,
   Network,
@@ -61,6 +62,11 @@ const mainNavItems = [
 ];
 
 const analysisNavItems = [
+  {
+    title: "设定总览",
+    icon: Layers,
+    href: "/settings",
+  },
   {
     title: "世界观",
     icon: Earth,
@@ -268,15 +274,15 @@ export function AppSidebar() {
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
-          {/* 设置 */}
-          <SidebarMenuItem>
+          {/* 系统设置 - 暂时隐藏，后续实现 */}
+          {/* <SidebarMenuItem>
             <SidebarMenuButton asChild className="hover:bg-accent/50">
-              <Link href="/settings">
+              <Link href="/preferences">
                 <Settings className="h-4 w-4" />
-                <span>设置</span>
+                <span>系统设置</span>
               </Link>
             </SidebarMenuButton>
-          </SidebarMenuItem>
+          </SidebarMenuItem> */}
         </SidebarMenu>
         {isAuthenticated && user ? (
           <DropdownMenu>

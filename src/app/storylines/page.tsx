@@ -28,7 +28,8 @@ import {
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { useMultiProjectEntities } from "@/hooks/use-analysis-results";
+import { useCrossProjectEntities } from "@/hooks/use-analysis-results";
+import { useSelectedProjectIds } from "@/stores/project-selection-store";
 import { useProjects, getProjectColor } from "@/hooks/use-projects";
 import type { EntityRead } from "@/types/api";
 
@@ -103,7 +104,8 @@ function parsePlotlineEntity(entity: EntityRead): PlotPoint {
 }
 
 export default function StorylinesPage() {
-  const [selectedNovels, setSelectedNovels] = useState<string[]>([]);
+  // 使用全局项目选择状态
+  const selectedNovels = useSelectedProjectIds();
   const [searchQuery, setSearchQuery] = useState("");
 
   // 获取项目列表（用于显示项目名称）
@@ -116,12 +118,15 @@ export default function StorylinesPage() {
     return map;
   }, [projectsData?.items]);
 
-  // 获取剧情线实体
-  const { entities, isLoading, error } = useMultiProjectEntities(
+  // 获取剧情线实体（使用新的跨项目 API）
+  const { data, isLoading, error } = useCrossProjectEntities(
     selectedNovels,
-    "plotline",
-    { enabled: selectedNovels.length > 0 }
+    {
+      entity_type: "plotline",
+      enabled: selectedNovels.length > 0,
+    }
   );
+  const entities = data?.items ?? [];
 
   // 解析并按项目分组
   const plotsByProject = useMemo(() => {
@@ -184,11 +189,7 @@ export default function StorylinesPage() {
 
         {/* 筛选栏 */}
         <div className="flex items-center gap-4 flex-wrap">
-          <NovelFilter
-            selectedIds={selectedNovels}
-            onSelectionChange={setSelectedNovels}
-            autoSelectFirst
-          />
+          <NovelFilter autoSelectFirst />
           <div className="flex-1 max-w-sm">
             <Command className="rounded-lg border border-border/50 bg-card/50">
               <CommandInput

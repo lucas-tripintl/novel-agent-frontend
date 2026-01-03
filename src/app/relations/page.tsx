@@ -30,7 +30,8 @@ import {
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { useMultiProjectEntities } from "@/hooks/use-analysis-results";
+import { useCrossProjectEntities } from "@/hooks/use-analysis-results";
+import { useSelectedProjectIds } from "@/stores/project-selection-store";
 import { useProjects, getProjectColor } from "@/hooks/use-projects";
 import type { EntityRead } from "@/types/api";
 
@@ -223,7 +224,8 @@ function extractCharactersAndRelations(
 }
 
 export default function RelationsPage() {
-  const [selectedNovels, setSelectedNovels] = useState<string[]>([]);
+  // 使用全局项目选择状态
+  const selectedNovels = useSelectedProjectIds();
   const [selectedRelationType, setSelectedRelationType] = useState<string>("all");
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterNode | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -238,12 +240,15 @@ export default function RelationsPage() {
     return map;
   }, [projectsData?.items]);
 
-  // 获取角色实体
-  const { entities, isLoading, error } = useMultiProjectEntities(
+  // 获取角色实体（使用新的跨项目 API）
+  const { data, isLoading, error } = useCrossProjectEntities(
     selectedNovels,
-    "character",
-    { enabled: selectedNovels.length > 0 }
+    {
+      entity_type: "character",
+      enabled: selectedNovels.length > 0,
+    }
   );
+  const entities = data?.items ?? [];
 
   // 提取节点和关系
   const { nodes: characterNodes, relations } = useMemo(
@@ -311,11 +316,7 @@ export default function RelationsPage() {
 
         {/* 筛选栏 */}
         <div className="flex items-center gap-4 flex-wrap">
-          <NovelFilter
-            selectedIds={selectedNovels}
-            onSelectionChange={setSelectedNovels}
-            autoSelectFirst
-          />
+          <NovelFilter autoSelectFirst />
           <Select
             value={selectedRelationType}
             onValueChange={setSelectedRelationType}

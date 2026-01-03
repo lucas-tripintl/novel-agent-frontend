@@ -32,7 +32,8 @@ import {
   Zap,
 } from "lucide-react";
 import { useState, useMemo } from "react";
-import { useMultiTypeEntities } from "@/hooks/use-analysis-results";
+import { useCrossProjectMultiTypeEntities } from "@/hooks/use-analysis-results";
+import { useSelectedProjectIds } from "@/stores/project-selection-store";
 import { getProjectColor } from "@/hooks/use-projects";
 import type { EntityType, EntityRead } from "@/types/api";
 
@@ -107,11 +108,12 @@ function parseEntityContent(entity: EntityRead): {
 }
 
 export default function WorldviewPage() {
-  const [selectedNovels, setSelectedNovels] = useState<string[]>([]);
+  // 使用全局项目选择状态
+  const selectedNovels = useSelectedProjectIds();
   const [searchQuery, setSearchQuery] = useState("");
 
-  // 获取多种类型的实体
-  const { entitiesByType, isLoading, error } = useMultiTypeEntities(
+  // 获取多种类型的实体（使用新的跨项目 API）
+  const { entitiesByType, isLoading, error } = useCrossProjectMultiTypeEntities(
     selectedNovels,
     WORLDVIEW_ENTITY_TYPES,
     { enabled: selectedNovels.length > 0 }
@@ -171,11 +173,7 @@ export default function WorldviewPage() {
 
         {/* 筛选栏 */}
         <div className="flex items-center gap-4 flex-wrap">
-          <NovelFilter
-            selectedIds={selectedNovels}
-            onSelectionChange={setSelectedNovels}
-            autoSelectFirst
-          />
+          <NovelFilter autoSelectFirst />
           <div className="flex-1 max-w-sm">
             <Command className="rounded-lg border border-border/50 bg-card/50">
               <CommandInput

@@ -18,25 +18,44 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useProjects, projectToNovel } from "@/hooks/use-projects";
+import { useProjectSelectionStore } from "@/stores/project-selection-store";
 import { BookOpen, Check, ChevronsUpDown, X, AlertCircle } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 
 interface NovelFilterProps {
-  selectedIds: string[];
-  onSelectionChange: (ids: string[]) => void;
+  /** 受控模式：外部传入选中的 ID */
+  selectedIds?: string[];
+  /** 受控模式：外部处理选择变化 */
+  onSelectionChange?: (ids: string[]) => void;
   className?: string;
   /** 是否默认选择第一个项目 */
   autoSelectFirst?: boolean;
+  /** 是否使用全局 store（默认 true） */
+  useGlobalStore?: boolean;
 }
 
 export function NovelFilter({
-  selectedIds,
-  onSelectionChange,
+  selectedIds: externalSelectedIds,
+  onSelectionChange: externalOnSelectionChange,
   className,
   autoSelectFirst = false,
+  useGlobalStore = true,
 }: NovelFilterProps) {
   const [open, setOpen] = useState(false);
   const { data, isLoading, error } = useProjects();
+
+  // 全局 store
+  const storeSelectedIds = useProjectSelectionStore((s) => s.selectedProjectIds);
+  const storeSetSelected = useProjectSelectionStore((s) => s.setSelectedProjects);
+
+  // 决定使用哪个状态源
+  const selectedIds = useGlobalStore
+    ? storeSelectedIds
+    : (externalSelectedIds ?? []);
+
+  const onSelectionChange = useGlobalStore
+    ? storeSetSelected
+    : (externalOnSelectionChange ?? (() => {}));
 
   // 将项目列表转换为 novels 格式
   const items = data?.items;

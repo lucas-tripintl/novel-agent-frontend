@@ -30,7 +30,8 @@ import {
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { useMultiProjectEntities } from "@/hooks/use-analysis-results";
+import { useCrossProjectEntities } from "@/hooks/use-analysis-results";
+import { useSelectedProjectIds } from "@/stores/project-selection-store";
 import { getProjectColor } from "@/hooks/use-projects";
 import type { EntityRead } from "@/types/api";
 
@@ -115,17 +116,21 @@ const roleColors: Record<string, string> = {
 };
 
 export default function CharactersPage() {
-  const [selectedNovels, setSelectedNovels] = useState<string[]>([]);
+  // 使用全局项目选择状态
+  const selectedNovels = useSelectedProjectIds();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
 
-  // 获取角色实体
-  const { entities, isLoading, error } = useMultiProjectEntities(
+  // 获取角色实体（使用新的跨项目 API）
+  const { data, isLoading, error } = useCrossProjectEntities(
     selectedNovels,
-    "character",
-    { enabled: selectedNovels.length > 0 }
+    {
+      entity_type: "character",
+      enabled: selectedNovels.length > 0,
+    }
   );
+  const entities = data?.items ?? [];
 
   // 解析并过滤角色数据
   const characters = useMemo(() => {
@@ -166,11 +171,7 @@ export default function CharactersPage() {
 
         {/* 筛选栏 */}
         <div className="flex items-center gap-4 flex-wrap">
-          <NovelFilter
-            selectedIds={selectedNovels}
-            onSelectionChange={setSelectedNovels}
-            autoSelectFirst
-          />
+          <NovelFilter autoSelectFirst />
           <div className="flex-1 max-w-sm">
             <Command className="rounded-lg border border-border/50 bg-card/50">
               <CommandInput
