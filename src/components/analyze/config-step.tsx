@@ -5,16 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Loader2, Users, Earth, Zap, GitBranch, Sparkles, BookOpen } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { ChevronLeft, ChevronRight, Loader2, Users, Earth, Zap, GitBranch, Sparkles } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export interface AnalyzeConfig {
@@ -93,70 +86,80 @@ export function ConfigStep({
     onStart,
   ]);
 
-  // 生成章节选项
-  const chapterOptions = Array.from({ length: importedChapters }, (_, i) => i + 1);
+  // 处理滑块值变化
+  const handleSliderChange = (values: number[]) => {
+    setStartChapter(values[0]);
+    setEndChapter(values[1]);
+  };
+
+  // 处理起始章节输入变化
+  const handleStartChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.max(1, Math.min(Number(e.target.value) || 1, endChapter));
+    setStartChapter(value);
+  };
+
+  // 处理结束章节输入变化
+  const handleEndChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.max(startChapter, Math.min(Number(e.target.value) || importedChapters, importedChapters));
+    setEndChapter(value);
+  };
 
   return (
     <div className="space-y-6">
       {/* 项目信息 */}
       <Card className="bg-card/50">
         <CardContent className="p-4 space-y-4">
-          {/* 项目名称 */}
           <div className="flex items-center gap-4">
-            <Label className="w-20 shrink-0">项目名称</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="输入项目名称"
-              className="flex-1 max-w-sm"
-            />
-          </div>
-
-          {/* 章节信息 */}
-          <div className="flex items-center justify-between">
-            <Badge variant="outline" className="font-mono">
-              已导入 {importedChapters} / {totalChapters} 章
-            </Badge>
+            <Label className="w-20 shrink-0">作品名称</Label>
+            <span className="text-sm font-medium">{name}</span>
           </div>
 
           {/* 章节范围 */}
-          <div className="flex items-center gap-4">
-            <Label className="w-20 shrink-0">分析范围</Label>
-            <div className="flex items-center gap-2">
-              <Select
-                value={String(startChapter)}
-                onValueChange={(v) => setStartChapter(Number(v))}
-              >
-                <SelectTrigger className="w-28">
-                  <SelectValue placeholder="起始" />
-                </SelectTrigger>
-                <SelectContent>
-                  {chapterOptions.map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      第 {n} 章
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <span className="text-muted-foreground">~</span>
-              <Select
-                value={String(endChapter)}
-                onValueChange={(v) => setEndChapter(Number(v))}
-              >
-                <SelectTrigger className="w-28">
-                  <SelectValue placeholder="结束" />
-                </SelectTrigger>
-                <SelectContent>
-                  {chapterOptions.map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      第 {n} 章
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <span className="text-sm text-muted-foreground">
-                ({endChapter - startChapter + 1} 章)
-              </span>
+          <div className="space-y-3">
+            <div className="flex items-center gap-4">
+              <Label className="w-20 shrink-0">分析范围</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">第</span>
+                <Input
+                  type="number"
+                  min={1}
+                  max={endChapter}
+                  value={startChapter}
+                  onChange={handleStartChange}
+                  className="w-20 h-8 text-center font-mono"
+                />
+                <span className="text-muted-foreground">~</span>
+                <Input
+                  type="number"
+                  min={startChapter}
+                  max={importedChapters}
+                  value={endChapter}
+                  onChange={handleEndChange}
+                  className="w-20 h-8 text-center font-mono"
+                />
+                <span className="text-sm text-muted-foreground">章</span>
+                <span className="text-sm text-muted-foreground ml-2">
+                  (共 {endChapter - startChapter + 1} 章)
+                </span>
+              </div>
+            </div>
+            {/* 可拖动滑块 */}
+            <div className="flex items-center gap-4">
+              <div className="w-20 shrink-0" />
+              <div className="flex-1 max-w-md">
+                <Slider
+                  value={[startChapter, endChapter]}
+                  onValueChange={handleSliderChange}
+                  min={1}
+                  max={importedChapters}
+                  step={1}
+                  className="cursor-pointer"
+                />
+                <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                  <span>第 1 章</span>
+                  <span>第 {importedChapters} 章</span>
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>

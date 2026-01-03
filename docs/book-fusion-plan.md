@@ -226,15 +226,10 @@ const projectTypeLabels = {
 **步骤 2: 章节预览**
 ```tsx
 <div className="space-y-4">
-  {/* 项目名称 */}
+  {/* 作品名称 */}
   <div className="flex items-center gap-4">
-    <Label className="w-20">项目名称</Label>
-    <Input
-      value={projectName}
-      onChange={e => setProjectName(e.target.value)}
-      placeholder="输入项目名称"
-      className="flex-1 max-w-sm"
-    />
+    <Label className="w-20 text-muted-foreground">作品名称</Label>
+    <span className="font-medium">{projectName}</span>
   </div>
 
   {/* 章节范围 */}

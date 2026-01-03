@@ -24,8 +24,8 @@ import { useTaskPolling, useActiveTasks } from "@/hooks/use-task-polling";
 // 导入向导步骤
 const importSteps = [
   { id: 1, title: "上传文件" },
-  { id: 2, title: "配置分析" },
-  { id: 3, title: "分析中" },
+  { id: 2, title: "分析配置" },
+  { id: 3, title: "执行分析" },
 ];
 
 type AnalyzeStep = "upload" | "config" | "loading" | "result";
@@ -134,9 +134,9 @@ export default function AnalyzePage() {
   // 当前步骤索引
   const stepIndex =
     currentStep === "upload" ? 0 :
-    currentStep === "config" ? 1 :
-    currentStep === "loading" ? 2 :
-    2;
+      currentStep === "config" ? 1 :
+        currentStep === "loading" ? 2 :
+          2;
 
   return (
     <MainLayout>
