@@ -92,7 +92,7 @@ export function Dropzone({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <CardContent className="flex flex-col items-center justify-center py-16">
+      <CardContent className="flex flex-col items-center justify-center h-full min-h-[200px]">
         <div
           className={cn(
             "flex h-16 w-16 items-center justify-center rounded-full mb-4 transition-colors",

@@ -25,7 +25,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           </header>
 
           {/* 主要内容 */}
-          <main className="flex-1 overflow-auto p-6 scrollbar-thin">
+          <main className="flex-1 flex flex-col overflow-hidden p-6">
             {children}
           </main>
         </SidebarInset>

@@ -4,3 +4,4 @@ export * from "./loading-step";
 export * from "./result-summary";
 export * from "./analyzing-list";
 export * from "./history-list";
+export * from "./project-selector";

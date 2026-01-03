@@ -140,9 +140,9 @@ export default function AnalyzePage() {
 
   return (
     <MainLayout>
-      <div className="space-y-6">
+      <div className="flex flex-col h-full">
         {/* 页面标题 */}
-        <div>
+        <div className="shrink-0 mb-6">
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <Zap className="h-6 w-6 text-primary" />
             设定提取
@@ -153,8 +153,8 @@ export default function AnalyzePage() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="upload" className="space-y-6">
-          <TabsList className="bg-card/50 border border-border/50">
+        <Tabs defaultValue="upload" className="flex-1 flex flex-col min-h-0">
+          <TabsList className="bg-card/50 border border-border/50 shrink-0 mb-6">
             <TabsTrigger value="upload">上传</TabsTrigger>
             <TabsTrigger value="analyzing">
               分析中
@@ -168,10 +168,12 @@ export default function AnalyzePage() {
           </TabsList>
 
           {/* 上传 Tab */}
-          <TabsContent value="upload" className="space-y-6">
+          <TabsContent value="upload" className="flex-1 flex flex-col min-h-0 mt-0">
             {/* 步骤指示器 */}
             {currentStep !== "upload" && (
-              <Steps steps={importSteps} currentStep={stepIndex + 1} />
+              <div className="shrink-0 mb-6">
+                <Steps steps={importSteps} currentStep={stepIndex + 1} />
+              </div>
             )}
 
             {/* 步骤内容 */}
@@ -213,12 +215,12 @@ export default function AnalyzePage() {
           </TabsContent>
 
           {/* 分析中 Tab */}
-          <TabsContent value="analyzing">
+          <TabsContent value="analyzing" className="mt-0">
             <AnalyzingList />
           </TabsContent>
 
           {/* 历史 Tab */}
-          <TabsContent value="history">
+          <TabsContent value="history" className="mt-0">
             <HistoryList />
           </TabsContent>
         </Tabs>
