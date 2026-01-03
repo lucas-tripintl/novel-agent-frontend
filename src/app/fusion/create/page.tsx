@@ -1,10 +1,9 @@
 "use client";
 
 import { MainLayout } from "@/components/layout/main-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -34,10 +33,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Steps } from "@/components/common/steps";
 import { cn } from "@/lib/utils";
-import { type FusionMode, fusionModes } from "@/types/fusion";
+import { type FusionMode, type SelectedElement, fusionModes } from "@/types/fusion";
+import { ProjectElementSelector } from "@/components/fusion/project-element-selector";
 
 // 融合模式图标映射
 const fusionModeIcons: Record<FusionMode, React.ComponentType<{ className?: string }>> = {
@@ -48,18 +48,9 @@ const fusionModeIcons: Record<FusionMode, React.ComponentType<{ className?: stri
   custom: Layers,
 };
 
-// 模拟已完成的项目
-const completedProjects = [
-  { id: "1", name: "斗破苍穹", stats: { characters: 342, worldview: 128 } },
-  { id: "2", name: "遮天", stats: { characters: 189, worldview: 76 } },
-  { id: "3", name: "完美世界", stats: { characters: 78, worldview: 32 } },
-  { id: "4", name: "凡人修仙传", stats: { characters: 156, worldview: 89 } },
-  { id: "5", name: "诡秘之主", stats: { characters: 234, worldview: 167 } },
-];
-
 // 创建向导步骤
 const createSteps = [
-  { id: 1, title: "选择源项目" },
+  { id: 1, title: "选择元素" },
   { id: 2, title: "选择融合模式" },
   { id: 3, title: "添加创意" },
   { id: 4, title: "确认" },
@@ -68,20 +59,33 @@ const createSteps = [
 export default function FusionCreatePage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
-  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [selectedElements, setSelectedElements] = useState<SelectedElement[]>([]);
   const [selectedMode, setSelectedMode] = useState<FusionMode | null>(null);
   const [userIdeas, setUserIdeas] = useState("");
   const [candidateCount, setCandidateCount] = useState(3);
   const [isCreating, setIsCreating] = useState(false);
 
-  // 切换项目选择
-  const toggleProject = useCallback((projectId: string) => {
-    setSelectedProjects((prev) =>
-      prev.includes(projectId)
-        ? prev.filter((id) => id !== projectId)
-        : [...prev, projectId]
-    );
+  // 处理元素选择变化
+  const handleElementsChange = useCallback((elements: SelectedElement[]) => {
+    setSelectedElements(elements);
   }, []);
+
+  // 按项目分组的元素统计
+  const elementsByProject = useMemo(() => {
+    const map = new Map<string, { projectId: string; count: number; types: Set<string> }>();
+    selectedElements.forEach((el) => {
+      if (!map.has(el.projectId)) {
+        map.set(el.projectId, { projectId: el.projectId, count: 0, types: new Set() });
+      }
+      const item = map.get(el.projectId)!;
+      item.count++;
+      item.types.add(el.entityType);
+    });
+    return Array.from(map.values());
+  }, [selectedElements]);
+
+  // 涉及的项目数量
+  const involvedProjectCount = elementsByProject.length;
 
   // 创建融合任务
   const handleCreate = useCallback(async () => {
@@ -106,7 +110,8 @@ export default function FusionCreatePage() {
   const canProceed = () => {
     switch (currentStep) {
       case 0:
-        return selectedProjects.length >= 2;
+        // 只要选中至少1个元素即可
+        return selectedElements.length >= 1;
       case 1:
         return selectedMode !== null;
       case 2:
@@ -120,7 +125,7 @@ export default function FusionCreatePage() {
 
   return (
     <MainLayout>
-      <div className="space-y-6 max-w-4xl mx-auto">
+      <div className="space-y-6 w-full">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" asChild>
@@ -134,7 +139,7 @@ export default function FusionCreatePage() {
               创建融合任务
             </h1>
             <p className="text-muted-foreground mt-1">
-              选择要融合的项目，配置融合参数
+              选择要融合的元素，配置融合参数
             </p>
           </div>
         </div>
@@ -145,48 +150,33 @@ export default function FusionCreatePage() {
         {/* 步骤内容 */}
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-6">
-            {/* 步骤 1: 选择源项目 */}
+            {/* 步骤 1: 选择融合元素 */}
             {currentStep === 0 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-lg font-semibold">选择要融合的项目</Label>
-                  <Badge variant="outline" className="font-mono">
-                    已选 {selectedProjects.length} 个
-                  </Badge>
+                  <Label className="text-lg font-semibold">选择要融合的元素</Label>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="font-mono">
+                      已选 {selectedElements.length} 个元素
+                    </Badge>
+                    <Badge variant="secondary" className="font-mono">
+                      来自 {involvedProjectCount} 个项目
+                    </Badge>
+                  </div>
                 </div>
 
-                <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
-                  {completedProjects.map((project) => (
-                    <Card
-                      key={project.id}
-                      className={cn(
-                        "cursor-pointer transition-all",
-                        selectedProjects.includes(project.id)
-                          ? "border-primary bg-primary/5"
-                          : "bg-card/50 border-border/50 hover:border-primary/30"
-                      )}
-                      onClick={() => toggleProject(project.id)}
-                    >
-                      <CardContent className="p-4 flex items-start gap-3">
-                        <Checkbox
-                          checked={selectedProjects.includes(project.id)}
-                          className="mt-1"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium truncate">{project.name}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {project.stats.characters} 角色 · {project.stats.worldview} 世界观
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                <ProjectElementSelector
+                  onSelectionChange={handleElementsChange}
+                  initialSelection={selectedElements}
+                  minSelection={1}
+                />
 
-                {selectedProjects.length < 2 && (
+                {selectedElements.length < 1 && (
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>请至少选择 2 个项目进行融合</AlertDescription>
+                    <AlertDescription>
+                      请至少选择 1 个元素进行融合
+                    </AlertDescription>
                   </Alert>
                 )}
               </div>
@@ -283,16 +273,25 @@ export default function FusionCreatePage() {
                 <Label className="text-lg font-semibold">确认融合配置</Label>
 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between py-2 border-b border-border/50">
-                    <span className="text-muted-foreground">源项目</span>
-                    <div className="flex gap-2">
-                      {completedProjects
-                        .filter((p) => selectedProjects.includes(p.id))
-                        .map((p) => (
-                          <Badge key={p.id} variant="secondary">
-                            {p.name}
-                          </Badge>
-                        ))}
+                  {/* 已选元素统计 */}
+                  <div className="py-2 border-b border-border/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-muted-foreground">选中元素</span>
+                      <Badge variant="outline" className="font-mono">
+                        {selectedElements.length} 个元素，来自 {involvedProjectCount} 个项目
+                      </Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {selectedElements.slice(0, 10).map((el) => (
+                        <Badge key={el.entityId} variant="secondary" className="text-xs">
+                          {el.name}
+                        </Badge>
+                      ))}
+                      {selectedElements.length > 10 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{selectedElements.length - 10} 更多
+                        </Badge>
+                      )}
                     </div>
                   </div>
 

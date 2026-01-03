@@ -1,3 +1,5 @@
+import type { EntityType, EntityRead } from "@/types/api";
+
 // 融合任务类型定义
 export type FusionStatus =
   | "pending"
@@ -15,6 +17,59 @@ export type FusionMode =
   | "abstract_recombine"
   | "conflict_merge"
   | "custom";
+
+// ============ 元素选择相关类型 ============
+
+/** 选中的元素 */
+export interface SelectedElement {
+  projectId: string;
+  entityId: string;
+  entityType: EntityType;
+  name: string;
+}
+
+/** 元素选择状态 */
+export interface ElementSelectionState {
+  /** 展开的项目 ID 列表 */
+  expandedProjects: Set<string>;
+  /** 展开的分类（projectId:entityType 格式）*/
+  expandedCategories: Set<string>;
+  /** 选中的元素 ID 集合（按项目分组） */
+  selectedElements: Map<string, Set<string>>;
+  /** 搜索关键词 */
+  searchKeyword: string;
+}
+
+/** 元素分类配置 */
+export interface ElementCategoryConfig {
+  type: EntityType;
+  label: string;
+  icon: string; // Lucide icon 名称
+}
+
+/** 项目元素统计 */
+export interface ProjectElementStats {
+  projectId: string;
+  projectName: string;
+  categories: {
+    type: EntityType;
+    count: number;
+    entities: EntityRead[];
+  }[];
+  totalCount: number;
+}
+
+/** 元素选择器 Props */
+export interface ProjectElementSelectorProps {
+  /** 选中的元素变化回调 */
+  onSelectionChange: (elements: SelectedElement[]) => void;
+  /** 初始选中的元素 */
+  initialSelection?: SelectedElement[];
+  /** 最小选择数量 */
+  minSelection?: number;
+  /** 是否显示搜索框 */
+  showSearch?: boolean;
+}
 
 export interface FusionSourceProject {
   id: string;
