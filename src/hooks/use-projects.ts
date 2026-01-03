@@ -55,3 +55,38 @@ export function useDeleteProject() {
     },
   });
 }
+
+/**
+ * 生成项目颜色（基于项目 ID 的哈希）
+ */
+export function getProjectColor(projectId: string): string {
+  const colors = [
+    "#22c55e", // green
+    "#a855f7", // purple
+    "#06b6d4", // cyan
+    "#f97316", // orange
+    "#ec4899", // pink
+    "#3b82f6", // blue
+    "#eab308", // yellow
+    "#ef4444", // red
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < projectId.length; i++) {
+    hash = ((hash << 5) - hash) + projectId.charCodeAt(i);
+    hash = hash & hash;
+  }
+
+  return colors[Math.abs(hash) % colors.length];
+}
+
+/**
+ * 将 ProjectList 转换为通用格式（用于 NovelFilter 等组件）
+ */
+export function projectToNovel(project: ProjectList) {
+  return {
+    id: project.id,
+    title: project.name,
+    color: getProjectColor(project.id),
+  };
+}

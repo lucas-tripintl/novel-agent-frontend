@@ -15,31 +15,42 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { BookOpen, Check, ChevronsUpDown, X } from "lucide-react";
-import { useState } from "react";
-
-// 模拟小说数据
-const novels = [
-  { id: "1", title: "斗破苍穹", author: "天蚕土豆", color: "#22c55e" },
-  { id: "2", title: "遮天", author: "辰东", color: "#a855f7" },
-  { id: "3", title: "完美世界", author: "辰东", color: "#06b6d4" },
-  { id: "4", title: "凡人修仙传", author: "忘语", color: "#f97316" },
-  { id: "5", title: "诡秘之主", author: "爱潜水的乌贼", color: "#ec4899" },
-];
+import { useProjects, projectToNovel } from "@/hooks/use-projects";
+import { BookOpen, Check, ChevronsUpDown, X, AlertCircle } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
 
 interface NovelFilterProps {
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
   className?: string;
+  /** 是否默认选择第一个项目 */
+  autoSelectFirst?: boolean;
 }
 
 export function NovelFilter({
   selectedIds,
   onSelectionChange,
   className,
+  autoSelectFirst = false,
 }: NovelFilterProps) {
   const [open, setOpen] = useState(false);
+  const { data, isLoading, error } = useProjects();
+
+  // 将项目列表转换为 novels 格式
+  const items = data?.items;
+  const novels = useMemo(() => {
+    if (!items) return [];
+    return items.map(projectToNovel);
+  }, [items]);
+
+  // 自动选择第一个项目
+  useEffect(() => {
+    if (autoSelectFirst && novels.length > 0 && selectedIds.length === 0) {
+      onSelectionChange([novels[0].id]);
+    }
+  }, [autoSelectFirst, novels, selectedIds.length, onSelectionChange]);
 
   const selectedNovels = novels.filter((n) => selectedIds.includes(n.id));
 
@@ -58,6 +69,23 @@ export function NovelFilter({
   const clearAll = () => {
     onSelectionChange([]);
   };
+
+  if (isLoading) {
+    return (
+      <div className={cn("flex items-center gap-2", className)}>
+        <Skeleton className="h-9 w-[180px]" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cn("flex items-center gap-2 text-destructive", className)}>
+        <AlertCircle className="h-4 w-4" />
+        <span className="text-sm">加载项目失败</span>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("flex items-center gap-2 flex-wrap", className)}>
@@ -84,7 +112,9 @@ export function NovelFilter({
           <Command>
             <CommandInput placeholder="搜索小说..." />
             <CommandList>
-              <CommandEmpty>未找到小说</CommandEmpty>
+              <CommandEmpty>
+                {novels.length === 0 ? "暂无项目，请先导入小说" : "未找到小说"}
+              </CommandEmpty>
               <CommandGroup>
                 {novels.map((novel) => (
                   <CommandItem
@@ -99,9 +129,6 @@ export function NovelFilter({
                     />
                     <div className="flex-1 min-w-0">
                       <div className="truncate font-medium">{novel.title}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {novel.author}
-                      </div>
                     </div>
                     <Check
                       className={cn(
@@ -153,4 +180,18 @@ export function NovelFilter({
       )}
     </div>
   );
+}
+
+/**
+ * 获取小说信息的 hook（供其他组件使用）
+ */
+export function useNovelInfo(novelId: string | null) {
+  const { data } = useProjects();
+  const items = data?.items;
+
+  return useMemo(() => {
+    if (!novelId || !items) return null;
+    const project = items.find((p) => p.id === novelId);
+    return project ? projectToNovel(project) : null;
+  }, [novelId, items]);
 }
