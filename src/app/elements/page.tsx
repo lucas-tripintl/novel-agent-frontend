@@ -181,16 +181,16 @@ const mockElements: Element[] = [
 ];
 
 export default function ElementsPage() {
-  const [selectedSources, setSelectedSources] = useState<string[]>([]);
+  const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   // 筛选元素
   const filteredElements = mockElements.filter((element) => {
     // 来源筛选
-    if (selectedSources.length > 0) {
+    if (selectedSource) {
       const hasSource = element.sourceProjects.some((p) =>
-        selectedSources.includes(p.id)
+        p.id === selectedSource
       );
       if (!hasSource) return false;
     }
@@ -230,8 +230,9 @@ export default function ElementsPage() {
         <div className="flex items-center gap-4 flex-wrap">
           {/* 来源项目筛选 */}
           <NovelFilter
-            selectedIds={selectedSources}
-            onSelectionChange={setSelectedSources}
+            selectedId={selectedSource}
+            onSelectionChange={setSelectedSource}
+            useGlobalStore={false}
           />
 
           {/* 元素类型筛选 */}

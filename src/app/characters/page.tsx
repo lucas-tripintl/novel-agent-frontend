@@ -31,7 +31,7 @@ import {
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useCrossProjectEntities } from "@/hooks/use-analysis-results";
-import { useSelectedProjectIds } from "@/stores/project-selection-store";
+import { useSelectedProjectId } from "@/stores/project-selection-store";
 import { getProjectColor } from "@/hooks/use-projects";
 import type { EntityRead } from "@/types/api";
 
@@ -117,17 +117,17 @@ const roleColors: Record<string, string> = {
 
 export default function CharactersPage() {
   // 使用全局项目选择状态
-  const selectedNovels = useSelectedProjectIds();
+  const selectedProjectId = useSelectedProjectId();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
 
   // 获取角色实体（使用新的跨项目 API）
   const { data, isLoading, error } = useCrossProjectEntities(
-    selectedNovels,
+    selectedProjectId ? [selectedProjectId] : [],
     {
       entity_type: "character",
-      enabled: selectedNovels.length > 0,
+      enabled: !!selectedProjectId,
     }
   );
   const entities = data?.items ?? [];
@@ -234,7 +234,7 @@ export default function CharactersPage() {
         )}
 
         {/* 未选择项目提示 */}
-        {!isLoading && selectedNovels.length === 0 && (
+        {!isLoading && !selectedProjectId && (
           <Card className="bg-card/30 border-dashed border-2 border-border/50">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
@@ -242,14 +242,14 @@ export default function CharactersPage() {
               </div>
               <h3 className="text-lg font-semibold mb-2">请选择小说</h3>
               <p className="text-muted-foreground text-center max-w-sm">
-                选择一本或多本小说以查看其角色信息
+                选择一本小说以查看其角色信息
               </p>
             </CardContent>
           </Card>
         )}
 
         {/* 人物列表 - 网格视图 */}
-        {!isLoading && !error && selectedNovels.length > 0 && viewMode === "grid" && (
+        {!isLoading && !error && selectedProjectId && viewMode === "grid" && (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {characters.map((char) => {
               const RoleIcon = roleIcons[char.role] || Users;
@@ -327,7 +327,7 @@ export default function CharactersPage() {
         )}
 
         {/* 人物列表 - 列表视图 */}
-        {!isLoading && !error && selectedNovels.length > 0 && viewMode === "list" && (
+        {!isLoading && !error && selectedProjectId && viewMode === "list" && (
           <div className="space-y-2">
             {characters.map((char) => {
               const RoleIcon = roleIcons[char.role] || Users;
@@ -384,7 +384,7 @@ export default function CharactersPage() {
         )}
 
         {/* 空状态 */}
-        {!isLoading && !error && selectedNovels.length > 0 && characters.length === 0 && (
+        {!isLoading && !error && selectedProjectId && characters.length === 0 && (
           <Card className="bg-card/30 border-dashed border-2 border-border/50">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">

@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -19,14 +18,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useProjects, projectToNovel } from "@/hooks/use-projects";
 import { useProjectSelectionStore } from "@/stores/project-selection-store";
-import { BookOpen, Check, ChevronsUpDown, X, AlertCircle } from "lucide-react";
+import { BookOpen, Check, ChevronsUpDown, AlertCircle } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 
 interface NovelFilterProps {
   /** 受控模式：外部传入选中的 ID */
-  selectedIds?: string[];
+  selectedId?: string | null;
   /** 受控模式：外部处理选择变化 */
-  onSelectionChange?: (ids: string[]) => void;
+  onSelectionChange?: (id: string | null) => void;
   className?: string;
   /** 是否默认选择第一个项目 */
   autoSelectFirst?: boolean;
@@ -35,7 +34,7 @@ interface NovelFilterProps {
 }
 
 export function NovelFilter({
-  selectedIds: externalSelectedIds,
+  selectedId: externalSelectedId,
   onSelectionChange: externalOnSelectionChange,
   className,
   autoSelectFirst = false,
@@ -45,13 +44,13 @@ export function NovelFilter({
   const { data, isLoading, error } = useProjects();
 
   // 全局 store
-  const storeSelectedIds = useProjectSelectionStore((s) => s.selectedProjectIds);
-  const storeSetSelected = useProjectSelectionStore((s) => s.setSelectedProjects);
+  const storeSelectedId = useProjectSelectionStore((s) => s.selectedProjectId);
+  const storeSetSelected = useProjectSelectionStore((s) => s.setSelectedProject);
 
   // 决定使用哪个状态源
-  const selectedIds = useGlobalStore
-    ? storeSelectedIds
-    : (externalSelectedIds ?? []);
+  const selectedId = useGlobalStore
+    ? storeSelectedId
+    : (externalSelectedId ?? null);
 
   const onSelectionChange = useGlobalStore
     ? storeSetSelected
@@ -66,27 +65,16 @@ export function NovelFilter({
 
   // 自动选择第一个项目
   useEffect(() => {
-    if (autoSelectFirst && novels.length > 0 && selectedIds.length === 0) {
-      onSelectionChange([novels[0].id]);
+    if (autoSelectFirst && novels.length > 0 && !selectedId) {
+      onSelectionChange(novels[0].id);
     }
-  }, [autoSelectFirst, novels, selectedIds.length, onSelectionChange]);
+  }, [autoSelectFirst, novels, selectedId, onSelectionChange]);
 
-  const selectedNovels = novels.filter((n) => selectedIds.includes(n.id));
+  const selectedNovel = novels.find((n) => n.id === selectedId);
 
-  const toggleNovel = (novelId: string) => {
-    if (selectedIds.includes(novelId)) {
-      onSelectionChange(selectedIds.filter((id) => id !== novelId));
-    } else {
-      onSelectionChange([...selectedIds, novelId]);
-    }
-  };
-
-  const removeNovel = (novelId: string) => {
-    onSelectionChange(selectedIds.filter((id) => id !== novelId));
-  };
-
-  const clearAll = () => {
-    onSelectionChange([]);
+  const selectNovel = (novelId: string) => {
+    onSelectionChange(novelId);
+    setOpen(false); // 选中即关闭
   };
 
   if (isLoading) {
@@ -107,98 +95,70 @@ export function NovelFilter({
   }
 
   return (
-    <div className={cn("flex items-center gap-2 flex-wrap", className)}>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="min-w-[180px] justify-between bg-card/50 border-border/50 hover:bg-accent/50"
-          >
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-              <span>
-                {selectedIds.length === 0
-                  ? "选择小说"
-                  : `已选 ${selectedIds.length} 本`}
-              </span>
-            </div>
-            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[280px] p-0" align="start">
-          <Command>
-            <CommandInput placeholder="搜索小说..." />
-            <CommandList>
-              <CommandEmpty>
-                {novels.length === 0 ? "暂无项目，请先导入小说" : "未找到小说"}
-              </CommandEmpty>
-              <CommandGroup>
-                {novels.map((novel) => (
-                  <CommandItem
-                    key={novel.id}
-                    value={novel.id}
-                    keywords={[novel.title]}
-                    onSelect={() => toggleNovel(novel.id)}
-                    className="cursor-pointer"
-                  >
-                    <div
-                      className="mr-2 h-3 w-3 rounded-full shrink-0"
-                      style={{ backgroundColor: novel.color }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="truncate font-medium">{novel.title}</div>
-                    </div>
-                    <Check
-                      className={cn(
-                        "h-4 w-4 shrink-0",
-                        selectedIds.includes(novel.id)
-                          ? "opacity-100"
-                          : "opacity-0"
-                      )}
-                    />
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-
-      {/* 已选小说标签 */}
-      {selectedNovels.map((novel) => (
-        <Badge
-          key={novel.id}
-          variant="secondary"
-          className="gap-1 pr-1 bg-card/50 border border-border/50"
-        >
-          <div
-            className="h-2 w-2 rounded-full"
-            style={{ backgroundColor: novel.color }}
-          />
-          {novel.title}
-          <button
-            onClick={() => removeNovel(novel.id)}
-            className="ml-1 rounded-full p-0.5 hover:bg-muted"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </Badge>
-      ))}
-
-      {/* 清空按钮 */}
-      {selectedIds.length > 1 && (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
         <Button
-          variant="ghost"
-          size="sm"
-          onClick={clearAll}
-          className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn(
+            "w-[200px] justify-center gap-2 bg-card/50 border-border/50 hover:bg-accent/50",
+            className
+          )}
         >
-          清空
+          {selectedNovel ? (
+            <>
+              <div
+                className="h-2.5 w-2.5 rounded-full shrink-0"
+                style={{ backgroundColor: selectedNovel.color }}
+              />
+              <span className="truncate max-w-[140px]">{selectedNovel.title}</span>
+            </>
+          ) : (
+            <>
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">选择小说</span>
+            </>
+          )}
+          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
         </Button>
-      )}
-    </div>
+      </PopoverTrigger>
+      <PopoverContent className="w-[220px] p-0" align="center">
+        <Command>
+          <CommandInput placeholder="搜索小说..." className="h-9" />
+          <CommandList>
+            <CommandEmpty>
+              {novels.length === 0 ? "暂无项目，请先导入小说" : "未找到小说"}
+            </CommandEmpty>
+            <CommandGroup>
+              {novels.map((novel) => (
+                <CommandItem
+                  key={novel.id}
+                  value={novel.id}
+                  keywords={[novel.title]}
+                  onSelect={() => selectNovel(novel.id)}
+                  className="cursor-pointer"
+                >
+                  <div
+                    className="mr-2 h-2.5 w-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: novel.color }}
+                  />
+                  <span className="flex-1 truncate">{novel.title}</span>
+                  <Check
+                    className={cn(
+                      "h-4 w-4 shrink-0",
+                      selectedId === novel.id
+                        ? "opacity-100"
+                        : "opacity-0"
+                    )}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 

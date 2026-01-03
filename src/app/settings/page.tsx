@@ -27,7 +27,7 @@ import {
   Layers,
 } from "lucide-react";
 import Link from "next/link";
-import { useSelectedProjectIds } from "@/stores/project-selection-store";
+import { useSelectedProjectId } from "@/stores/project-selection-store";
 import { useEntitiesOverview } from "@/hooks/use-analysis-results";
 import { useProjects, getProjectColor } from "@/hooks/use-projects";
 import type { EntityType, EntityRead } from "@/types/api";
@@ -144,7 +144,7 @@ function parseEntityContent(entity: EntityRead): {
 }
 
 export default function SettingsOverviewPage() {
-  const selectedProjectIds = useSelectedProjectIds();
+  const selectedProjectId = useSelectedProjectId();
 
   // 获取项目列表（用于显示项目名称）
   const { data: projectsData } = useProjects();
@@ -158,8 +158,8 @@ export default function SettingsOverviewPage() {
 
   // 获取设定统计和所有实体（一次请求获取全部）
   const { stats, total, isLoading, error, entities } = useEntitiesOverview(
-    selectedProjectIds,
-    { enabled: selectedProjectIds.length > 0 }
+    selectedProjectId ? [selectedProjectId] : [],
+    { enabled: !!selectedProjectId }
   );
 
   // 从已获取的实体中取最近的 6 个用于预览（按更新时间排序）
@@ -203,12 +203,12 @@ export default function SettingsOverviewPage() {
         </Card>
 
         {/* 未选择项目提示 */}
-        {selectedProjectIds.length === 0 && (
+        {!selectedProjectId && (
           <Card className="bg-muted/30 border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <BookOpen className="h-12 w-12 text-muted-foreground/50 mb-4" />
               <p className="text-muted-foreground text-center">
-                请选择一个或多个项目查看设定
+                请选择一个项目查看设定
               </p>
               <p className="text-sm text-muted-foreground/70 mt-2">
                 选择后将展示所有设定的统计和预览
@@ -218,7 +218,7 @@ export default function SettingsOverviewPage() {
         )}
 
         {/* 加载中 */}
-        {selectedProjectIds.length > 0 && isLoading && (
+        {selectedProjectId && isLoading && (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-24" />
@@ -237,7 +237,7 @@ export default function SettingsOverviewPage() {
         )}
 
         {/* 设定统计卡片 */}
-        {selectedProjectIds.length > 0 && !isLoading && (
+        {selectedProjectId && !isLoading && (
           <>
             {/* 总计统计 */}
             <div className="grid gap-4 md:grid-cols-3">
@@ -262,8 +262,10 @@ export default function SettingsOverviewPage() {
                       <BookOpen className="h-6 w-6 text-blue-500" />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">已选项目</p>
-                      <p className="text-3xl font-bold">{selectedProjectIds.length}</p>
+                      <p className="text-sm text-muted-foreground">当前项目</p>
+                      <p className="text-xl font-bold truncate max-w-[150px]">
+                        {projectsMap.get(selectedProjectId)?.name || "已选择"}
+                      </p>
                     </div>
                   </div>
                 </CardContent>

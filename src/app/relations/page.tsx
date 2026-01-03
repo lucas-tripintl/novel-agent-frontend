@@ -31,7 +31,7 @@ import {
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useCrossProjectEntities } from "@/hooks/use-analysis-results";
-import { useSelectedProjectIds } from "@/stores/project-selection-store";
+import { useSelectedProjectId } from "@/stores/project-selection-store";
 import { useProjects, getProjectColor } from "@/hooks/use-projects";
 import type { EntityRead } from "@/types/api";
 
@@ -225,7 +225,7 @@ function extractCharactersAndRelations(
 
 export default function RelationsPage() {
   // 使用全局项目选择状态
-  const selectedNovels = useSelectedProjectIds();
+  const selectedProjectId = useSelectedProjectId();
   const [selectedRelationType, setSelectedRelationType] = useState<string>("all");
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterNode | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -242,10 +242,10 @@ export default function RelationsPage() {
 
   // 获取角色实体（使用新的跨项目 API）
   const { data, isLoading, error } = useCrossProjectEntities(
-    selectedNovels,
+    selectedProjectId ? [selectedProjectId] : [],
     {
       entity_type: "character",
-      enabled: selectedNovels.length > 0,
+      enabled: !!selectedProjectId,
     }
   );
   const entities = data?.items ?? [];
@@ -394,7 +394,7 @@ export default function RelationsPage() {
         )}
 
         {/* 未选择项目提示 */}
-        {!isLoading && selectedNovels.length === 0 && (
+        {!isLoading && !selectedProjectId && (
           <Card className="bg-card/30 border-dashed border-2 border-border/50">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
@@ -402,14 +402,14 @@ export default function RelationsPage() {
               </div>
               <h3 className="text-lg font-semibold mb-2">请选择小说</h3>
               <p className="text-muted-foreground text-center max-w-sm">
-                选择一本或多本小说以查看人物关系网络
+                选择一本小说以查看人物关系网络
               </p>
             </CardContent>
           </Card>
         )}
 
         {/* 关系图 */}
-        {!isLoading && !error && selectedNovels.length > 0 && (
+        {!isLoading && !error && selectedProjectId && (
           <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
             {/* 关系图区域 */}
             <Card className="bg-card/30 border-border/50 overflow-hidden">
@@ -578,7 +578,7 @@ export default function RelationsPage() {
               </Card>
 
               {/* 小说来源图例 */}
-              {selectedNovels.length > 0 && (
+              {selectedProjectId && (
                 <Card className="bg-card/50 border-border/50">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium">小说来源</CardTitle>

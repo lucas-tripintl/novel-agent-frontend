@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useCrossProjectMultiTypeEntities } from "@/hooks/use-analysis-results";
-import { useSelectedProjectIds } from "@/stores/project-selection-store";
+import { useSelectedProjectId } from "@/stores/project-selection-store";
 import { getProjectColor } from "@/hooks/use-projects";
 import type { EntityType, EntityRead } from "@/types/api";
 
@@ -109,14 +109,14 @@ function parseEntityContent(entity: EntityRead): {
 
 export default function WorldviewPage() {
   // 使用全局项目选择状态
-  const selectedNovels = useSelectedProjectIds();
+  const selectedProjectId = useSelectedProjectId();
   const [searchQuery, setSearchQuery] = useState("");
 
   // 获取多种类型的实体（使用新的跨项目 API）
   const { entitiesByType, isLoading, error } = useCrossProjectMultiTypeEntities(
-    selectedNovels,
+    selectedProjectId ? [selectedProjectId] : [],
     WORLDVIEW_ENTITY_TYPES,
-    { enabled: selectedNovels.length > 0 }
+    { enabled: !!selectedProjectId }
   );
 
   // 按分类组织数据
@@ -216,7 +216,7 @@ export default function WorldviewPage() {
         )}
 
         {/* 未选择项目提示 */}
-        {!isLoading && selectedNovels.length === 0 && (
+        {!isLoading && !selectedProjectId && (
           <Card className="bg-card/30 border-dashed border-2 border-border/50">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
@@ -224,14 +224,14 @@ export default function WorldviewPage() {
               </div>
               <h3 className="text-lg font-semibold mb-2">请选择小说</h3>
               <p className="text-muted-foreground text-center max-w-sm">
-                选择一本或多本小说以查看其世界观设定
+                选择一本小说以查看其世界观设定
               </p>
             </CardContent>
           </Card>
         )}
 
         {/* 设定分类 */}
-        {!isLoading && !error && selectedNovels.length > 0 && (
+        {!isLoading && !error && selectedProjectId && (
           <Accordion
             type="multiple"
             defaultValue={Object.keys(categoryConfig)}
@@ -339,7 +339,7 @@ export default function WorldviewPage() {
         )}
 
         {/* 空状态 */}
-        {!isLoading && !error && selectedNovels.length > 0 && totalSettings === 0 && (
+        {!isLoading && !error && selectedProjectId && totalSettings === 0 && (
           <Card className="bg-card/30 border-dashed border-2 border-border/50">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">

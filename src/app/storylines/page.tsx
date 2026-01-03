@@ -29,7 +29,7 @@ import {
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useCrossProjectEntities } from "@/hooks/use-analysis-results";
-import { useSelectedProjectIds } from "@/stores/project-selection-store";
+import { useSelectedProjectId } from "@/stores/project-selection-store";
 import { useProjects, getProjectColor } from "@/hooks/use-projects";
 import type { EntityRead } from "@/types/api";
 
@@ -105,7 +105,7 @@ function parsePlotlineEntity(entity: EntityRead): PlotPoint {
 
 export default function StorylinesPage() {
   // 使用全局项目选择状态
-  const selectedNovels = useSelectedProjectIds();
+  const selectedProjectId = useSelectedProjectId();
   const [searchQuery, setSearchQuery] = useState("");
 
   // 获取项目列表（用于显示项目名称）
@@ -120,10 +120,10 @@ export default function StorylinesPage() {
 
   // 获取剧情线实体（使用新的跨项目 API）
   const { data, isLoading, error } = useCrossProjectEntities(
-    selectedNovels,
+    selectedProjectId ? [selectedProjectId] : [],
     {
       entity_type: "plotline",
-      enabled: selectedNovels.length > 0,
+      enabled: !!selectedProjectId,
     }
   );
   const entities = data?.items ?? [];
@@ -230,7 +230,7 @@ export default function StorylinesPage() {
         )}
 
         {/* 未选择项目提示 */}
-        {!isLoading && selectedNovels.length === 0 && (
+        {!isLoading && !selectedProjectId && (
           <Card className="bg-card/30 border-dashed border-2 border-border/50">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
@@ -238,14 +238,14 @@ export default function StorylinesPage() {
               </div>
               <h3 className="text-lg font-semibold mb-2">请选择小说</h3>
               <p className="text-muted-foreground text-center max-w-sm">
-                选择一本或多本小说以查看其剧情大纲
+                选择一本小说以查看其剧情大纲
               </p>
             </CardContent>
           </Card>
         )}
 
         {/* 剧情大纲 */}
-        {!isLoading && !error && selectedNovels.length > 0 && (
+        {!isLoading && !error && selectedProjectId && (
           <div className="space-y-6">
             {Array.from(plotsByProject.entries()).map(([projectId, plots]) => {
               const project = projectsMap.get(projectId);
@@ -325,7 +325,7 @@ export default function StorylinesPage() {
         )}
 
         {/* 空状态 */}
-        {!isLoading && !error && selectedNovels.length > 0 && totalPlots === 0 && (
+        {!isLoading && !error && selectedProjectId && totalPlots === 0 && (
           <Card className="bg-card/30 border-dashed border-2 border-border/50">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
