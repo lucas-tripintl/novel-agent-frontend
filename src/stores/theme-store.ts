@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type ThemeType = "cyberpunk" | "ink" | "bamboo";
+export type ThemeType = "cyberpunk" | "ink";
 
 export interface ThemeInfo {
   id: ThemeType;
@@ -14,7 +14,7 @@ export interface ThemeInfo {
   };
 }
 
-export const themes: ThemeInfo[] = [ 
+export const themes: ThemeInfo[] = [
   {
     id: "ink",
     name: "墨韵白",
@@ -30,19 +30,9 @@ export const themes: ThemeInfo[] = [
     name: "科技黑",
     description: "深色科技风，荧光绿 + 电光紫",
     preview: {
-      bg: "#000000",
-      primary: "#22c55e",
-      accent: "#a855f7",
-    },
-  },
-  {
-    id: "bamboo",
-    name: "竹青绿",
-    description: "护眼舒适，竹青绿 + 金秋橙",
-    preview: {
-      bg: "#f6faf6",
-      primary: "#16a34a",
-      accent: "#ea580c",
+      bg: "#0c0c14",
+      primary: "#3dd68c",
+      accent: "#b47aff",
     },
   },
 ];

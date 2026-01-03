@@ -30,8 +30,6 @@ import {
   Library,
   LogOut,
   Network,
-  Palette,
-  Settings,
   Sparkles,
   Users,
   Zap,
@@ -39,7 +37,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useThemeStore, themes } from "@/stores/theme-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { cn } from "@/lib/utils";
 
@@ -105,10 +102,7 @@ const creationNavItems = [
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, setTheme } = useThemeStore();
   const { user, isAuthenticated, logout } = useAuthStore();
-
-  const currentTheme = themes.find((t) => t.id === theme);
 
   const handleLogout = () => {
     logout();
@@ -210,84 +204,10 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border/50 p-4">
-        <SidebarMenu>
-          {/* 主题切换 */}
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton className="hover:bg-accent/50 cursor-pointer">
-                  <Palette className="h-4 w-4" />
-                  <span>{currentTheme?.name}</span>
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="right" align="end" className="w-64">
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
-                  选择主题
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {themes.map((t) => (
-                  <DropdownMenuItem
-                    key={t.id}
-                    onClick={() => setTheme(t.id)}
-                    className={cn(
-                      "flex items-start gap-3 p-3 cursor-pointer rounded-md hover:bg-transparent focus:bg-transparent focus:text-foreground",
-                      theme === t.id && "border-2 border-primary"
-                    )}
-                  >
-                    <div
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-lg"
-                      style={{ backgroundColor: t.preview.bg }}
-                    >
-                      <div
-                        className="h-4 w-4 rounded-full"
-                        style={{ backgroundColor: t.preview.primary }}
-                      />
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{t.name}</span>
-                        {theme === t.id && (
-                          <span className="text-xs text-primary">✓ 当前</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">{t.description}</p>
-                      <div className="flex gap-1.5 pt-1">
-                        <div
-                          className="h-3 w-3 rounded-full border"
-                          style={{ backgroundColor: t.preview.bg }}
-                          title="背景色"
-                        />
-                        <div
-                          className="h-3 w-3 rounded-full"
-                          style={{ backgroundColor: t.preview.primary }}
-                          title="主色"
-                        />
-                        <div
-                          className="h-3 w-3 rounded-full"
-                          style={{ backgroundColor: t.preview.accent }}
-                          title="强调色"
-                        />
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-          {/* 系统设置 - 暂时隐藏，后续实现 */}
-          {/* <SidebarMenuItem>
-            <SidebarMenuButton asChild className="hover:bg-accent/50">
-              <Link href="/preferences">
-                <Settings className="h-4 w-4" />
-                <span>系统设置</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem> */}
-        </SidebarMenu>
         {isAuthenticated && user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <div className="mt-3 flex items-center gap-3 rounded-lg bg-card/50 p-3 cursor-pointer hover:bg-accent/50 transition-colors group-data-[collapsible=icon]:hidden">
+              <div className="flex items-center gap-3 rounded-lg bg-card/50 p-3 cursor-pointer hover:bg-accent/50 transition-colors group-data-[collapsible=icon]:hidden">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-primary/20 text-primary text-sm">
                     {userInitial}
@@ -315,7 +235,7 @@ export function AppSidebar() {
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <div className="mt-3 group-data-[collapsible=icon]:hidden">
+          <div className="group-data-[collapsible=icon]:hidden">
             <Link
               href="/login"
               className="flex items-center justify-center gap-2 rounded-lg bg-primary/10 p-3 text-sm text-primary hover:bg-primary/20 transition-colors"

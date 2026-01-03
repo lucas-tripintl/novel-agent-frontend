@@ -17,7 +17,7 @@ const themeInitScript = `
     if (stored) {
       var parsed = JSON.parse(stored);
       var theme = parsed.state && parsed.state.theme;
-      if (theme && ['cyberpunk', 'ink', 'bamboo'].includes(theme)) {
+      if (theme && ['cyberpunk', 'ink'].includes(theme)) {
         document.documentElement.setAttribute('data-theme', theme);
         if (theme === 'cyberpunk') {
           document.documentElement.classList.add('dark');

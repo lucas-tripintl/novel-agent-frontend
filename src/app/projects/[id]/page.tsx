@@ -49,85 +49,41 @@ import {
   projectTypeLabels,
 } from "@/types/project";
 
-// 模拟项目数据
-const mockProject: Project = {
-  id: "1",
-  name: "斗破苍穹",
-  type: "original",
-  status: "completed",
-  progress: 100,
-  totalChapters: 1648,
-  analyzedChapters: 1648,
-  stats: {
-    characters: 342,
-    worldview: 128,
-    goldenFingers: 5,
-    plotlines: 24,
-    foreshadowing: 89,
-  },
-  createdAt: "2024-01-10",
-  updatedAt: "2024-01-15",
-};
-
-// 模拟章节数据
-const mockChapters: Chapter[] = Array.from({ length: 20 }, (_, i) => ({
-  id: String(i + 1),
-  projectId: "1",
-  number: i + 1,
-  title: `第${i + 1}章 ${["陨落的天才", "斗之气", "纳戒", "魂力", "炎帝", "药老", "云岚宗", "萧薰儿", "斗技", "修炼"][i % 10]}`,
-  wordCount: Math.floor(Math.random() * 3000) + 2000,
-  summary: i % 3 === 0 ? "本章主角萧炎展开修炼，实力有所提升..." : undefined,
-  analyzed: i < 15,
-}));
-
-// 模拟金手指数据
-const mockGoldenFingers: GoldenFinger[] = [
-  {
-    id: "1",
-    projectId: "1",
-    name: "药老",
-    type: "导师系统",
-    level: 9,
-    description: "沉睡在纳戒中的上古药王强者，指导主角修炼",
-    abilities: ["炼药指导", "战斗辅助", "知识传授"],
-    resources: {
-      "地火": "异火榜第十九",
-      "药典": "上古药方",
-    },
-  },
-  {
-    id: "2",
-    projectId: "1",
-    name: "异火",
-    type: "能力系统",
-    level: 10,
-    description: "天地间的奇异火焰，可用于炼药和战斗",
-    abilities: ["青莲地心火", "陨落心炎", "海心焰"],
-    resources: {
-      "异火数量": 6,
-      "最高排名": 3,
-    },
-  },
-  {
-    id: "3",
-    projectId: "1",
-    name: "吞噬",
-    type: "特殊体质",
-    level: 8,
-    description: "可以吞噬他人异火为己用",
-    abilities: ["吞噬融合", "火焰控制", "温度免疫"],
-  },
-];
+import {
+  useProject,
+  useProjectChapters,
+  useProjectGoldenFingers,
+} from "@/hooks/use-projects";
+import { useAnalysisStats } from "@/hooks/use-analysis-results";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function ProjectDetailPage() {
   const params = useParams();
   const projectId = params.id as string;
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // 实际项目中应该从 API 获取数据
-  const project = mockProject;
-  const chapters = mockChapters;
-  const goldenFingers = mockGoldenFingers;
+  const {
+    data: project,
+    isLoading: isProjectLoading,
+    error: projectError,
+  } = useProject(projectId);
+
+  const {
+    data: chaptersData,
+    isLoading: isChaptersLoading,
+  } = useProjectChapters(projectId, { limit: 100 }); // Initially load 100, needing pagination in future
+
+  const {
+    data: goldenFingersData,
+    isLoading: isGoldenFingersLoading,
+  } = useProjectGoldenFingers(projectId, { limit: 100 });
+
+  const { stats, isLoading: isStatsLoading } = useAnalysisStats(projectId);
+
+  const chapters = chaptersData?.items ?? [];
+  const goldenFingers = goldenFingersData?.items ?? [];
 
   const filteredChapters = chapters.filter((ch) => {
     if (statusFilter === "all") return true;
@@ -135,6 +91,63 @@ export default function ProjectDetailPage() {
     if (statusFilter === "pending") return !ch.analyzed;
     return true;
   });
+
+  if (isProjectLoading) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-9 w-9" />
+              <div>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-8 w-32" />
+                  <Skeleton className="h-6 w-16" />
+                </div>
+                <Skeleton className="h-4 w-48 mt-1" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-10 w-10" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <div className="grid grid-cols-6 gap-4 mt-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-24 w-full" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (projectError || !project) {
+    return (
+      <MainLayout>
+        <div className="p-8">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>加载失败</AlertTitle>
+            <AlertDescription>无法获取项目信息，请稍后重试。</AlertDescription>
+          </Alert>
+          <Button asChild className="mt-4" variant="outline">
+            <Link href="/">返回作品中心</Link>
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  const progress = project.total_chapters > 0
+    ? Math.round((project.analyzed_chapters / project.total_chapters) * 100)
+    : 0;
+
+  // Use analyzed_chapters + 1 as approximation for current chapter if processing
+  const currentChapter = project.analyzed_chapters + 1;
 
   return (
     <MainLayout>
@@ -154,7 +167,7 @@ export default function ProjectDetailPage() {
                 <ProjectStatusBadge status={project.status} />
               </div>
               <p className="text-muted-foreground mt-1">
-                {project.totalChapters} 章 · {project.stats.characters} 角色 · {project.stats.worldview} 世界观设定
+                {project.total_chapters} 章 · {stats.characters} 角色 · {stats.worldview} 世界观设定
               </p>
             </div>
           </div>
@@ -214,12 +227,18 @@ export default function ProjectDetailPage() {
           <TabsContent value="overview" className="space-y-6">
             {/* 统计卡片 */}
             <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-              <StatCard title="章节" value={project.totalChapters} icon={FileText} />
-              <StatCard title="角色" value={project.stats.characters} icon={Users} />
-              <StatCard title="世界观" value={project.stats.worldview} icon={Earth} />
-              <StatCard title="金手指" value={project.stats.goldenFingers} icon={Zap} />
-              <StatCard title="剧情线" value={project.stats.plotlines} icon={GitBranch} />
-              <StatCard title="伏笔" value={project.stats.foreshadowing} icon={Bookmark} />
+              {isStatsLoading ? (
+                Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
+              ) : (
+                <>
+                  <StatCard title="章节" value={project.total_chapters} icon={FileText} />
+                  <StatCard title="角色" value={stats.characters} icon={Users} />
+                  <StatCard title="世界观" value={stats.worldview} icon={Earth} />
+                  <StatCard title="金手指" value={stats.goldenFingers} icon={Zap} />
+                  <StatCard title="剧情线" value={stats.plotlines} icon={GitBranch} />
+                  <StatCard title="伏笔" value={stats.foreshadowing} icon={Bookmark} />
+                </>
+              )}
             </div>
 
             {/* 分析进度（如果正在进行）*/}
@@ -233,10 +252,10 @@ export default function ProjectDetailPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between text-sm">
-                    <span>第 {project.currentChapter} 章 / 共 {project.totalChapters} 章</span>
-                    <span className="font-mono text-primary">{project.progress}%</span>
+                    <span>第 {currentChapter} 章 / 共 {project.total_chapters} 章</span>
+                    <span className="font-mono text-primary">{progress}%</span>
                   </div>
-                  <Progress value={project.progress} className="h-2" />
+                  <Progress value={progress} className="h-2" />
                 </CardContent>
               </Card>
             )}
@@ -246,31 +265,31 @@ export default function ProjectDetailPage() {
               <Link href={`/characters?novel=${project.id}`}>
                 <StatCardHorizontal
                   title="查看角色"
-                  value={project.stats.characters}
+                  value={stats.characters}
                   icon={Users}
-                  description={`${project.stats.characters} 个角色`}
+                  description={`${stats.characters} 个角色`}
                 />
               </Link>
               <Link href={`/worldview?novel=${project.id}`}>
                 <StatCardHorizontal
                   title="查看世界观"
-                  value={project.stats.worldview}
+                  value={stats.worldview}
                   icon={Earth}
-                  description={`${project.stats.worldview} 个设定`}
+                  description={`${stats.worldview} 个设定`}
                 />
               </Link>
               <Link href={`/storylines?novel=${project.id}`}>
                 <StatCardHorizontal
                   title="查看剧情线"
-                  value={project.stats.plotlines}
+                  value={stats.plotlines}
                   icon={GitBranch}
-                  description={`${project.stats.plotlines} 条剧情线`}
+                  description={`${stats.plotlines} 条剧情线`}
                 />
               </Link>
               <Link href={`/relations?novel=${project.id}`}>
                 <StatCardHorizontal
                   title="查看关系网络"
-                  value={project.stats.characters}
+                  value={stats.characters}
                   icon={Network}
                   description="角色关系图"
                 />
@@ -284,7 +303,7 @@ export default function ProjectDetailPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="font-mono">
-                  {project.analyzedChapters}/{project.totalChapters} 已分析
+                  {project.analyzed_chapters}/{project.total_chapters} 已分析
                 </Badge>
               </div>
               <div className="flex items-center gap-2">
@@ -321,7 +340,7 @@ export default function ProjectDetailPage() {
                       )}
                     </div>
                     <Badge variant="outline" className="font-mono text-xs shrink-0">
-                      {chapter.wordCount.toLocaleString()} 字
+                      {chapter.word_count.toLocaleString()} 字
                     </Badge>
                     <Badge
                       variant="outline"
@@ -408,37 +427,11 @@ export default function ProjectDetailPage() {
                     </Badge>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground">{gf.description}</p>
+                    {/* API 列表接口暂不返回详细信息，如需展示详情需单独获取 */}
 
-                    {gf.abilities.length > 0 && (
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">当前能力</Label>
-                        <div className="flex flex-wrap gap-1">
-                          {gf.abilities.map((ability) => (
-                            <Badge key={ability} variant="outline" className="text-xs">
-                              {ability}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {gf.resources && Object.keys(gf.resources).length > 0 && (
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">资源</Label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {Object.entries(gf.resources).map(([key, value]) => (
-                            <div
-                              key={key}
-                              className="flex items-center justify-between bg-muted/30 rounded px-2 py-1"
-                            >
-                              <span className="text-xs">{key}</span>
-                              <span className="font-mono text-xs text-primary">{value}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    <div className="py-4 text-center text-sm text-muted-foreground">
+                      点击查看详情
+                    </div>
 
                     <Button variant="outline" size="sm" className="w-full">
                       查看状态历史

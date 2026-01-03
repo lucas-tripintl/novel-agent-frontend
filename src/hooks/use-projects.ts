@@ -3,7 +3,13 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listProjects, deleteProject, getProject } from "@/lib/api/projects";
+import {
+  listProjects,
+  deleteProject,
+  getProject,
+  listChapters,
+  listGoldenFingers,
+} from "@/lib/api/projects";
 import type { ProjectList, ProjectStatus } from "@/types/api";
 
 // Query keys
@@ -14,6 +20,10 @@ export const projectKeys = {
     [...projectKeys.lists(), params] as const,
   details: () => [...projectKeys.all, "detail"] as const,
   detail: (id: string) => [...projectKeys.details(), id] as const,
+  chapters: (projectId: string, params?: { skip?: number; limit?: number }) =>
+    [...projectKeys.detail(projectId), "chapters", params] as const,
+  goldenFingers: (projectId: string, params?: { skip?: number; limit?: number }) =>
+    [...projectKeys.detail(projectId), "goldenFingers", params] as const,
 };
 
 /**
@@ -38,6 +48,46 @@ export function useProject(projectId: string) {
     queryKey: projectKeys.detail(projectId),
     queryFn: () => getProject(projectId),
     enabled: !!projectId,
+  });
+}
+
+/**
+ * 获取项目章节列表
+ */
+export function useProjectChapters(
+  projectId: string,
+  params?: {
+    skip?: number;
+    limit?: number;
+  },
+  options?: { enabled?: boolean }
+) {
+  const { enabled = true } = options ?? {};
+
+  return useQuery({
+    queryKey: projectKeys.chapters(projectId, params),
+    queryFn: () => listChapters(projectId, params),
+    enabled: enabled && !!projectId,
+  });
+}
+
+/**
+ * 获取项目金手指列表
+ */
+export function useProjectGoldenFingers(
+  projectId: string,
+  params?: {
+    skip?: number;
+    limit?: number;
+  },
+  options?: { enabled?: boolean }
+) {
+  const { enabled = true } = options ?? {};
+
+  return useQuery({
+    queryKey: projectKeys.goldenFingers(projectId, params),
+    queryFn: () => listGoldenFingers(projectId, params),
+    enabled: enabled && !!projectId,
   });
 }
 
