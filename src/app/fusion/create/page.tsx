@@ -125,9 +125,9 @@ export default function FusionCreatePage() {
 
   return (
     <MainLayout>
-      <div className="space-y-6 w-full">
+      <div className="flex flex-col flex-1 min-h-0 w-full">
         {/* Header */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="sm" asChild>
             <Link href="/fusion">
               <ChevronLeft className="h-4 w-4" />
@@ -145,14 +145,14 @@ export default function FusionCreatePage() {
         </div>
 
         {/* 步骤指示器 */}
-        <Steps steps={createSteps} currentStep={currentStep} />
+        <Steps steps={createSteps} currentStep={currentStep} className="mb-6" />
 
         {/* 步骤内容 */}
-        <Card className="bg-card/50 border-border/50">
-          <CardContent className="p-6">
+        <Card className="bg-card/50 border-border/50 flex-1 flex flex-col min-h-0">
+          <CardContent className="p-6 flex-1 flex flex-col min-h-0">
             {/* 步骤 1: 选择融合元素 */}
             {currentStep === 0 && (
-              <div className="space-y-4">
+              <div className="flex-1 flex flex-col space-y-4 min-h-0">
                 <div className="flex items-center justify-between">
                   <Label className="text-lg font-semibold">选择要融合的元素</Label>
                   <div className="flex items-center gap-2">
@@ -184,7 +184,7 @@ export default function FusionCreatePage() {
 
             {/* 步骤 2: 选择融合模式 */}
             {currentStep === 1 && (
-              <div className="space-y-4">
+              <div className="flex-1 flex flex-col space-y-4 min-h-0">
                 <Label className="text-lg font-semibold">选择融合模式</Label>
 
                 <RadioGroup
@@ -229,7 +229,7 @@ export default function FusionCreatePage() {
 
             {/* 步骤 3: 添加创意 */}
             {currentStep === 2 && (
-              <div className="space-y-4">
+              <div className="flex-1 flex flex-col space-y-4 min-h-0">
                 <Label className="text-lg font-semibold">添加你的创意偏好（可选）</Label>
                 <Textarea
                   placeholder="例如：我想把修仙元素和赛博朋克结合，主角是一个觉醒了古代传承的程序员..."
@@ -269,7 +269,7 @@ export default function FusionCreatePage() {
 
             {/* 步骤 4: 确认 */}
             {currentStep === 3 && (
-              <div className="space-y-6">
+              <div className="flex-1 flex flex-col space-y-6 min-h-0">
                 <Label className="text-lg font-semibold">确认融合配置</Label>
 
                 <div className="space-y-4">
@@ -318,7 +318,7 @@ export default function FusionCreatePage() {
             )}
 
             {/* 导航按钮 */}
-            <div className="flex justify-between mt-8">
+            <div className="flex justify-between mt-auto pt-6">
               <Button
                 variant="outline"
                 onClick={prevStep}

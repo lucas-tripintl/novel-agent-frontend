@@ -246,18 +246,18 @@ export function ProjectElementSelector({
 
   if (isLoadingProjects) {
     return (
-      <div className="space-y-4">
+      <div className="flex-1 flex flex-col space-y-4 min-h-0">
         {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-20 w-full" />
+          <Skeleton key={i} className="h-20 w-full shrink-0" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex-1 flex flex-col space-y-4 min-h-0">
       {/* 搜索栏 */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 shrink-0">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -273,12 +273,13 @@ export function ProjectElementSelector({
       </div>
 
       {/* 项目列表 */}
-      <Accordion
-        type="multiple"
-        value={expandedProjects}
-        onValueChange={setExpandedProjects}
-        className="space-y-3"
-      >
+      <div className="flex-1 min-h-0 overflow-auto">
+        <Accordion
+          type="multiple"
+          value={expandedProjects}
+          onValueChange={setExpandedProjects}
+          className="space-y-3"
+        >
         {completedProjects.map((project) => (
           <ProjectAccordionItem
             key={project.id}
@@ -295,16 +296,17 @@ export function ProjectElementSelector({
             isPartiallySelected={isPartiallySelected}
           />
         ))}
-      </Accordion>
+        </Accordion>
 
-      {completedProjects.length === 0 && (
-        <Card className="bg-card/30 border-dashed">
-          <CardContent className="flex flex-col items-center py-12">
-            <BookOpen className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground">没有已完成分析的项目</p>
-          </CardContent>
-        </Card>
-      )}
+        {completedProjects.length === 0 && (
+          <Card className="bg-card/30 border-dashed">
+            <CardContent className="flex flex-col items-center py-12">
+              <BookOpen className="h-12 w-12 text-muted-foreground/50 mb-4" />
+              <p className="text-muted-foreground">没有已完成分析的项目</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
