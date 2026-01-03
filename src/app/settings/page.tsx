@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSelectedProjectIds } from "@/stores/project-selection-store";
-import { useEntitiesOverview, useCrossProjectEntities } from "@/hooks/use-analysis-results";
+import { useEntitiesOverview } from "@/hooks/use-analysis-results";
 import { useProjects, getProjectColor } from "@/hooks/use-projects";
 import type { EntityType, EntityRead } from "@/types/api";
 import { useMemo } from "react";
@@ -156,20 +156,19 @@ export default function SettingsOverviewPage() {
     return map;
   }, [projectsData?.items]);
 
-  // 获取设定统计
-  const { stats, total, isLoading, error } = useEntitiesOverview(
+  // 获取设定统计和所有实体（一次请求获取全部）
+  const { stats, total, isLoading, error, entities } = useEntitiesOverview(
     selectedProjectIds,
     { enabled: selectedProjectIds.length > 0 }
   );
 
-  // 获取最近的实体（预览用）
-  const { data: recentEntities, isLoading: loadingRecent } = useCrossProjectEntities(
-    selectedProjectIds,
-    {
-      limit: 6,
-      enabled: selectedProjectIds.length > 0,
-    }
-  );
+  // 从已获取的实体中取最近的 6 个用于预览（按更新时间排序）
+  const recentEntities = useMemo(() => {
+    if (!entities || entities.length === 0) return [];
+    return [...entities]
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+      .slice(0, 6);
+  }, [entities]);
 
   // 计算各分类的统计
   const categoryStats = categoryConfig.map((cat) => ({
@@ -320,7 +319,7 @@ export default function SettingsOverviewPage() {
             </div>
 
             {/* 最近添加的设定 */}
-            {recentEntities?.items && recentEntities.items.length > 0 && (
+            {recentEntities.length > 0 && (
               <Card className="bg-card/50 border-border/50">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -333,7 +332,7 @@ export default function SettingsOverviewPage() {
                 <CardContent>
                   <ScrollArea className="h-[300px] pr-4">
                     <div className="space-y-3">
-                      {recentEntities.items.map((entity) => {
+                      {recentEntities.map((entity) => {
                         const parsed = parseEntityContent(entity);
                         const catConfig = categoryConfig.find(
                           (c) => c.type === entity.entity_type

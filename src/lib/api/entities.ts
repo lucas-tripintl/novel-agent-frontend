@@ -72,7 +72,8 @@ export async function listEntitiesCrossProject(
 /**
  * 批量获取多种类型的实体（用于总览页面）
  *
- * 返回按类型分组的实体统计
+ * 优化：一次请求获取所有实体，前端按类型分组统计
+ * 比之前为每种类型发起单独请求更高效（10次请求 -> 1次请求）
  */
 export async function getEntitiesOverview(projectIds: string[]) {
   const entityTypes: EntityType[] = [
@@ -88,21 +89,22 @@ export async function getEntitiesOverview(projectIds: string[]) {
     "golden_finger",
   ];
 
-  // 并行请求所有类型（每种类型只取1条用于统计total）
-  const results = await Promise.all(
-    entityTypes.map((type) =>
-      listEntitiesCrossProject({
-        project_ids: projectIds,
-        entity_type: type,
-        limit: 1, // 只需要 total 数量
-      }).catch(() => ({ items: [], total: 0, skip: 0, limit: 1 }))
-    )
-  );
+  // 一次请求获取所有实体
+  const result = await listEntitiesCrossProject({
+    project_ids: projectIds,
+    limit: 1000, // 获取足够多的实体用于统计
+  }).catch(() => ({ items: [], total: 0, skip: 0, limit: 1000 }));
 
-  // 构建统计结果
+  // 前端按类型分组统计
   const stats: Record<EntityType, number> = {} as Record<EntityType, number>;
-  entityTypes.forEach((type, index) => {
-    stats[type] = results[index].total;
+  entityTypes.forEach((type) => {
+    stats[type] = 0;
+  });
+
+  result.items.forEach((entity) => {
+    if (stats[entity.entity_type] !== undefined) {
+      stats[entity.entity_type]++;
+    }
   });
 
   return stats;

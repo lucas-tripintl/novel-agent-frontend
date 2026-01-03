@@ -138,7 +138,8 @@ export function NovelFilter({
                 {novels.map((novel) => (
                   <CommandItem
                     key={novel.id}
-                    value={novel.title}
+                    value={novel.id}
+                    keywords={[novel.title]}
                     onSelect={() => toggleNovel(novel.id)}
                     className="cursor-pointer"
                   >

@@ -288,6 +288,9 @@ export function useCrossProjectMultiTypeEntities(
 
 /**
  * 设定总览统计 - 获取所有类型的实体数量
+ *
+ * 优化：一次请求获取所有实体，前端按类型分组统计
+ * 比之前为每种类型发起单独请求更高效
  */
 export function useEntitiesOverview(
   projectIds: string[],
@@ -308,36 +311,38 @@ export function useEntitiesOverview(
     "golden_finger",
   ];
 
-  // 为每种类型创建一个查询（只获取 total）
-  const queries = allEntityTypes.map((entityType) => ({
+  // 一次请求获取所有实体（不指定 entity_type）
+  const { data, isLoading, error } = useQuery({
     queryKey: [
       "entities",
       "cross-project",
       "overview",
       projectIds.sort().join(","),
-      entityType,
     ],
     queryFn: () =>
       listEntitiesCrossProject({
         project_ids: projectIds,
-        entity_type: entityType,
-        limit: 1, // 只需要 total
+        limit: 1000, // 获取足够多的实体用于统计
       }),
     enabled: enabled && projectIds.length > 0,
-  }));
-
-  const results = useQueries({ queries });
-
-  const isLoading = results.some((r) => r.isLoading);
-  const error = results.find((r) => r.error)?.error;
-
-  // 构建统计
-  const stats: Record<EntityType, number> = {} as Record<EntityType, number>;
-  allEntityTypes.forEach((type, index) => {
-    stats[type] = results[index].data?.total ?? 0;
   });
 
-  const total = Object.values(stats).reduce((sum, count) => sum + count, 0);
+  // 前端按类型分组统计
+  const stats: Record<EntityType, number> = {} as Record<EntityType, number>;
+  allEntityTypes.forEach((type) => {
+    stats[type] = 0;
+  });
 
-  return { stats, total, isLoading, error };
+  // 统计每种类型的数量
+  if (data?.items) {
+    data.items.forEach((entity) => {
+      if (stats[entity.entity_type] !== undefined) {
+        stats[entity.entity_type]++;
+      }
+    });
+  }
+
+  const total = data?.total ?? 0;
+
+  return { stats, total, isLoading, error, entities: data?.items ?? [] };
 }
