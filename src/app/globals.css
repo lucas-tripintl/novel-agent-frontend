@@ -52,47 +52,57 @@
 }
 
 /* ============================================
-   🌙 Theme: Cyberpunk (深色科技风)
-   适合：技术展示、酷炫效果
+   🌙 Theme: Cyberpunk (午夜深蓝)
+   灵感：夜空、科技城市、柔和霓虹
+   适合：技术展示、长时间使用
    ============================================ */
 :root[data-theme="cyberpunk"],
 :root:not([data-theme]) {
   --radius: 0.5rem;
-  --background: #000000;
-  --foreground: #e4e4e7;
-  --card: #09090b;
-  --card-foreground: #fafafa;
-  --popover: #09090b;
-  --popover-foreground: #fafafa;
-  --primary: #22c55e;
-  --primary-foreground: #000000;
-  --secondary: #18181b;
-  --secondary-foreground: #a1a1aa;
-  --muted: #18181b;
-  --muted-foreground: #71717a;
-  --accent: #a855f7;
-  --accent-foreground: #fafafa;
-  --destructive: #ef4444;
-  --border: rgba(255, 255, 255, 0.1);
-  --input: rgba(255, 255, 255, 0.08);
-  --ring: #22c55e;
-  --chart-1: #22c55e;
-  --chart-2: #a855f7;
-  --chart-3: #06b6d4;
-  --chart-4: #f97316;
-  --chart-5: #ec4899;
-  --sidebar: #09090b;
-  --sidebar-foreground: #e4e4e7;
-  --sidebar-primary: #22c55e;
-  --sidebar-primary-foreground: #000000;
-  --sidebar-accent: #18181b;
-  --sidebar-accent-foreground: #fafafa;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #22c55e;
-  --neon-green: #22c55e;
-  --neon-purple: #a855f7;
-  --neon-cyan: #06b6d4;
-  --terminal: #0a0a0a;
+  /* 深蓝灰底色，比纯黑更护眼 */
+  --background: #0c0c14;
+  --foreground: #e8e8ec;
+  /* 卡片略浅，增加层次感 */
+  --card: #14141e;
+  --card-foreground: #f4f4f6;
+  --popover: #14141e;
+  --popover-foreground: #f4f4f6;
+  /* 主色：柔和霓虹绿 */
+  --primary: #3dd68c;
+  --primary-foreground: #0c0c14;
+  /* 次要色：带蓝调的深色 */
+  --secondary: #1c1c28;
+  --secondary-foreground: #a8a8b4;
+  --muted: #1c1c28;
+  --muted-foreground: #6e6e7a;
+  /* 强调色：柔和霓虹紫 */
+  --accent: #b47aff;
+  --accent-foreground: #f4f4f6;
+  --destructive: #f87171;
+  /* 边框：带蓝调的柔和边框 */
+  --border: rgba(140, 160, 200, 0.12);
+  --input: rgba(140, 160, 200, 0.1);
+  --ring: #3dd68c;
+  /* 图表色 */
+  --chart-1: #3dd68c;
+  --chart-2: #b47aff;
+  --chart-3: #22d3ee;
+  --chart-4: #fb923c;
+  --chart-5: #f472b6;
+  /* Sidebar */
+  --sidebar: #0c0c14;
+  --sidebar-foreground: #e8e8ec;
+  --sidebar-primary: #3dd68c;
+  --sidebar-primary-foreground: #0c0c14;
+  --sidebar-accent: #1c1c28;
+  --sidebar-accent-foreground: #f4f4f6;
+  --sidebar-border: rgba(140, 160, 200, 0.1);
+  --sidebar-ring: #3dd68c;
+  /* 霓虹色：柔和版本 */
+  --neon-green: #3dd68c;
+  --neon-purple: #b47aff;
+  --neon-cyan: #22d3ee;
+  --terminal: #0a0a12;
 }
 
 /* ============================================
