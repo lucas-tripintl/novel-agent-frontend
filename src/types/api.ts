@@ -105,7 +105,10 @@ export type EntityType =
   | "plot_pattern"
   | "character_archetype"
   | "conflict_pattern"
-  | "narrative_rhythm";
+  | "narrative_rhythm"
+  | "cool_point_pattern"
+  | "writing_technique"
+  | "golden_opening_report";
 
 export type EntityStatus = "pending" | "confirmed" | "rejected";
 export type SourceType = "extracted" | "manual" | "merged";
