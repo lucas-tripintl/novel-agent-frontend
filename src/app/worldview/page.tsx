@@ -284,7 +284,9 @@ export default function WorldviewPage() {
                                         color: projectColor,
                                       }}
                                     >
-                                      {getLabel("EntityType", entity.entity_type)}
+                                      {entity.attributes?.category
+                                        ? getLabel("WorldviewCategory", entity.attributes.category)
+                                        : getLabel("EntityType", entity.entity_type)}
                                     </Badge>
                                   </div>
                                 </CardHeader>

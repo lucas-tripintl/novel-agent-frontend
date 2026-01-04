@@ -58,23 +58,38 @@ interface Character {
 
 // 从 EntityRead 解析角色数据
 function parseCharacterEntity(entity: EntityRead): Character {
-  let content: Record<string, unknown> = {};
+  // 优先从 attributes 获取结构化数据
+  const attrs = entity.attributes || {};
+  const meta = entity.metadata_ || {};
+
+  // 尝试解析 content（可能是 JSON 或纯文本）
+  let contentData: Record<string, unknown> = {};
   try {
-    content = JSON.parse(entity.content);
+    contentData = JSON.parse(entity.content);
   } catch {
-    content = { description: entity.content };
+    // content 是纯文本，作为描述使用
   }
 
   const name = entity.name;
-  const description = (content.description as string) || (content.summary as string) || entity.content.slice(0, 200);
-  const traits = (content.traits as string[]) || (content.personality as string[]) || entity.tags || [];
-  const faction = (content.faction as string) || (content.organization as string) || (content.affiliation as string) || "";
-  const role = (content.role as string) || (content.type as string) || "配角";
-  const powerLevel = (content.power_level as string) || (content.level as string) || (content.realm as string) || "";
-  const alias = (content.alias as string) || (content.nickname as string) || (content.title as string) || "";
-  const relations = (content.relations as { name: string; type: string }[]) ||
-                   (content.relationships as { name: string; type: string }[]) || [];
-  const events = (content.events as string[]) || (content.key_events as string[]) || [];
+  // 描述：优先使用 content 文本，其次从 contentData 中获取
+  const description = typeof entity.content === "string" && !entity.content.startsWith("{")
+    ? entity.content
+    : (contentData.description as string) || (contentData.summary as string) || "";
+
+  // 从 attributes 获取角色属性
+  const role = (attrs.role as string) || (contentData.role as string) || "supporting";
+  const faction = (attrs.faction as string) || (contentData.faction as string) || "";
+  const powerLevel = (attrs.power_level as string) || (contentData.power_level as string) || "";
+  const traits = (attrs.personality as string[]) || (contentData.personality as string[]) || [];
+
+  // 从 metadata_ 获取别名
+  const aliases = meta.aliases || [];
+  const alias = aliases[0] || (contentData.alias as string) || "";
+
+  // 关系和事件从 contentData 获取
+  const relations = (contentData.relations as { name: string; type: string }[]) ||
+                   (contentData.relationships as { name: string; type: string }[]) || [];
+  const events = (contentData.events as string[]) || (contentData.key_events as string[]) || [];
 
   return {
     id: entity.id,
@@ -130,6 +145,20 @@ export default function CharactersPage() {
     if (/[\u4e00-\u9fa5]/.test(role)) return role;
     // 否则从枚举获取
     return getLabel("CharacterRole", role);
+  };
+
+  // 获取标签的本地化显示
+  const getTagLabel = (tag: string) => {
+    // 如果已经是中文，直接返回
+    if (/[\u4e00-\u9fa5]/.test(tag)) return tag;
+    // 尝试从 CharacterRole 枚举获取
+    const roleLabel = getLabel("CharacterRole", tag);
+    if (roleLabel !== tag) return roleLabel;
+    // 尝试从 CharacterImportance 枚举获取
+    const importanceLabel = getLabel("CharacterImportance", tag);
+    if (importanceLabel !== tag) return importanceLabel;
+    // 无法本地化，返回原值
+    return tag;
   };
 
   // 获取角色实体（使用新的跨项目 API）
@@ -527,7 +556,7 @@ export default function CharactersPage() {
                           <div className="flex flex-wrap gap-2">
                             {selectedCharacter.tags.map((tag, index) => (
                               <Badge key={index} variant="outline">
-                                {tag}
+                                {getTagLabel(tag)}
                               </Badge>
                             ))}
                           </div>

@@ -121,6 +121,24 @@ export interface EntityRead {
   source_type: SourceType;
   first_chapter?: number;
   last_chapter?: number;
+  /** 实体属性（如世界观类别、角色类型、重要性等） */
+  attributes?: {
+    // 通用
+    category?: string;
+    importance?: string;
+    // 角色特有
+    role?: string;
+    personality?: string[];
+    power_level?: string;
+    faction?: string;
+    abilities?: string[];
+    [key: string]: unknown;
+  };
+  /** 元数据（如别名等） */
+  metadata_?: {
+    aliases?: string[];
+    [key: string]: unknown;
+  };
   created_at: string;
   updated_at: string;
 }
