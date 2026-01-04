@@ -80,7 +80,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
   };
 
   return (
-    <div className="flex h-full flex-col border-l border-border/50 bg-card/30">
+    <div className="flex h-full flex-col border-l border-border/50 bg-card/30 min-h-0">
       {/* 头部 */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
         <div className="flex items-center gap-2">
@@ -123,7 +123,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
       <SelectedContext entities={contextEntities} mode={mode} />
 
       {/* 对话区域 */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="p-4 space-y-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center py-8 text-center">

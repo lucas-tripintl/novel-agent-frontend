@@ -134,7 +134,7 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col min-h-0">
       {/* 搜索栏 */}
       <div className="px-3 pb-2">
         <div className="relative">
@@ -159,7 +159,7 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
       )}
 
       {/* 设定列表 */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="p-3 pt-0">
           {nonEmptyCategories.length === 0 ? (
             <div className="flex flex-col items-center py-8 text-center">

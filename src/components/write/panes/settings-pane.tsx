@@ -29,7 +29,7 @@ export function SettingsPane({ projectId }: SettingsPaneProps) {
   const { selectedEntities } = useWritingStore();
 
   return (
-    <div className="flex h-full flex-col border-r border-border/50 bg-card/30">
+    <div className="flex h-full flex-col border-r border-border/50 bg-card/30 min-h-0">
       {/* 头部 */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50">
         <BookOpen className="h-4 w-4 text-primary" />
@@ -37,8 +37,8 @@ export function SettingsPane({ projectId }: SettingsPaneProps) {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <TabsList className="mx-3 mt-3 grid grid-cols-2">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+        <TabsList className="mx-3 mt-3 grid grid-cols-2 shrink-0">
           <TabsTrigger value="chapters" className="gap-1.5 text-xs">
             <FileText className="h-3.5 w-3.5" />
             章节
@@ -54,11 +54,11 @@ export function SettingsPane({ projectId }: SettingsPaneProps) {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="chapters" className="flex-1 m-0 mt-2">
+        <TabsContent value="chapters" className="flex-1 m-0 mt-2 min-h-0 overflow-hidden">
           <ChapterList projectId={projectId} />
         </TabsContent>
 
-        <TabsContent value="settings" className="flex-1 m-0 mt-2">
+        <TabsContent value="settings" className="flex-1 m-0 mt-2 min-h-0 overflow-hidden">
           <EntityBrowser projectId={projectId} />
         </TabsContent>
       </Tabs>

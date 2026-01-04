@@ -64,7 +64,7 @@ export function EditorPane({ projectId }: EditorPaneProps) {
   }
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex h-full flex-col bg-background min-h-0">
       {/* 流式写作指示器 */}
       {isStreaming && (
         <div className="flex items-center gap-2 px-6 py-2 bg-primary/5 border-b border-primary/20">
@@ -83,7 +83,7 @@ export function EditorPane({ projectId }: EditorPaneProps) {
         </div>
       )}
 
-      <ScrollArea className="flex-1 h-0">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="max-w-3xl mx-auto px-6 py-8">
           {/* 章节头部 */}
           <ChapterHeader

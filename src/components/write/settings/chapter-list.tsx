@@ -47,8 +47,8 @@ export function ChapterList({ projectId }: ChapterListProps) {
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <ScrollArea className="flex-1">
+    <div className="flex h-full flex-col min-h-0">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="p-3 space-y-1">
           {chapters.length === 0 ? (
             <div className="flex flex-col items-center py-8 text-center">

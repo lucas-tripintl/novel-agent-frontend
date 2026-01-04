@@ -28,14 +28,14 @@ export function WritingPanel({ project }: WritingPanelProps) {
   }, [project.id, setContext]);
 
   return (
-    <div className="flex h-screen flex-col bg-background">
+    <div className="flex h-screen flex-col bg-background overflow-hidden">
       {/* 顶部工具栏 */}
       <WritingToolbar project={project} />
 
       {/* 三栏主体 */}
       <ResizablePanelGroup
         orientation="horizontal"
-        className="flex-1"
+        className="flex-1 min-h-0"
       >
         {/* 左栏 - 设定面板 */}
         <ResizablePanel
