@@ -22,7 +22,7 @@ export const projectKeys = {
     [...projectKeys.lists(), params] as const,
   details: () => [...projectKeys.all, "detail"] as const,
   detail: (id: string) => [...projectKeys.details(), id] as const,
-  chapters: (projectId: string, params?: { sort?: ChapterSortOrder }) =>
+  chapters: (projectId: string, params?: { order?: ChapterSortOrder }) =>
     [...projectKeys.detail(projectId), "chapters", params] as const,
   chapter: (projectId: string, chapterNumber: number) =>
     [...projectKeys.detail(projectId), "chapter", chapterNumber] as const,
@@ -63,20 +63,20 @@ const CHAPTERS_PAGE_SIZE = 20;
 export function useProjectChapters(
   projectId: string,
   params?: {
-    sort?: ChapterSortOrder;
+    order?: ChapterSortOrder;
   },
   options?: { enabled?: boolean }
 ) {
   const { enabled = true } = options ?? {};
-  const sort = params?.sort ?? "desc"; // 默认按最新排序
+  const order = params?.order ?? "desc"; // 默认按最新排序
 
   return useInfiniteQuery({
-    queryKey: projectKeys.chapters(projectId, { sort }),
+    queryKey: projectKeys.chapters(projectId, { order }),
     queryFn: ({ pageParam = 0 }) =>
       listChapters(projectId, {
         skip: pageParam,
         limit: CHAPTERS_PAGE_SIZE,
-        sort,
+        order,
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {

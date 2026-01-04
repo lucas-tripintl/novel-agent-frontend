@@ -14,7 +14,7 @@ export default function WritePage() {
 
   const { data: project, isLoading, error } = useProject(projectId);
   // 默认按 desc 排序，第一个就是最新章节
-  const { data: chaptersData } = useProjectChapters(projectId, { sort: "desc" });
+  const { data: chaptersData } = useProjectChapters(projectId, { order: "desc" });
   const { chapterId, setContext } = useWritingStore();
 
   // 从 infinite query 结构提取章节列表

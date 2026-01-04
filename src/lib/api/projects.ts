@@ -65,7 +65,7 @@ export type ChapterSortOrder = "asc" | "desc";
 
 export async function listChapters(
   projectId: string,
-  params?: { skip?: number; limit?: number; sort?: ChapterSortOrder }
+  params?: { skip?: number; limit?: number; order?: ChapterSortOrder }
 ) {
   return apiClient.get<PaginatedResponse<ChapterRead>>(
     `/projects/${projectId}/chapters`,

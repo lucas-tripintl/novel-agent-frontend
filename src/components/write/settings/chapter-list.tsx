@@ -41,7 +41,7 @@ export function ChapterList({ projectId }: ChapterListProps) {
     isFetchingNextPage,
     hasNextPage,
     fetchNextPage,
-  } = useProjectChapters(projectId, { sort: sortOrder });
+  } = useProjectChapters(projectId, { order: sortOrder });
 
   const { chapterId, setContext } = useWritingStore();
   const { editingEntity, isEntityDirty, closeEntityEditor } = useEntityEditing();
