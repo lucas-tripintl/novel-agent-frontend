@@ -4,7 +4,6 @@ import type { SelectedEntity, WritingMode } from "@/types/writing";
 import { useWritingStore } from "@/stores/writing-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   HoverCard,
   HoverCardContent,
@@ -75,8 +74,8 @@ export function SelectedContext({ entities, mode }: SelectedContextProps) {
         </Badge>
       </div>
 
-      <ScrollArea className="w-full">
-        <div className="flex gap-2 px-4 pb-3">
+      <div className="px-4 pb-3">
+        <div className="flex flex-wrap gap-2">
           {entities.map((entity) => {
             const Icon = typeIconMap[entity.entityType] || Circle;
 
@@ -87,7 +86,7 @@ export function SelectedContext({ entities, mode }: SelectedContextProps) {
                     className={cn(
                       "flex items-center gap-1.5 px-2 py-1 rounded-md",
                       "bg-primary/10 border border-primary/20",
-                      "text-xs font-medium shrink-0",
+                      "text-xs font-medium",
                       "transition-colors hover:bg-primary/15"
                     )}
                   >
@@ -139,8 +138,7 @@ export function SelectedContext({ entities, mode }: SelectedContextProps) {
             );
           })}
         </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+      </div>
     </div>
   );
 }
