@@ -65,10 +65,14 @@ export type PatternType =
   | "plot_pattern"
   | "character_archetype"
   | "worldview"
-  | "conflict_pattern"
   | "narrative_rhythm"
+  | "chapter_structure"
+  | "relationship_dynamic"
+  | "conflict_escalation"
+  | "cheat_evolution"
   | "cool_point_pattern"
-  | "writing_technique";
+  | "writing_technique"
+  | "golden_opening_report";
 
 /**
  * 模式类型标签映射
@@ -80,8 +84,13 @@ export const patternTypeLabels: Record<string, string> = {
   worldview: "世界观模式",
   conflict_pattern: "冲突模式",
   narrative_rhythm: "叙事节奏",
+  chapter_structure: "章节结构",
+  relationship_dynamic: "关系动态",
+  conflict_escalation: "冲突升级",
+  cheat_evolution: "金手指演化",
   cool_point_pattern: "爽点模式",
   writing_technique: "写作技巧",
+  golden_opening_report: "黄金三章报告",
   // 也支持通用类型
   character: "角色",
   location: "地点",

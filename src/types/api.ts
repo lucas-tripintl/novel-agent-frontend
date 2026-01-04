@@ -106,6 +106,10 @@ export type EntityType =
   | "character_archetype"
   | "conflict_pattern"
   | "narrative_rhythm"
+  | "chapter_structure"
+  | "relationship_dynamic"
+  | "conflict_escalation"
+  | "cheat_evolution"
   | "cool_point_pattern"
   | "writing_technique"
   | "golden_opening_report";

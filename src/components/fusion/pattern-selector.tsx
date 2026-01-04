@@ -42,6 +42,11 @@ import {
   RefreshCw,
   CheckCircle2,
   XCircle,
+  Layout,
+  HeartHandshake,
+  TrendingUp,
+  Dna,
+  FileText,
 } from "lucide-react";
 import type { PatternRead } from "@/types/pattern";
 import type { EntityType } from "@/types/api";
@@ -57,6 +62,11 @@ const typeIconMap: Record<string, React.ComponentType<{ className?: string }>> =
   narrative_rhythm: Music,
   cool_point_pattern: Sparkles,
   writing_technique: PenTool,
+  chapter_structure: Layout,
+  relationship_dynamic: HeartHandshake,
+  conflict_escalation: TrendingUp,
+  cheat_evolution: Dna,
+  golden_opening_report: FileText,
 };
 
 /** 选中的 Pattern 信息 */

@@ -49,6 +49,11 @@ export const PATTERN_TYPE_OPTIONS: { value: EntityType | "all"; label: string }[
   { value: "worldview", label: "世界观模式" },
   { value: "conflict_pattern", label: "冲突模式" },
   { value: "narrative_rhythm", label: "叙事节奏" },
+  { value: "chapter_structure", label: "章节结构" },
+  { value: "relationship_dynamic", label: "关系动态" },
+  { value: "conflict_escalation", label: "冲突升级" },
+  { value: "cheat_evolution", label: "金手指演化" },
   { value: "cool_point_pattern", label: "爽点模式" },
   { value: "writing_technique", label: "写作技巧" },
+  { value: "golden_opening_report", label: "黄金三章报告" },
 ];
