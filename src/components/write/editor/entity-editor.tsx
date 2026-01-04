@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Collapsible,
   CollapsibleContent,
@@ -24,13 +23,10 @@ import { ConfirmLeaveDialog } from "../confirm-leave-dialog";
 import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
-  Code2,
-  FileText,
   ChevronRight,
   Plus,
   Trash2,
   AlertCircle,
-  Check,
   User,
   Globe,
   Zap,
@@ -118,7 +114,6 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
   const getLabel = useEnumStore((state) => state.getLabel);
   const getFieldValueLabel = useEnumStore((state) => state.getFieldValueLabel);
 
-  const [editMode, setEditMode] = useState<"visual" | "raw">("visual");
   const [name, setName] = useState(entity.name);
   const [isEditingName, setIsEditingName] = useState(false);
   const [tags, setTags] = useState<string[]>(entity.tags || []);
@@ -136,7 +131,6 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
     setIsEditingName(false);
     setTags(entity.tags || []);
     setAttributes(entity.attributes || {});
-    setEditMode("visual");
     setSaveStatus("idle");
   }, [entity.id, entity.name, entity.tags, entity.attributes]);
 
@@ -183,10 +177,7 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
     },
   });
 
-  // 处理保存
-  const handleSave = () => {
-    updateMutation.mutate();
-  };
+
 
   // 处理返回
   const handleBack = () => {
@@ -359,97 +350,50 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
 
       {/* 属性编辑区 */}
       {Object.keys(attributes).length > 0 && (
-        <div className="px-6 py-3 border-b border-border/30">
-          <Collapsible defaultOpen>
-            <CollapsibleTrigger className="flex items-center gap-2 w-full hover:bg-muted/50 rounded-md px-2 py-1.5 -ml-2">
-              <ChevronRight className="h-4 w-4 transition-transform data-[state=open]:rotate-90" />
-              <span className="text-sm font-medium">属性</span>
-              <Badge variant="outline" className="ml-auto font-mono text-[10px]">
-                {Object.keys(attributes).length} 项
-              </Badge>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pt-3 space-y-3">
-              <AttributesEditor
-                entityType={entity.entity_type}
-                attributes={attributes}
-                onChange={setAttributes}
-                getLabel={getLabel}
-                getFieldValueLabel={getFieldValueLabel}
-              />
-            </CollapsibleContent>
-          </Collapsible>
+        <div className="px-6 py-4 border-b border-border/30 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">属性</span>
+            <Badge variant="outline" className="ml-auto font-mono text-[10px]">
+              {Object.keys(attributes).length} 项
+            </Badge>
+          </div>
+          <AttributesEditor
+            entityType={entity.entity_type}
+            attributes={attributes}
+            onChange={setAttributes}
+            getLabel={getLabel}
+            getFieldValueLabel={getFieldValueLabel}
+          />
         </div>
       )}
 
-      {/* 编辑模式切换 */}
-      <Tabs
-        value={editMode}
-        onValueChange={(v) => setEditMode(v as "visual" | "raw")}
-        className="flex-1 flex flex-col"
-      >
-        <div className="px-6 pt-3">
-          <TabsList className="grid w-[200px] grid-cols-2">
-            <TabsTrigger value="visual" className="gap-1.5 text-xs">
-              <FileText className="h-3.5 w-3.5" />
-              可视化
-            </TabsTrigger>
-            <TabsTrigger value="raw" className="gap-1.5 text-xs">
-              <Code2 className="h-3.5 w-3.5" />
-              原始
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="visual" className="flex-1 m-0">
-          <ScrollArea className="h-full">
-            <div className="p-6 pt-4">
-              {parsedContent.isJson ? (
-                <JsonVisualEditor
-                  data={parsedContent.data}
-                  onUpdate={updateJsonField}
-                />
-              ) : (
-                <div className="space-y-3">
-                  <Label>内容</Label>
-                  <Textarea
-                    value={editingEntityContent}
-                    onChange={(e) => setEditingEntityContent(e.target.value)}
-                    className={cn("min-h-[400px]", getFontClass(settings.fontFamily))}
-                    style={{
-                      fontSize: `${settings.fontSize}px`,
-                      lineHeight: settings.lineHeight,
-                    }}
-                    placeholder="输入设定内容..."
-                  />
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </TabsContent>
-
-        <TabsContent value="raw" className="flex-1 m-0">
-          <ScrollArea className="h-full">
-            <div className="p-6 pt-4">
-              <Textarea
-                value={editingEntityContent}
-                onChange={(e) => setEditingEntityContent(e.target.value)}
-                className={cn("min-h-[500px]", getFontClass(settings.fontFamily))}
-                style={{
-                  fontSize: `${settings.fontSize}px`,
-                  lineHeight: settings.lineHeight,
-                }}
-                placeholder="输入 JSON 或纯文本..."
+      {/* 内容编辑区 */}
+      <div className="flex-1 min-h-0 bg-background">
+        <ScrollArea className="h-full">
+          <div className="p-6 pt-4">
+            {parsedContent.isJson ? (
+              <JsonVisualEditor
+                data={parsedContent.data}
+                onUpdate={updateJsonField}
               />
-              {parsedContent.isJson && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  <Check className="inline h-3 w-3 mr-1 text-green-500" />
-                  有效的 JSON 格式
-                </p>
-              )}
-            </div>
-          </ScrollArea>
-        </TabsContent>
-      </Tabs>
+            ) : (
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">内容</Label>
+                <Textarea
+                  value={editingEntityContent}
+                  onChange={(e) => setEditingEntityContent(e.target.value)}
+                  className={cn("min-h-[400px]", getFontClass(settings.fontFamily))}
+                  style={{
+                    fontSize: `${settings.fontSize}px`,
+                    lineHeight: settings.lineHeight,
+                  }}
+                  placeholder="输入设定内容..."
+                />
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
       </div>
     </>
   );
@@ -742,7 +686,7 @@ function AttributesEditor({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {Object.entries(attributes).map(([key, value]) => {
         const config = attributeFieldConfig[key];
 
@@ -750,16 +694,16 @@ function AttributesEditor({
         if (config?.type === "array" || Array.isArray(value)) {
           const arrayValue = Array.isArray(value) ? value : [];
           return (
-            <div key={key} className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">
+            <div key={key} className="space-y-2">
+              <Label className="text-sm font-medium text-muted-foreground">
                 {formatAttrName(key)}
               </Label>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {arrayValue.map((item, idx) => (
                   <Badge
                     key={idx}
                     variant="secondary"
-                    className="gap-1 pr-1"
+                    className="gap-1 pr-1 text-sm py-1"
                   >
                     {String(item)}
                     <button
@@ -769,13 +713,13 @@ function AttributesEditor({
                       }}
                       className="ml-1 rounded-full hover:bg-destructive/20 p-0.5"
                     >
-                      <Trash2 className="h-2.5 w-2.5" />
+                      <Trash2 className="h-3 w-3" />
                     </button>
                   </Badge>
                 ))}
                 <Input
                   placeholder="添加..."
-                  className="h-6 w-20 text-xs"
+                  className="h-8 w-24 text-sm"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       const target = e.target as HTMLInputElement;
@@ -794,12 +738,12 @@ function AttributesEditor({
         // 下拉选择类型 - 显示为只读，因为枚举值需要从后端获取
         if (config?.type === "select") {
           return (
-            <div key={key} className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">
+            <div key={key} className="space-y-2">
+              <Label className="text-sm font-medium text-muted-foreground">
                 {formatAttrName(key)}
               </Label>
               <div className="flex items-center gap-2">
-                <Badge variant="outline">
+                <Badge variant="outline" className="text-sm py-1">
                   {getDisplayValue(key, value)}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
@@ -812,14 +756,14 @@ function AttributesEditor({
 
         // 文本类型
         return (
-          <div key={key} className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">
+          <div key={key} className="space-y-2">
+            <Label className="text-sm font-medium text-muted-foreground">
               {formatAttrName(key)}
             </Label>
             <Input
               value={String(value ?? "")}
               onChange={(e) => updateAttribute(key, e.target.value)}
-              className="text-sm"
+              className="text-base"
               placeholder={`输入${formatAttrName(key)}...`}
             />
           </div>
