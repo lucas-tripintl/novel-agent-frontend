@@ -204,6 +204,8 @@ export interface AnalyzeRequest {
   start_chapter?: number;
   end_chapter?: number;
   force?: boolean;
+  /** 分析完成后自动提取抽象模式（力量体系、剧情模式、角色原型等） */
+  auto_extract_patterns?: boolean;
 }
 
 export interface SynthesizeRequest {

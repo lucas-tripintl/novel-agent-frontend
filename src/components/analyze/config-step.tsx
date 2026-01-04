@@ -16,7 +16,7 @@ import {
   Earth,
   Zap,
   GitBranch,
-  Sparkles,
+  Layers,
   PenTool,
   BookOpen,
   Flame,
@@ -89,9 +89,8 @@ export interface AnalyzeConfig {
   startChapter: number;
   endChapter: number;
   force: boolean;
-  // 保留风格分析（独立 API）
-  enableStyleAnalyze: boolean;
-  styleSampleChapters: number;
+  // 自动提取抽象模式
+  autoExtractPatterns: boolean;
 }
 
 interface ConfigStepProps {
@@ -124,9 +123,8 @@ export function ConfigStep({
     new Set(["golden_opening"])
   );
 
-  // 风格分析（独立控制）
-  const [enableStyleAnalyze, setEnableStyleAnalyze] = useState(false);
-  const [styleSampleChapters, setStyleSampleChapters] = useState(10);
+  // 自动模式提取
+  const [autoExtractPatterns, setAutoExtractPatterns] = useState(false);
 
   // 切换分析类型
   const toggleType = useCallback((type: AnalysisType) => {
@@ -151,7 +149,7 @@ export function ConfigStep({
   }, [selectedTypes.size]);
 
   const handleStart = useCallback(() => {
-    if (selectedTypes.size === 0 && !enableStyleAnalyze) {
+    if (selectedTypes.size === 0) {
       return; // 至少选择一个分析项目
     }
 
@@ -163,8 +161,7 @@ export function ConfigStep({
       startChapter,
       endChapter,
       force,
-      enableStyleAnalyze,
-      styleSampleChapters,
+      autoExtractPatterns,
     });
   }, [
     projectId,
@@ -174,8 +171,7 @@ export function ConfigStep({
     startChapter,
     endChapter,
     force,
-    enableStyleAnalyze,
-    styleSampleChapters,
+    autoExtractPatterns,
     onStart,
   ]);
 
@@ -204,7 +200,7 @@ export function ConfigStep({
   const hasGoldenOpening = selectedTypes.has("golden_opening");
 
   // 是否有可以执行的分析
-  const canStart = selectedTypes.size > 0 || enableStyleAnalyze;
+  const canStart = selectedTypes.size > 0;
 
   return (
     <div className="space-y-6">
@@ -361,48 +357,35 @@ export function ConfigStep({
         </CardContent>
       </Card>
 
-      {/* 风格分析（独立 API） */}
+      {/* 附加分析选项 */}
       <Card className="bg-card/50">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">附加分析</CardTitle>
         </CardHeader>
         <CardContent>
           <div
-            className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${enableStyleAnalyze
+            className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${autoExtractPatterns
               ? "bg-primary/5 border-primary/30"
               : "bg-transparent border-transparent hover:bg-accent/50"
               }`}
-            onClick={() => setEnableStyleAnalyze(!enableStyleAnalyze)}
+            onClick={() => setAutoExtractPatterns(!autoExtractPatterns)}
           >
             <Checkbox
-              id="style-analyze"
-              checked={enableStyleAnalyze}
-              onCheckedChange={(checked) => setEnableStyleAnalyze(!!checked)}
+              checked={autoExtractPatterns}
+              onCheckedChange={() => setAutoExtractPatterns(!autoExtractPatterns)}
             />
-            <Label
-              htmlFor="style-analyze"
-              className="flex items-center gap-3 cursor-pointer flex-1"
-            >
-              <Sparkles
-                className={`h-4 w-4 ${enableStyleAnalyze ? "text-primary" : "text-muted-foreground"
+            <div className="flex items-center gap-3 cursor-pointer flex-1">
+              <Layers
+                className={`h-4 w-4 ${autoExtractPatterns ? "text-primary" : "text-muted-foreground"
                   }`}
               />
-              <div className="flex items-center gap-2 flex-1">
-                <span className="font-medium">风格分析</span>
-                <span className="text-sm text-muted-foreground">采样</span>
-                <Input
-                  type="number"
-                  min={1}
-                  max={50}
-                  value={styleSampleChapters}
-                  onChange={(e) => setStyleSampleChapters(Number(e.target.value))}
-                  className="w-16 h-7 text-sm"
-                  disabled={!enableStyleAnalyze}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <span className="text-sm text-muted-foreground">章分析写作风格</span>
+              <div className="flex-1">
+                <span className="font-medium">自动模式提取</span>
+                <span className="text-sm text-muted-foreground ml-2">
+                  分析完成后自动提取抽象模式（力量体系、剧情模式、角色原型等）
+                </span>
               </div>
-            </Label>
+            </div>
           </div>
         </CardContent>
       </Card>

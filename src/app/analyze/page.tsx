@@ -17,7 +17,7 @@ import {
 } from "@/components/analyze";
 import type { AnalyzeConfig } from "@/components/analyze/config-step";
 import type { ProjectImportResponse } from "@/types/api";
-import { analyzeProject, analyzeStyle } from "@/lib/api/projects";
+import { analyzeProject } from "@/lib/api/projects";
 import { cancelTask } from "@/lib/api/tasks";
 import { useTaskPolling, useActiveTasks } from "@/hooks/use-task-polling";
 
@@ -58,25 +58,13 @@ export default function AnalyzePage() {
   // 分析 mutation
   const analyzeMutation = useMutation({
     mutationFn: async (config: AnalyzeConfig) => {
-      // 1. 启动主分析任务（如果有选择分析类型）
-      let analyzeResult = null;
-      if (config.analysisTypes.length > 0) {
-        analyzeResult = await analyzeProject(config.projectId, {
-          analysis_types: config.analysisTypes,
-          start_chapter: config.startChapter,
-          end_chapter: config.endChapter,
-          force: config.force,
-        });
-      }
-
-      // 2. 如果启用风格分析，同时启动（独立 API）
-      if (config.enableStyleAnalyze) {
-        await analyzeStyle(config.projectId, {
-          sample_chapters: config.styleSampleChapters,
-        });
-      }
-
-      return analyzeResult;
+      return await analyzeProject(config.projectId, {
+        analysis_types: config.analysisTypes,
+        start_chapter: config.startChapter,
+        end_chapter: config.endChapter,
+        force: config.force,
+        auto_extract_patterns: config.autoExtractPatterns,
+      });
     },
     onSuccess: (result) => {
       if (result) {

@@ -9,6 +9,7 @@ interface AnalyzeConfig {
   startChapter?: number;
   endChapter?: number;
   force?: boolean;
+  autoExtractPatterns?: boolean;
 }
 
 export function useProjectAnalyze(projectId: string) {
@@ -21,6 +22,7 @@ export function useProjectAnalyze(projectId: string) {
         start_chapter: config.startChapter,
         end_chapter: config.endChapter,
         force: config.force,
+        auto_extract_patterns: config.autoExtractPatterns,
       });
     },
     onSuccess: () => {

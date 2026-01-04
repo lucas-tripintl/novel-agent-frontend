@@ -93,6 +93,7 @@ export async function analyzeProject(
       start_chapter: config.start_chapter ?? 1,
       end_chapter: config.end_chapter,
       force: config.force ?? false,
+      auto_extract_patterns: config.auto_extract_patterns ?? false,
     }
   );
 }
