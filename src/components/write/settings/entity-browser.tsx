@@ -6,7 +6,6 @@ import {
   elementCategories,
   groupEntitiesByCategory,
   getCategoryConfig,
-  getEntityTypeLabel,
 } from "@/hooks/use-project-elements";
 import { useEnumStore } from "@/stores/enum-store";
 import { useWritingStore, useWritingMode, useEntityEditing } from "@/stores/writing-store";
@@ -51,16 +50,32 @@ import {
 } from "lucide-react";
 
 // 标签本地化函数
-function getTagLabel(tag: string, getLabel: (enumName: string, value: string) => string): string {
+function getTagLabel(
+  tag: string,
+  getLabel: (enumName: string, value: string) => string,
+  getFieldValueLabel: (fieldName: string, value: string) => string
+): string {
   // 如果已经是中文，直接返回
   if (/[\u4e00-\u9fa5]/.test(tag)) return tag;
 
-  // 尝试从各种枚举获取标签
+  // 1. 尝试从枚举获取标签
   const enums = ["CharacterRole", "CharacterImportance", "WorldviewCategory", "EntityType"];
   for (const enumName of enums) {
     const label = getLabel(enumName, tag);
     if (label !== tag) return label;
   }
+
+  // 2. 尝试从 field_values 获取标签（如金手指类型、重要性等）
+  const fieldNames = ["golden_finger_type", "importance", "gf_type"];
+  for (const fieldName of fieldNames) {
+    const label = getFieldValueLabel(fieldName, tag);
+    if (label !== tag) return label;
+  }
+
+  // 3. 尝试从静态配置获取（fallback）
+  const categoryConfig = elementCategories.find((c) => c.type === tag);
+  if (categoryConfig) return categoryConfig.label;
+
   return tag;
 }
 
@@ -96,6 +111,7 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
   // 订阅 loaded 状态确保枚举加载后重渲染
   const enumsLoaded = useEnumStore((state) => state.loaded);
   const getLabel = useEnumStore((state) => state.getLabel);
+  const getFieldValueLabel = useEnumStore((state) => state.getFieldValueLabel);
 
   // 获取实体类型的本地化标签
   const getTypeLabel = (type: EntityType) => {
@@ -253,6 +269,7 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
                             onToggle={() => toggleEntity(entity)}
                             onEdit={() => openEntityEditor(entity)}
                             getLabel={getLabel}
+                            getFieldValueLabel={getFieldValueLabel}
                           />
                         ))}
                       </div>
@@ -277,6 +294,7 @@ interface EntityRowProps {
   onToggle: () => void;
   onEdit: () => void;
   getLabel: (enumName: string, value: string) => string;
+  getFieldValueLabel: (fieldName: string, value: string) => string;
 }
 
 function EntityRow({
@@ -286,6 +304,7 @@ function EntityRow({
   onToggle,
   onEdit,
   getLabel,
+  getFieldValueLabel,
 }: EntityRowProps) {
   return (
     <HoverCard openDelay={300} closeDelay={100}>
@@ -322,7 +341,7 @@ function EntityRow({
           {/* 标签 */}
           {entity.tags && entity.tags.length > 0 && (
             <Badge variant="outline" className="text-[10px] shrink-0">
-              {getTagLabel(entity.tags[0], getLabel)}
+              {getTagLabel(entity.tags[0], getLabel, getFieldValueLabel)}
             </Badge>
           )}
 
@@ -361,6 +380,7 @@ function EntityPreview({ entity, onEdit }: EntityPreviewProps) {
   // 订阅 loaded 状态确保枚举加载后重渲染
   const enumsLoaded = useEnumStore((state) => state.loaded);
   const getLabel = useEnumStore((state) => state.getLabel);
+  const getFieldValueLabel = useEnumStore((state) => state.getFieldValueLabel);
 
   // 获取实体类型的本地化标签
   const typeLabel = (() => {
@@ -393,7 +413,7 @@ function EntityPreview({ entity, onEdit }: EntityPreviewProps) {
         <div className="flex flex-wrap gap-1">
           {entity.tags.slice(0, 4).map((tag) => (
             <Badge key={tag} variant="secondary" className="text-[10px]">
-              {getTagLabel(tag, getLabel)}
+              {getTagLabel(tag, getLabel, getFieldValueLabel)}
             </Badge>
           ))}
           {entity.tags.length > 4 && (

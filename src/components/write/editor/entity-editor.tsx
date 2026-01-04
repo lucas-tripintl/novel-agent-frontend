@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEntityEditing, useEditorSettings } from "@/stores/writing-store";
 import { useEnumStore } from "@/stores/enum-store";
 import { updateEntity } from "@/lib/api/projects";
-import { getCategoryConfig } from "@/hooks/use-project-elements";
+import { getCategoryConfig, elementCategories } from "@/hooks/use-project-elements";
 import type { EntityRead } from "@/types/api";
 import { fontFamilies, type EditorFontFamily } from "@/types/writing";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -72,16 +72,32 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 // 标签本地化函数
-function getTagLabel(tag: string, getLabel: (enumName: string, value: string) => string): string {
+function getTagLabel(
+  tag: string,
+  getLabel: (enumName: string, value: string) => string,
+  getFieldValueLabel: (fieldName: string, value: string) => string
+): string {
   // 如果已经是中文，直接返回
   if (/[\u4e00-\u9fa5]/.test(tag)) return tag;
 
-  // 尝试从各种枚举获取标签
+  // 1. 尝试从枚举获取标签
   const enums = ["CharacterRole", "CharacterImportance", "WorldviewCategory", "EntityType"];
   for (const enumName of enums) {
     const label = getLabel(enumName, tag);
     if (label !== tag) return label;
   }
+
+  // 2. 尝试从 field_values 获取标签（如金手指类型、重要性等）
+  const fieldNames = ["golden_finger_type", "importance", "gf_type"];
+  for (const fieldName of fieldNames) {
+    const label = getFieldValueLabel(fieldName, tag);
+    if (label !== tag) return label;
+  }
+
+  // 3. 尝试从静态配置获取（fallback）
+  const categoryConfig = elementCategories.find((c) => c.type === tag);
+  if (categoryConfig) return categoryConfig.label;
+
   return tag;
 }
 
@@ -100,6 +116,7 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
   } = useEntityEditing();
   const { settings } = useEditorSettings();
   const getLabel = useEnumStore((state) => state.getLabel);
+  const getFieldValueLabel = useEnumStore((state) => state.getFieldValueLabel);
 
   const [editMode, setEditMode] = useState<"visual" | "raw">("visual");
   const [name, setName] = useState(entity.name);
@@ -311,7 +328,7 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
               variant="secondary"
               className="gap-1 pr-1"
             >
-              {getTagLabel(tag, getLabel)}
+              {getTagLabel(tag, getLabel, getFieldValueLabel)}
               <button
                 onClick={() => handleRemoveTag(tag)}
                 className="ml-1 rounded-full hover:bg-destructive/20 p-0.5"
@@ -357,6 +374,7 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
                 attributes={attributes}
                 onChange={setAttributes}
                 getLabel={getLabel}
+                getFieldValueLabel={getFieldValueLabel}
               />
             </CollapsibleContent>
           </Collapsible>
@@ -654,6 +672,7 @@ interface AttributesEditorProps {
   attributes: Record<string, unknown>;
   onChange: (attrs: Record<string, unknown>) => void;
   getLabel: (enumName: string, value: string) => string;
+  getFieldValueLabel: (fieldName: string, value: string) => string;
 }
 
 function AttributesEditor({
@@ -661,6 +680,7 @@ function AttributesEditor({
   attributes,
   onChange,
   getLabel,
+  getFieldValueLabel,
 }: AttributesEditorProps) {
   // 更新单个属性
   const updateAttribute = (key: string, value: unknown) => {
@@ -671,6 +691,12 @@ function AttributesEditor({
   const formatAttrName = (key: string) => {
     const config = attributeFieldConfig[key];
     if (config) return config.label;
+    // 处理特殊字段名
+    const specialLabels: Record<string, string> = {
+      gf_type: "金手指类型",
+      first_appearance: "首次出现章节",
+    };
+    if (specialLabels[key]) return specialLabels[key];
     return key
       .replace(/_/g, " ")
       .replace(/([A-Z])/g, " $1")
@@ -680,15 +706,39 @@ function AttributesEditor({
 
   // 获取属性显示值
   const getDisplayValue = (key: string, value: unknown): string => {
+    if (typeof value !== "string") {
+      if (Array.isArray(value)) {
+        return value.join(", ");
+      }
+      return String(value ?? "");
+    }
+
     const config = attributeFieldConfig[key];
-    if (config?.enumName && typeof value === "string") {
+
+    // 特殊处理 importance 字段：只有 character 类型使用 CharacterImportance 枚举
+    if (key === "importance") {
+      if (entityType === "character") {
+        const label = getLabel("CharacterImportance", value);
+        return label !== value ? label : value;
+      }
+      // 其他实体类型使用 field_values 的 importance 字段
+      const label = getFieldValueLabel("importance", value);
+      return label !== value ? label : value;
+    }
+
+    // 处理金手指类型字段
+    if (key === "gf_type") {
+      const label = getFieldValueLabel("golden_finger_type", value);
+      return label !== value ? label : value;
+    }
+
+    // 其他有配置枚举的字段
+    if (config?.enumName) {
       const label = getLabel(config.enumName, value);
       return label !== value ? label : value;
     }
-    if (Array.isArray(value)) {
-      return value.join(", ");
-    }
-    return String(value ?? "");
+
+    return value;
   };
 
   return (
