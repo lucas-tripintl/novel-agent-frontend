@@ -19,5 +19,5 @@ export async function getTask(taskId: string) {
 }
 
 export async function cancelTask(taskId: string) {
-  return apiClient.delete(`/tasks/${taskId}`);
+  return apiClient.post(`/tasks/${taskId}/cancel`);
 }

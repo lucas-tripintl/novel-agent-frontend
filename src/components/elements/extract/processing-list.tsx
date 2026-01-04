@@ -4,7 +4,10 @@ import { useActiveTasks } from "@/hooks/use-task-polling";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cancelTask } from "@/lib/api/tasks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Sparkles, AlertCircle, X } from "lucide-react";
 import { formatTimeAgo } from "@/lib/utils/time";
 
 // 假设模式提取的任务类型
@@ -17,6 +20,14 @@ interface TaskMeta {
 
 export function ProcessingList() {
     const { data: tasks, isLoading, error } = useActiveTasks();
+    const queryClient = useQueryClient();
+
+    const cancelMutation = useMutation({
+        mutationFn: cancelTask,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        },
+    });
 
     // 过滤出模式提取任务
     const extractTasks = tasks.filter(task =>
@@ -61,6 +72,14 @@ export function ProcessingList() {
         <div className="space-y-4">
             {extractTasks.map((task) => {
                 const meta = task.meta as TaskMeta | undefined;
+                // 处理时间显示，如果后端返回的时间没有时区信息，默认视为 UTC
+                const dateStr = task.created_at;
+                const date = new Date(
+                    dateStr.endsWith('Z') || dateStr.includes('+')
+                        ? dateStr
+                        : `${dateStr}Z`
+                );
+
                 return (
                     <Card key={task.id} className="bg-card/50">
                         <CardContent className="p-4 space-y-3">
@@ -74,9 +93,25 @@ export function ProcessingList() {
                                         {task.status === "running" ? "提取中" : "排队中"}
                                     </Badge>
                                 </div>
-                                <span className="text-xs text-muted-foreground">
-                                    开始于 {formatTimeAgo(task.created_at)}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">
+                                        开始于 {formatTimeAgo(date)}
+                                    </span>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                        onClick={() => cancelMutation.mutate(task.id)}
+                                        disabled={cancelMutation.isPending}
+                                        title="取消任务"
+                                    >
+                                        {cancelMutation.isPending ? (
+                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                        ) : (
+                                            <X className="h-3 w-3" />
+                                        )}
+                                    </Button>
+                                </div>
                             </div>
 
                             <div className="space-y-1">
