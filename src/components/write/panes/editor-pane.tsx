@@ -1,0 +1,102 @@
+"use client";
+
+import { useEffect } from "react";
+import { useWritingStore, useStreamingState } from "@/stores/writing-store";
+import { useProjectChapters, useChapter } from "@/hooks/use-projects";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { TiptapEditor } from "../editor/tiptap-editor";
+import { ChapterHeader } from "../editor/chapter-header";
+import { FileText, Sparkles } from "lucide-react";
+
+interface EditorPaneProps {
+  projectId: string;
+}
+
+export function EditorPane({ projectId }: EditorPaneProps) {
+  const { chapterId, content, setContent, loadDraft } = useWritingStore();
+  const { isStreaming } = useStreamingState();
+  const { data: chaptersData } = useProjectChapters(projectId);
+
+  // 从章节列表获取当前章节的 chapter_number
+  const currentChapterFromList = chaptersData?.items?.find((c) => c.id === chapterId);
+  const chapterNumber = currentChapterFromList?.chapter_number ?? 0;
+
+  // 使用章节详情 API 获取完整内容
+  const { data: chapterDetail } = useChapter(projectId, chapterNumber, {
+    enabled: !!chapterId && chapterNumber > 0,
+  });
+
+  // 加载章节内容
+  useEffect(() => {
+    if (chapterDetail) {
+      loadDraft({
+        title: chapterDetail.title || "",
+        outline: chapterDetail.summary || "",
+        content: chapterDetail.content || "",
+      });
+    }
+  }, [chapterDetail, loadDraft]);
+
+  // 空状态
+  if (!chapterId) {
+    return (
+      <div className="flex h-full items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4 text-center max-w-md px-8">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <FileText className="h-8 w-8 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold">选择一个章节开始创作</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              从左侧章节列表中选择要编辑的章节，或创建新章节
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full flex-col bg-background">
+      {/* 流式写作指示器 */}
+      {isStreaming && (
+        <div className="flex items-center gap-2 px-6 py-2 bg-primary/5 border-b border-primary/20">
+          <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+          <span className="text-sm text-primary">AI 正在创作中...</span>
+          <div className="flex-1" />
+          <div className="flex gap-1">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <ScrollArea className="flex-1 h-0">
+        <div className="max-w-3xl mx-auto px-6 py-8">
+          {/* 章节头部 */}
+          <ChapterHeader
+            chapterNumber={chapterNumber || 1}
+          />
+
+          {/* 编辑器 */}
+          <div className="mt-6">
+            <TiptapEditor
+              content={content}
+              onChange={setContent}
+              isReadOnly={isStreaming}
+              placeholder="开始创作你的故事..."
+            />
+          </div>
+
+          {/* 底部留白 */}
+          <div className="h-[30vh]" />
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}

@@ -8,6 +8,7 @@ import {
   deleteProject,
   getProject,
   listChapters,
+  getChapter,
   listGoldenFingers,
 } from "@/lib/api/projects";
 import type { ProjectList, ProjectStatus } from "@/types/api";
@@ -22,6 +23,8 @@ export const projectKeys = {
   detail: (id: string) => [...projectKeys.details(), id] as const,
   chapters: (projectId: string, params?: { skip?: number; limit?: number }) =>
     [...projectKeys.detail(projectId), "chapters", params] as const,
+  chapter: (projectId: string, chapterNumber: number) =>
+    [...projectKeys.detail(projectId), "chapter", chapterNumber] as const,
   goldenFingers: (projectId: string, params?: { skip?: number; limit?: number }) =>
     [...projectKeys.detail(projectId), "goldenFingers", params] as const,
 };
@@ -68,6 +71,23 @@ export function useProjectChapters(
     queryKey: projectKeys.chapters(projectId, params),
     queryFn: () => listChapters(projectId, params),
     enabled: enabled && !!projectId,
+  });
+}
+
+/**
+ * 获取单个章节详情（包含正文内容）
+ */
+export function useChapter(
+  projectId: string,
+  chapterNumber: number,
+  options?: { enabled?: boolean }
+) {
+  const { enabled = true } = options ?? {};
+
+  return useQuery({
+    queryKey: projectKeys.chapter(projectId, chapterNumber),
+    queryFn: () => getChapter(projectId, chapterNumber),
+    enabled: enabled && !!projectId && chapterNumber > 0,
   });
 }
 

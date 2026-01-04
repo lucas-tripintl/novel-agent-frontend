@@ -79,8 +79,9 @@ export interface ProjectList {
 export interface ChapterRead {
   id: string;
   project_id: string;
-  number: number;
+  chapter_number: number;
   title: string;
+  content?: string; // 详情接口返回完整内容
   word_count: number;
   summary?: string;
   analyzed: boolean;

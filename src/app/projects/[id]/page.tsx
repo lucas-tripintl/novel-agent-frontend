@@ -226,9 +226,11 @@ export default function ProjectDetailPage() {
           </div>
           <div className="flex items-center gap-2">
             {/* 核心入口：开始写作 */}
-            <Button className="glow-primary">
-              <PenLine className="mr-2 h-4 w-4" />
-              开始写作
+            <Button className="glow-primary" asChild>
+              <Link href={`/write/${project.id}`}>
+                <PenLine className="mr-2 h-4 w-4" />
+                开始写作
+              </Link>
             </Button>
             {project.status === "draft" && (
               <Button variant="outline">
@@ -450,7 +452,7 @@ export default function ProjectDetailPage() {
                 >
                   <CardContent className="flex items-center gap-4 p-4">
                     <span className="font-mono text-sm text-muted-foreground w-12">
-                      {chapter.number}
+                      {chapter.chapter_number}
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{chapter.title}</div>

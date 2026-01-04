@@ -1,0 +1,343 @@
+"use client";
+
+import { useState, useMemo } from "react";
+import {
+  useProjectElements,
+  elementCategories,
+  groupEntitiesByCategory,
+  getCategoryConfig,
+} from "@/hooks/use-project-elements";
+import { useWritingStore, useWritingMode } from "@/stores/writing-store";
+import type { EntityRead, EntityType } from "@/types/api";
+import type { SelectedEntity } from "@/types/writing";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import { cn } from "@/lib/utils";
+import {
+  Search,
+  User,
+  Globe,
+  Zap,
+  Sparkles,
+  MapPin,
+  Flag,
+  Package,
+  Sword,
+  GitBranch,
+  Eye,
+  Workflow,
+  Users,
+  Circle,
+  Plus,
+  Check,
+  Loader2,
+} from "lucide-react";
+
+// 图标映射
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  User,
+  Globe,
+  Zap,
+  Sparkles,
+  MapPin,
+  Flag,
+  Package,
+  Sword,
+  GitBranch,
+  Eye,
+  Workflow,
+  Users,
+  Circle,
+};
+
+interface EntityBrowserProps {
+  projectId: string;
+}
+
+export function EntityBrowser({ projectId }: EntityBrowserProps) {
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+
+  const { data, isLoading } = useProjectElements(projectId, true);
+  const mode = useWritingMode();
+  const { selectedEntities, addEntity, removeEntity } = useWritingStore();
+
+  const entities = data?.items ?? [];
+
+  // 按分类分组
+  const groupedEntities = useMemo(
+    () => groupEntitiesByCategory(entities, searchKeyword),
+    [entities, searchKeyword]
+  );
+
+  // 非空分类
+  const nonEmptyCategories = useMemo(() => {
+    return elementCategories.filter(
+      (cat) => (groupedEntities.get(cat.type)?.length || 0) > 0
+    );
+  }, [groupedEntities]);
+
+  // 检查实体是否已选中
+  const isEntitySelected = (entityId: string) =>
+    selectedEntities.some((e) => e.id === entityId);
+
+  // 切换实体选择
+  const toggleEntity = (entity: EntityRead) => {
+    if (mode !== "director") return;
+
+    const selectedEntity: SelectedEntity = {
+      id: entity.id,
+      projectId,
+      name: entity.name,
+      entityType: entity.entity_type,
+      content: entity.content,
+      tags: entity.tags,
+    };
+
+    if (isEntitySelected(entity.id)) {
+      removeEntity(entity.id);
+    } else {
+      addEntity(selectedEntity);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-3 space-y-3">
+        <Skeleton className="h-9 w-full" />
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-10 w-full" />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* 搜索栏 */}
+      <div className="px-3 pb-2">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="搜索设定..."
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            className="pl-8 h-8 text-sm bg-background/50"
+          />
+        </div>
+      </div>
+
+      {/* 模式提示 */}
+      {mode === "auto" && (
+        <div className="mx-3 mb-2 p-2 rounded-md bg-primary/5 border border-primary/20">
+          <p className="text-xs text-muted-foreground">
+            <Sparkles className="inline h-3 w-3 mr-1 text-primary" />
+            全自动模式下，AI 会自动选择相关设定
+          </p>
+        </div>
+      )}
+
+      {/* 设定列表 */}
+      <ScrollArea className="flex-1">
+        <div className="p-3 pt-0">
+          {nonEmptyCategories.length === 0 ? (
+            <div className="flex flex-col items-center py-8 text-center">
+              <Globe className="h-10 w-10 text-muted-foreground/50 mb-3" />
+              <p className="text-sm text-muted-foreground">
+                {searchKeyword ? "没有匹配的设定" : "暂无设定"}
+              </p>
+            </div>
+          ) : (
+            <Accordion
+              type="multiple"
+              value={expandedCategories}
+              onValueChange={setExpandedCategories}
+              className="space-y-1"
+            >
+              {nonEmptyCategories.map((category) => {
+                const catEntities = groupedEntities.get(category.type) || [];
+                const Icon = iconMap[category.icon] || Circle;
+                const selectedInCategory = catEntities.filter((e) =>
+                  isEntitySelected(e.id)
+                ).length;
+
+                return (
+                  <AccordionItem
+                    key={category.type}
+                    value={category.type}
+                    className="border border-border/30 rounded-md bg-background/50"
+                  >
+                    <AccordionTrigger className="hover:no-underline px-3 py-2">
+                      <div className="flex items-center gap-2 flex-1">
+                        <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center">
+                          <Icon className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <span className="text-sm font-medium">
+                          {category.label}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className="ml-auto font-mono text-[10px]"
+                        >
+                          {catEntities.length}
+                        </Badge>
+                        {mode === "director" && selectedInCategory > 0 && (
+                          <Badge
+                            variant="secondary"
+                            className="font-mono text-[10px]"
+                          >
+                            +{selectedInCategory}
+                          </Badge>
+                        )}
+                      </div>
+                    </AccordionTrigger>
+
+                    <AccordionContent className="px-3 pb-3">
+                      <div className="space-y-1">
+                        {catEntities.map((entity) => (
+                          <EntityRow
+                            key={entity.id}
+                            entity={entity}
+                            isSelected={isEntitySelected(entity.id)}
+                            isSelectable={mode === "director"}
+                            onToggle={() => toggleEntity(entity)}
+                          />
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
+          )}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
+
+// ============ 实体行组件 ============
+
+interface EntityRowProps {
+  entity: EntityRead;
+  isSelected: boolean;
+  isSelectable: boolean;
+  onToggle: () => void;
+}
+
+function EntityRow({
+  entity,
+  isSelected,
+  isSelectable,
+  onToggle,
+}: EntityRowProps) {
+  return (
+    <HoverCard openDelay={300} closeDelay={100}>
+      <HoverCardTrigger asChild>
+        <div
+          className={cn(
+            "flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors",
+            isSelectable && "cursor-pointer",
+            isSelected
+              ? "bg-primary/10 border border-primary/30"
+              : isSelectable
+              ? "hover:bg-muted/50 border border-transparent"
+              : "border border-transparent"
+          )}
+          onClick={isSelectable ? onToggle : undefined}
+        >
+          {/* 选择指示器 */}
+          {isSelectable && (
+            <div
+              className={cn(
+                "h-4 w-4 rounded-full border flex items-center justify-center shrink-0",
+                isSelected
+                  ? "bg-primary border-primary"
+                  : "border-muted-foreground/30"
+              )}
+            >
+              {isSelected && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
+            </div>
+          )}
+
+          {/* 名称 */}
+          <span className="text-sm flex-1 truncate">{entity.name}</span>
+
+          {/* 标签 */}
+          {entity.tags && entity.tags.length > 0 && (
+            <Badge variant="outline" className="text-[10px] shrink-0">
+              {entity.tags[0]}
+            </Badge>
+          )}
+        </div>
+      </HoverCardTrigger>
+
+      <HoverCardContent side="right" align="start" className="w-72 p-3">
+        <EntityPreview entity={entity} />
+      </HoverCardContent>
+    </HoverCard>
+  );
+}
+
+// ============ 实体预览 ============
+
+interface EntityPreviewProps {
+  entity: EntityRead;
+}
+
+function EntityPreview({ entity }: EntityPreviewProps) {
+  const catConfig = getCategoryConfig(entity.entity_type);
+  const Icon = iconMap[catConfig.icon] || Circle;
+
+  return (
+    <div className="space-y-2">
+      {/* 头部 */}
+      <div className="flex items-start gap-2">
+        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <Icon className="h-4 w-4 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-sm truncate">{entity.name}</h4>
+          <p className="text-xs text-muted-foreground">{catConfig.label}</p>
+        </div>
+      </div>
+
+      {/* 内容摘要 */}
+      {entity.content && (
+        <p className="text-xs text-muted-foreground line-clamp-3">
+          {entity.content}
+        </p>
+      )}
+
+      {/* 标签 */}
+      {entity.tags && entity.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {entity.tags.slice(0, 4).map((tag) => (
+            <Badge key={tag} variant="secondary" className="text-[10px]">
+              {tag}
+            </Badge>
+          ))}
+          {entity.tags.length > 4 && (
+            <Badge variant="outline" className="text-[10px]">
+              +{entity.tags.length - 4}
+            </Badge>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
