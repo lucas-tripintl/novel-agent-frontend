@@ -88,6 +88,11 @@ const analysisNavItems = [
 
 const creationNavItems = [
   {
+    title: "模式提取",
+    icon: Sparkles,
+    href: "/elements/extract",
+  },
+  {
     title: "元素库",
     icon: Library,
     href: "/elements",
@@ -97,7 +102,6 @@ const creationNavItems = [
     icon: Blend,
     href: "/fusion",
   },
-
 ];
 
 export function AppSidebar() {

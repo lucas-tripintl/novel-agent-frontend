@@ -309,67 +309,67 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
           </div>
         </div>
 
-        {/* 标签编辑区 */}
-        <div className="px-6 py-3 border-b border-border/30 bg-muted/30">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-muted-foreground">标签:</span>
-            {tags.map((tag) => (
-              <Badge
-                key={tag}
-                variant="secondary"
-                className="gap-1 pr-1"
-              >
-                {getTagLabel(tag, getLabel, getFieldValueLabel)}
-                <button
-                  onClick={() => handleRemoveTag(tag)}
-                  className="ml-1 rounded-full hover:bg-destructive/20 p-0.5"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
-            <div className="flex items-center gap-1">
-              <Input
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
-                placeholder="添加标签..."
-                className="h-6 w-24 text-xs"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={handleAddTag}
-              >
-                <Plus className="h-3 w-3" />
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* 属性编辑区 */}
-        {Object.keys(attributes).length > 0 && (
-          <div className="px-6 py-4 border-b border-border/30 space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">属性</span>
-              <Badge variant="outline" className="ml-auto font-mono text-[10px]">
-                {Object.keys(attributes).length} 项
-              </Badge>
-            </div>
-            <AttributesEditor
-              entityType={entity.entity_type}
-              attributes={attributes}
-              onChange={setAttributes}
-              getLabel={getLabel}
-              getFieldValueLabel={getFieldValueLabel}
-            />
-          </div>
-        )}
-
-        {/* 内容编辑区 */}
-        <div className="flex-1 min-h-0 bg-background">
+        <div className="flex-1 min-h-0">
           <ScrollArea className="h-full">
+            {/* 标签编辑区 */}
+            <div className="px-6 py-3 border-b border-border/30 bg-muted/30">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-muted-foreground">标签:</span>
+                {tags.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant="secondary"
+                    className="gap-1 pr-1"
+                  >
+                    {getTagLabel(tag, getLabel, getFieldValueLabel)}
+                    <button
+                      onClick={() => handleRemoveTag(tag)}
+                      className="ml-1 rounded-full hover:bg-destructive/20 p-0.5"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+                <div className="flex items-center gap-1">
+                  <Input
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
+                    placeholder="添加标签..."
+                    className="h-6 w-24 text-xs"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={handleAddTag}
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* 属性编辑区 */}
+            {Object.keys(attributes).length > 0 && (
+              <div className="px-6 py-4 border-b border-border/30 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">属性</span>
+                  <Badge variant="outline" className="ml-auto font-mono text-[10px]">
+                    {Object.keys(attributes).length} 项
+                  </Badge>
+                </div>
+                <AttributesEditor
+                  entityType={entity.entity_type}
+                  attributes={attributes}
+                  onChange={setAttributes}
+                  getLabel={getLabel}
+                  getFieldValueLabel={getFieldValueLabel}
+                />
+              </div>
+            )}
+
+            {/* 内容编辑区 */}
             <div className="p-6 pt-4">
               {parsedContent.isJson ? (
                 <JsonVisualEditor
@@ -612,6 +612,160 @@ const attributeFieldConfig: Record<string, {
   faction: { label: "所属阵营", type: "text" },
 };
 
+interface AttributeItemProps {
+  attrKey: string;
+  value: unknown;
+  config?: { label: string; type: string; enumName?: string };
+  formatAttrName: (key: string) => string;
+  getDisplayValue: (key: string, value: unknown) => string;
+  onUpdate: (key: string, value: unknown) => void;
+  entityType?: string;
+}
+
+function AttributeItem({
+  attrKey,
+  value,
+  config,
+  formatAttrName,
+  getDisplayValue,
+  onUpdate,
+}: AttributeItemProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(String(value ?? ""));
+
+  // 数组类型
+  if (config?.type === "array" || Array.isArray(value)) {
+    const arrayValue = Array.isArray(value) ? value : [];
+    return (
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-muted-foreground">
+          {formatAttrName(attrKey)}
+        </Label>
+        <div className="flex flex-wrap gap-2">
+          {arrayValue.map((item, idx) => (
+            <Badge
+              key={idx}
+              variant="secondary"
+              className="gap-1 pr-1 text-sm py-1 whitespace-normal text-left h-auto"
+            >
+              <span className="break-all">{String(item)}</span>
+              <button
+                onClick={() => {
+                  const newArr = arrayValue.filter((_, i) => i !== idx);
+                  onUpdate(attrKey, newArr);
+                }}
+                className="ml-1 rounded-full hover:bg-destructive/20 p-0.5 shrink-0"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+          <div className="flex items-center gap-1">
+            <Input
+              placeholder="添加..."
+              className="h-8 w-32 text-sm"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const target = e.target as HTMLInputElement;
+                  if (target.value.trim()) {
+                    onUpdate(attrKey, [...arrayValue, target.value.trim()]);
+                    target.value = "";
+                  }
+                }
+              }}
+            />
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 下拉选择类型 (只读/系统分析)
+  if (config?.type === "select") {
+    return (
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-muted-foreground">
+          {formatAttrName(attrKey)}
+        </Label>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-sm py-1">
+            {getDisplayValue(attrKey, value)}
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            (由系统分析设定)
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // 文本类型: 读写分离
+  return (
+    <div className="space-y-2 group">
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-medium text-muted-foreground">
+          {formatAttrName(attrKey)}
+        </Label>
+        {!isEditing && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={() => {
+              setEditValue(String(value ?? ""));
+              setIsEditing(true);
+            }}
+          >
+            <Edit3 className="h-3 w-3" />
+          </Button>
+        )}
+      </div>
+
+      {isEditing ? (
+        <div className="space-y-2">
+          <Textarea
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            className="text-base min-h-[80px]"
+            autoFocus
+          />
+          <div className="flex items-center gap-2 justify-end">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setIsEditing(false)}
+            >
+              取消
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                onUpdate(attrKey, editValue);
+                setIsEditing(false);
+              }}
+            >
+              确认
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div
+          className="p-3 bg-muted/20 rounded-md text-sm cursor-text hover:bg-muted/40 transition-colors min-h-[40px] whitespace-pre-wrap break-words"
+          onClick={() => {
+            setEditValue(String(value ?? ""));
+            setIsEditing(true);
+          }}
+        >
+          {String(value ?? "") || <span className="text-muted-foreground italic">点击编辑...</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface AttributesEditorProps {
   entityType: string;
   attributes: Record<string, unknown>;
@@ -632,10 +786,15 @@ function AttributesEditor({
     onChange({ ...attributes, [key]: value });
   };
 
-  // 格式化属性名
   const formatAttrName = (key: string) => {
     const config = attributeFieldConfig[key];
     if (config) return config.label;
+
+    // 尝试从枚举获取翻译
+    if (entityType === "character") {
+      const label = getFieldValueLabel("character_attributes", key);
+      if (label !== key) return label;
+    }
     // 处理特殊字段名
     const specialLabels: Record<string, string> = {
       gf_type: "金手指类型",
@@ -687,89 +846,25 @@ function AttributesEditor({
   };
 
   return (
-    <div className="space-y-4">
-      {Object.entries(attributes).map(([key, value]) => {
-        const config = attributeFieldConfig[key];
+    <div className="space-y-6">
+      {Object.entries(attributes)
+        .filter(([key]) => key !== 'description') // 过滤掉 description
+        .map(([key, value]) => {
+          const config = attributeFieldConfig[key];
 
-        // 数组类型
-        if (config?.type === "array" || Array.isArray(value)) {
-          const arrayValue = Array.isArray(value) ? value : [];
           return (
-            <div key={key} className="space-y-2">
-              <Label className="text-sm font-medium text-muted-foreground">
-                {formatAttrName(key)}
-              </Label>
-              <div className="flex flex-wrap gap-2">
-                {arrayValue.map((item, idx) => (
-                  <Badge
-                    key={idx}
-                    variant="secondary"
-                    className="gap-1 pr-1 text-sm py-1"
-                  >
-                    {String(item)}
-                    <button
-                      onClick={() => {
-                        const newArr = arrayValue.filter((_, i) => i !== idx);
-                        updateAttribute(key, newArr);
-                      }}
-                      className="ml-1 rounded-full hover:bg-destructive/20 p-0.5"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-                <Input
-                  placeholder="添加..."
-                  className="h-8 w-24 text-sm"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      const target = e.target as HTMLInputElement;
-                      if (target.value.trim()) {
-                        updateAttribute(key, [...arrayValue, target.value.trim()]);
-                        target.value = "";
-                      }
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          );
-        }
-
-        // 下拉选择类型 - 显示为只读，因为枚举值需要从后端获取
-        if (config?.type === "select") {
-          return (
-            <div key={key} className="space-y-2">
-              <Label className="text-sm font-medium text-muted-foreground">
-                {formatAttrName(key)}
-              </Label>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-sm py-1">
-                  {getDisplayValue(key, value)}
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  (由系统分析设定)
-                </span>
-              </div>
-            </div>
-          );
-        }
-
-        // 文本类型
-        return (
-          <div key={key} className="space-y-2">
-            <Label className="text-sm font-medium text-muted-foreground">
-              {formatAttrName(key)}
-            </Label>
-            <Input
-              value={String(value ?? "")}
-              onChange={(e) => updateAttribute(key, e.target.value)}
-              className="text-base"
-              placeholder={`输入${formatAttrName(key)}...`}
+            <AttributeItem
+              key={key}
+              attrKey={key}
+              value={value}
+              config={config}
+              formatAttrName={formatAttrName}
+              getDisplayValue={getDisplayValue}
+              onUpdate={updateAttribute}
+              entityType={entityType}
             />
-          </div>
-        );
-      })}
+          );
+        })}
     </div>
   );
 }

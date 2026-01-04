@@ -121,7 +121,7 @@ export function ConfigStep({
 
   // 分析类型选择
   const [selectedTypes, setSelectedTypes] = useState<Set<AnalysisType>>(
-    new Set(["entity_extraction"])
+    new Set(["golden_opening"])
   );
 
   // 风格分析（独立控制）

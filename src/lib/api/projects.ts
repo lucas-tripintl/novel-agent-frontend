@@ -97,6 +97,12 @@ export async function analyzeProject(
   );
 }
 
+export async function extractPatterns(projectId: string) {
+  return apiClient.post<SuccessResponse<TaskCreateResponse>>(
+    `/projects/${projectId}/extract-patterns`
+  );
+}
+
 export { type AnalysisType };
 
 export async function synthesizeWorldview(

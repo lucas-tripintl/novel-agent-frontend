@@ -54,7 +54,7 @@ export function NovelFilter({
 
   const onSelectionChange = useGlobalStore
     ? storeSetSelected
-    : (externalOnSelectionChange ?? (() => {}));
+    : (externalOnSelectionChange ?? (() => { }));
 
   // 将项目列表转换为 novels 格式
   const items = data?.items;
@@ -102,28 +102,31 @@ export function NovelFilter({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-[200px] justify-center gap-2 bg-card/50 border-border/50 hover:bg-accent/50",
+            "w-[200px] justify-between gap-2 bg-card/50 border-border/50 hover:bg-accent/50",
             className
           )}
         >
           {selectedNovel ? (
-            <>
+            <div className="flex items-center gap-2 truncate">
               <div
                 className="h-2.5 w-2.5 rounded-full shrink-0"
                 style={{ backgroundColor: selectedNovel.color }}
               />
-              <span className="truncate max-w-[140px]">{selectedNovel.title}</span>
-            </>
+              <span className="truncate">{selectedNovel.title}</span>
+            </div>
           ) : (
-            <>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">选择小说</span>
-            </>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <BookOpen className="h-4 w-4" />
+              <span>选择小说</span>
+            </div>
           )}
-          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50 ml-auto" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[220px] p-0" align="center">
+      <PopoverContent
+        className="w-[--radix-popover-trigger-width] p-0 min-w-[200px]"
+        align="start"
+      >
         <Command>
           <CommandInput placeholder="搜索小说..." className="h-9" />
           <CommandList>

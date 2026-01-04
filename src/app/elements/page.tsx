@@ -21,7 +21,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { Library, Blend } from "lucide-react";
+import { Library, Blend, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { NovelFilter } from "@/components/common/novel-filter";
@@ -216,14 +216,16 @@ export default function ElementsPage() {
     <MainLayout>
       <div className="space-y-6">
         {/* 标题 */}
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Library className="h-6 w-6 text-primary" />
-            元素库
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            从已分析作品中提取的抽象模式，可用于融合创作
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+              <Library className="h-6 w-6 text-primary" />
+              元素库
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              从已分析作品中提取的抽象模式，可用于融合创作
+            </p>
+          </div>
         </div>
 
         {/* 筛选栏 */}
