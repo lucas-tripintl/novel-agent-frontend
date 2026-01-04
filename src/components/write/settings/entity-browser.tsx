@@ -6,7 +6,9 @@ import {
   elementCategories,
   groupEntitiesByCategory,
   getCategoryConfig,
+  getEntityTypeLabel,
 } from "@/hooks/use-project-elements";
+import { useEnumStore } from "@/stores/enum-store";
 import { useWritingStore, useWritingMode, useEntityEditing } from "@/stores/writing-store";
 import type { EntityRead, EntityType } from "@/types/api";
 import type { SelectedEntity } from "@/types/writing";
@@ -77,6 +79,19 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
   const mode = useWritingMode();
   const { selectedEntities, addEntity, removeEntity } = useWritingStore();
   const { setEditingEntity } = useEntityEditing();
+  // 订阅 loaded 状态确保枚举加载后重渲染
+  const enumsLoaded = useEnumStore((state) => state.loaded);
+  const getLabel = useEnumStore((state) => state.getLabel);
+
+  // 获取实体类型的本地化标签
+  const getTypeLabel = (type: EntityType) => {
+    const enumLabel = getLabel("EntityType", type);
+    // 如果枚举返回原值，使用静态配置
+    if (enumLabel === type) {
+      return getCategoryConfig(type).label;
+    }
+    return enumLabel;
+  };
 
   const entities = data?.items ?? [];
 
@@ -194,7 +209,7 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
                           <Icon className="h-3.5 w-3.5 text-primary" />
                         </div>
                         <span className="text-sm font-medium">
-                          {category.label}
+                          {getTypeLabel(category.type)}
                         </span>
                         <Badge
                           variant="outline"
@@ -326,6 +341,15 @@ interface EntityPreviewProps {
 function EntityPreview({ entity, onEdit }: EntityPreviewProps) {
   const catConfig = getCategoryConfig(entity.entity_type);
   const Icon = iconMap[catConfig.icon] || Circle;
+  // 订阅 loaded 状态确保枚举加载后重渲染
+  const enumsLoaded = useEnumStore((state) => state.loaded);
+  const getLabel = useEnumStore((state) => state.getLabel);
+
+  // 获取实体类型的本地化标签
+  const typeLabel = (() => {
+    const enumLabel = getLabel("EntityType", entity.entity_type);
+    return enumLabel === entity.entity_type ? catConfig.label : enumLabel;
+  })();
 
   return (
     <div className="space-y-2">
@@ -336,7 +360,7 @@ function EntityPreview({ entity, onEdit }: EntityPreviewProps) {
         </div>
         <div className="flex-1 min-w-0">
           <h4 className="font-semibold text-sm truncate">{entity.name}</h4>
-          <p className="text-xs text-muted-foreground">{catConfig.label}</p>
+          <p className="text-xs text-muted-foreground">{typeLabel}</p>
         </div>
       </div>
 

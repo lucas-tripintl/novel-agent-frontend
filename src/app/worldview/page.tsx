@@ -35,6 +35,7 @@ import { useState, useMemo } from "react";
 import { useCrossProjectMultiTypeEntities } from "@/hooks/use-analysis-results";
 import { useSelectedProjectId } from "@/stores/project-selection-store";
 import { getProjectColor } from "@/hooks/use-projects";
+import { useEnumStore } from "@/stores/enum-store";
 import type { EntityType, EntityRead } from "@/types/api";
 
 // 世界观相关的实体类型
@@ -111,6 +112,9 @@ export default function WorldviewPage() {
   // 使用全局项目选择状态
   const selectedProjectId = useSelectedProjectId();
   const [searchQuery, setSearchQuery] = useState("");
+  // 订阅 loaded 状态确保枚举加载后重渲染
+  const enumsLoaded = useEnumStore((state) => state.loaded);
+  const getLabel = useEnumStore((state) => state.getLabel);
 
   // 获取多种类型的实体（使用新的跨项目 API）
   const { entitiesByType, isLoading, error } = useCrossProjectMultiTypeEntities(
@@ -280,7 +284,7 @@ export default function WorldviewPage() {
                                         color: projectColor,
                                       }}
                                     >
-                                      {entity.tags[0] || entity.entity_type}
+                                      {getLabel("EntityType", entity.entity_type)}
                                     </Badge>
                                   </div>
                                 </CardHeader>
@@ -322,7 +326,7 @@ export default function WorldviewPage() {
                                     style={{ backgroundColor: projectColor }}
                                   />
                                   <span className="text-xs text-muted-foreground">
-                                    {entity.source_type === "extracted" ? "AI 提取" : "手动添加"}
+                                    {getLabel("SourceType", entity.source_type)}
                                   </span>
                                 </div>
                               </div>

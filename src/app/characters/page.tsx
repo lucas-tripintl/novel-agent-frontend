@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { useCrossProjectEntities } from "@/hooks/use-analysis-results";
 import { useSelectedProjectId } from "@/stores/project-selection-store";
 import { getProjectColor } from "@/hooks/use-projects";
+import { useEnumStore } from "@/stores/enum-store";
 import type { EntityRead } from "@/types/api";
 
 // 角色数据结构（从 API 实体解析）
@@ -121,6 +122,15 @@ export default function CharactersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  const getLabel = useEnumStore((state) => state.getLabel);
+
+  // 获取角色定位的本地化标签
+  const getRoleLabel = (role: string) => {
+    // 如果已经是中文（老数据），直接返回
+    if (/[\u4e00-\u9fa5]/.test(role)) return role;
+    // 否则从枚举获取
+    return getLabel("CharacterRole", role);
+  };
 
   // 获取角色实体（使用新的跨项目 API）
   const { data, isLoading, error } = useCrossProjectEntities(
@@ -294,10 +304,10 @@ export default function CharactersPage() {
                     <div className="flex items-center justify-between">
                       <Badge
                         variant="outline"
-                        className={cn("text-xs", roleColors[char.role] || roleColors["配角"])}
+                        className={cn("text-xs", roleColors[char.role] || roleColors["supporting"])}
                       >
                         <RoleIcon className="h-3 w-3 mr-1" />
-                        {char.role}
+                        {getRoleLabel(char.role)}
                       </Badge>
                       {char.powerLevel && (
                         <Badge variant="secondary" className="text-xs">
@@ -361,10 +371,10 @@ export default function CharactersPage() {
                         )}
                         <Badge
                           variant="outline"
-                          className={cn("text-xs", roleColors[char.role] || roleColors["配角"])}
+                          className={cn("text-xs", roleColors[char.role] || roleColors["supporting"])}
                         >
                           <RoleIcon className="h-3 w-3 mr-1" />
-                          {char.role}
+                          {getRoleLabel(char.role)}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground truncate">
@@ -443,9 +453,9 @@ export default function CharactersPage() {
                         )}
                         <Badge
                           variant="outline"
-                          className={cn("text-xs", roleColors[selectedCharacter.role] || roleColors["配角"])}
+                          className={cn("text-xs", roleColors[selectedCharacter.role] || roleColors["supporting"])}
                         >
-                          {selectedCharacter.role}
+                          {getRoleLabel(selectedCharacter.role)}
                         </Badge>
                       </DialogDescription>
                     </div>

@@ -14,6 +14,7 @@ import {
   groupEntitiesByCategory,
   getCategoryConfig,
 } from "@/hooks/use-project-elements";
+import { useEnumStore } from "@/stores/enum-store";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -530,6 +531,15 @@ function CategoryAccordionItem({
   const Icon = iconMap[category.icon] || Circle;
   const categoryAllSelected = isAllSelected(projectId, entities);
   const categoryPartiallySelected = isPartiallySelected(projectId, entities);
+  // 订阅 loaded 状态确保枚举加载后重渲染
+  const enumsLoaded = useEnumStore((state) => state.loaded);
+  const getLabel = useEnumStore((state) => state.getLabel);
+
+  // 获取实体类型的本地化标签
+  const typeLabel = (() => {
+    const enumLabel = getLabel("EntityType", category.type);
+    return enumLabel === category.type ? category.label : enumLabel;
+  })();
 
   // 计算分类选中数
   const selectedInCategory = useMemo(() => {
@@ -549,7 +559,7 @@ function CategoryAccordionItem({
             <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center">
               <Icon className="h-3.5 w-3.5 text-primary" />
             </div>
-            <span className="text-sm font-medium">{category.label}</span>
+            <span className="text-sm font-medium">{typeLabel}</span>
             {selectedInCategory > 0 && (
               <Badge variant="secondary" className="font-mono text-[10px] h-5">
                 {selectedInCategory}
@@ -725,6 +735,15 @@ interface ElementPreviewProps {
 function ElementPreview({ entity }: ElementPreviewProps) {
   const catConfig = getCategoryConfig(entity.entity_type);
   const Icon = iconMap[catConfig.icon] || Circle;
+  // 订阅 loaded 状态确保枚举加载后重渲染
+  const enumsLoaded = useEnumStore((state) => state.loaded);
+  const getLabel = useEnumStore((state) => state.getLabel);
+
+  // 获取实体类型的本地化标签
+  const typeLabel = (() => {
+    const enumLabel = getLabel("EntityType", entity.entity_type);
+    return enumLabel === entity.entity_type ? catConfig.label : enumLabel;
+  })();
 
   return (
     <div className="space-y-3">
@@ -735,7 +754,7 @@ function ElementPreview({ entity }: ElementPreviewProps) {
         </div>
         <div className="flex-1 min-w-0">
           <h4 className="font-semibold truncate">{entity.name}</h4>
-          <p className="text-xs text-muted-foreground">{catConfig.label}</p>
+          <p className="text-xs text-muted-foreground">{typeLabel}</p>
         </div>
       </div>
 
@@ -775,18 +794,10 @@ function ElementPreview({ entity }: ElementPreviewProps) {
           variant={entity.status === "confirmed" ? "default" : "secondary"}
           className="text-[10px]"
         >
-          {entity.status === "confirmed"
-            ? "已确认"
-            : entity.status === "pending"
-            ? "待确认"
-            : "已拒绝"}
+          {getLabel("EntityStatus", entity.status)}
         </Badge>
         <Badge variant="outline" className="text-[10px]">
-          {entity.source_type === "extracted"
-            ? "自动提取"
-            : entity.source_type === "manual"
-            ? "手动添加"
-            : "合并"}
+          {getLabel("SourceType", entity.source_type)}
         </Badge>
       </div>
     </div>

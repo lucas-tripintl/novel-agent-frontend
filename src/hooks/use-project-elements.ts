@@ -5,6 +5,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { listEntities } from "@/lib/api/projects";
+import { useEnumStore } from "@/stores/enum-store";
 import type { EntityRead, EntityType, ProjectList } from "@/types/api";
 import type { ProjectElementStats, ElementCategoryConfig } from "@/types/fusion";
 
@@ -119,7 +120,7 @@ export function buildProjectStats(
 }
 
 /**
- * 获取分类配置
+ * 获取分类配置（静态，用于 fallback）
  */
 export function getCategoryConfig(type: EntityType): ElementCategoryConfig {
   return (
@@ -129,5 +130,30 @@ export function getCategoryConfig(type: EntityType): ElementCategoryConfig {
       icon: "Circle",
     }
   );
+}
+
+/**
+ * 获取实体类型标签（优先从枚举获取）
+ */
+export function getEntityTypeLabel(type: EntityType): string {
+  const enumLabel = useEnumStore.getState().getLabel("EntityType", type);
+  // 如果枚举返回原值，使用静态配置
+  if (enumLabel === type) {
+    return getCategoryConfig(type).label;
+  }
+  return enumLabel;
+}
+
+/**
+ * Hook: 获取实体类型标签
+ */
+export function useEntityTypeLabel(type: EntityType): string {
+  const getLabel = useEnumStore((state) => state.getLabel);
+  const enumLabel = getLabel("EntityType", type);
+  // 如果枚举返回原值，使用静态配置
+  if (enumLabel === type) {
+    return getCategoryConfig(type).label;
+  }
+  return enumLabel;
 }
 
