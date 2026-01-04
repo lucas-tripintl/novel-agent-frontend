@@ -141,6 +141,9 @@ export const useWritingStore = create<WritingState>()(
           isDirty: false,
           messages: [],
           streamingBuffer: "",
+          // 切换项目/章节时清空选中的设定
+          selectedEntities: [],
+          autoSelectedEntities: [],
         }),
 
       setMode: (mode) => {
