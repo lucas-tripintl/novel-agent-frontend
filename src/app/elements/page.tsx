@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Library, Blend, Search, RefreshCw, AlertCircle, Eye } from "lucide-react";
+import { Library, Blend, Search, AlertCircle, Eye } from "lucide-react";
 import Link from "next/link";
 import { useState, useMemo, useCallback } from "react";
 import { usePatterns, PATTERN_TYPE_OPTIONS } from "@/hooks/use-patterns";
@@ -27,9 +27,11 @@ import type { EntityType } from "@/types/api";
 import { formatTimeAgo } from "@/lib/utils/time";
 import { PatternDetailDialog } from "@/components/elements/pattern-detail-dialog";
 import type { PatternRead } from "@/types/pattern";
+import { NovelFilter } from "@/components/common/novel-filter";
 
 export default function ElementsPage() {
   const [typeFilter, setTypeFilter] = useState<EntityType | "all">("all");
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedPattern, setSelectedPattern] = useState<PatternRead | null>(null);
@@ -56,6 +58,7 @@ export default function ElementsPage() {
   } = usePatterns({
     entity_type: typeFilter === "all" ? undefined : typeFilter,
     keyword: debouncedSearch || undefined,
+    source_project_id: selectedProjectId || undefined,
     limit: 50,
   });
 
@@ -83,17 +86,7 @@ export default function ElementsPage() {
               从已分析作品中提取的抽象模式，可用于融合创作
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching}
-          >
-            <RefreshCw
-              className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-            />
-            刷新
-          </Button>
+
         </div>
 
         {/* 筛选栏 */}
@@ -114,6 +107,14 @@ export default function ElementsPage() {
               ))}
             </SelectContent>
           </Select>
+
+          {/* 项目筛选 */}
+          <NovelFilter
+            selectedId={selectedProjectId}
+            onSelectionChange={setSelectedProjectId}
+            useGlobalStore={false}
+            className="w-48"
+          />
 
           {/* 搜索 */}
           <div className="flex-1 max-w-sm relative">
@@ -252,22 +253,23 @@ export default function ElementsPage() {
             <CardContent className="flex flex-col items-center justify-center py-16">
               <Library className="h-12 w-12 text-muted-foreground/50 mb-4" />
               <h3 className="text-lg font-semibold mb-2">
-                {searchQuery || typeFilter !== "all"
+                {searchQuery || typeFilter !== "all" || selectedProjectId
                   ? "没有找到匹配的模式"
                   : "暂无抽象模式"}
               </h3>
               <p className="text-muted-foreground text-center max-w-sm">
-                {searchQuery || typeFilter !== "all"
+                {searchQuery || typeFilter !== "all" || selectedProjectId
                   ? "尝试调整筛选条件"
                   : "分析更多作品并提取模式后，将在此处显示"}
               </p>
-              {(searchQuery || typeFilter !== "all") && (
+              {(searchQuery || typeFilter !== "all" || selectedProjectId) && (
                 <Button
                   variant="outline"
                   className="mt-4"
                   onClick={() => {
                     setSearchQuery("");
                     setTypeFilter("all");
+                    setSelectedProjectId(null);
                   }}
                 >
                   清除筛选

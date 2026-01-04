@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Blend, Plus, ChevronRight, RefreshCw, AlertCircle } from "lucide-react";
+import { Blend, Plus, ChevronRight, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { FusionStatusBadge } from "@/components/common/status-badge";
 import { useFusionTasks, useFusionModes } from "@/hooks/use-fusion";
@@ -46,17 +46,6 @@ export default function FusionPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              disabled={isFetching}
-            >
-              <RefreshCw
-                className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-              />
-              刷新
-            </Button>
             <Button asChild className="glow-green">
               <Link href="/fusion/create">
                 <Plus className="mr-2 h-4 w-4" />

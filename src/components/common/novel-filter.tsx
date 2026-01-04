@@ -134,6 +134,23 @@ export function NovelFilter({
               {novels.length === 0 ? "暂无项目，请先导入小说" : "未找到小说"}
             </CommandEmpty>
             <CommandGroup>
+              <CommandItem
+                value="all_novels_clear_selection"
+                onSelect={() => {
+                  onSelectionChange(null);
+                  setOpen(false);
+                }}
+                className="cursor-pointer font-medium text-primary"
+              >
+                <BookOpen className="mr-2 h-4 w-4" />
+                全部作品
+                <Check
+                  className={cn(
+                    "ml-auto h-4 w-4 shrink-0",
+                    selectedId === null ? "opacity-100" : "opacity-0"
+                  )}
+                />
+              </CommandItem>
               {novels.map((novel) => (
                 <CommandItem
                   key={novel.id}

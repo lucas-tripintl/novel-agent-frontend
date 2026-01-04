@@ -21,6 +21,8 @@ export interface PatternsParams {
   entity_type?: EntityType;
   /** 名称关键字 */
   keyword?: string;
+  /** 来源项目 ID */
+  source_project_id?: string;
   /** 跳过数量 */
   skip?: number;
   /** 返回数量限制 (1-100) */
@@ -41,6 +43,7 @@ export async function listPatterns(params: PatternsParams = {}) {
     params: {
       entity_type: params.entity_type,
       keyword: params.keyword,
+      source_project_id: params.source_project_id,
       skip: params.skip,
       limit: params.limit,
       order_by: params.order_by,
