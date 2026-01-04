@@ -159,15 +159,15 @@ export function AppSidebar() {
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-medium text-muted-foreground">
-            设定集
+            创意工坊
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {analysisNavItems.map((item) => (
+              {creationNavItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname === item.href}
+                    isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
                     tooltip={item.title}
                     className="transition-colors hover:bg-accent/50"
                   >
@@ -184,15 +184,15 @@ export function AppSidebar() {
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-medium text-muted-foreground">
-            创作工坊
+            设定集
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {creationNavItems.map((item) => (
+              {analysisNavItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
+                    isActive={pathname === item.href}
                     tooltip={item.title}
                     className="transition-colors hover:bg-accent/50"
                   >

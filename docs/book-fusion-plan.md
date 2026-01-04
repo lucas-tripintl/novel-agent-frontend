@@ -54,7 +54,7 @@ const analysisNavItems = [
   { title: "关系网络", icon: Network, href: "/relations" },
 ];
 
-// 新增：创作工坊
+// 新增：创意工坊
 const creationNavItems = [
   { title: "元素融合", icon: Blend, href: "/fusion" },
   { title: "元素库", icon: Library, href: "/elements" },
