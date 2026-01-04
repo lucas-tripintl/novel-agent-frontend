@@ -55,3 +55,20 @@ export async function listPatterns(params: PatternsParams = {}) {
 export async function getPattern(patternId: string) {
   return apiClient.get<PatternRead>(`/patterns/${patternId}`);
 }
+
+/**
+ * 更新抽象模式数据
+ */
+export interface PatternUpdateData {
+  name?: string;
+  content?: string;
+  tags?: string[];
+  attributes?: Record<string, unknown>;
+}
+
+export async function updatePattern(
+  patternId: string,
+  data: PatternUpdateData
+) {
+  return apiClient.patch<PatternRead>(`/patterns/${patternId}`, data);
+}

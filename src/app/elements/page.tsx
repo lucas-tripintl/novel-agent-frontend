@@ -18,18 +18,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Library, Blend, Search, RefreshCw, AlertCircle } from "lucide-react";
+import { Library, Blend, Search, RefreshCw, AlertCircle, Eye } from "lucide-react";
 import Link from "next/link";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { usePatterns, PATTERN_TYPE_OPTIONS } from "@/hooks/use-patterns";
 import { getPatternTypeLabel } from "@/types/pattern";
 import type { EntityType } from "@/types/api";
 import { formatTimeAgo } from "@/lib/utils/time";
+import { PatternDetailDialog } from "@/components/elements/pattern-detail-dialog";
+import type { PatternRead } from "@/types/pattern";
 
 export default function ElementsPage() {
   const [typeFilter, setTypeFilter] = useState<EntityType | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedPattern, setSelectedPattern] = useState<PatternRead | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  const handleViewPattern = useCallback((pattern: PatternRead) => {
+    setSelectedPattern(pattern);
+    setIsDetailOpen(true);
+  }, []);
+
+  const handleCloseDetail = useCallback(() => {
+    setIsDetailOpen(false);
+    setSelectedPattern(null);
+  }, []);
 
   // 获取抽象模式列表
   const {
@@ -208,20 +222,24 @@ export default function ElementsPage() {
                     </div>
                   )}
 
-                  {/* 来源信息 */}
-                  {pattern.source_entity_ids &&
-                    pattern.source_entity_ids.length > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        来自 {pattern.source_entity_ids.length} 个实例
-                      </p>
-                    )}
-
-                  <Button variant="outline" size="sm" className="w-full" asChild>
-                    <Link href={`/fusion/create?elements=${pattern.id}`}>
-                      <Blend className="mr-2 h-4 w-4" />
-                      用于融合
-                    </Link>
-                  </Button>
+                  {/* 操作按钮 */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleViewPattern(pattern)}
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      查看
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1" asChild>
+                      <Link href={`/fusion/create?elements=${pattern.id}`}>
+                        <Blend className="mr-2 h-4 w-4" />
+                        融合
+                      </Link>
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -259,6 +277,19 @@ export default function ElementsPage() {
           </Card>
         )}
       </div>
+
+      {/* Pattern 详情对话框 */}
+      <PatternDetailDialog
+        pattern={selectedPattern}
+        open={isDetailOpen}
+        onOpenChange={(open) => {
+          if (!open) handleCloseDetail();
+        }}
+        onSave={() => {
+          // 保存后刷新列表
+          refetch();
+        }}
+      />
     </MainLayout>
   );
 }
