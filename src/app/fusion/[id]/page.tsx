@@ -24,9 +24,16 @@ import {
   Check,
   AlertCircle,
   RefreshCw,
+  Eye,
+  Globe,
+  BookOpen,
+  User,
+  TrendingUp,
+  Lightbulb,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { FusionStatusBadge } from "@/components/common/status-badge";
 import { cn } from "@/lib/utils";
@@ -39,13 +46,33 @@ import {
 import { formatTimeAgo } from "@/lib/utils/time";
 import type { FusionCandidateRead } from "@/types/fusion";
 
+/** 简易 Markdown 渲染组件 */
+function MarkdownContent({ content }: { content: string }) {
+  // 简单处理：将 **text** 转为粗体，将换行转为 <br>，将 \n\n 转为段落
+  const html = content
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/\\n/g, "\n")
+    .split("\n\n")
+    .map((p) => `<p>${p.replace(/\n/g, "<br/>")}</p>`)
+    .join("");
+
+  return (
+    <div
+      className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
+
 export default function FusionDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const taskId = params.id as string;
   const [selectedCandidate, setSelectedCandidate] = useState<number | null>(null);
   const [showBuildDialog, setShowBuildDialog] = useState(false);
   const [projectName, setProjectName] = useState("");
+  // 候选详情对话框状态
+  const [detailCandidate, setDetailCandidate] = useState<FusionCandidateRead | null>(null);
 
   // 获取任务详情
   const {
@@ -84,12 +111,8 @@ export default function FusionDetailPage() {
   // 创建项目
   const buildProject = useBuildFusionProject();
 
-  // 同步已选择的候选
-  useEffect(() => {
-    if (task?.selected_candidate_index !== null && task?.selected_candidate_index !== undefined) {
-      setSelectedCandidate(task.selected_candidate_index);
-    }
-  }, [task?.selected_candidate_index]);
+  // 计算实际的选中索引：优先使用本地状态，如果没有则使用后端返回的值
+  const effectiveSelectedCandidate = selectedCandidate ?? task?.selected_candidate_index ?? null;
 
   // 获取融合模式名称
   const getModeName = (mode: string) => {
@@ -99,12 +122,12 @@ export default function FusionDetailPage() {
 
   // 确认选择候选方案
   const handleSelectCandidate = async () => {
-    if (selectedCandidate === null) return;
+    if (effectiveSelectedCandidate === null) return;
 
     try {
       await selectCandidate.mutateAsync({
         taskId,
-        request: { candidate_index: selectedCandidate },
+        request: { candidate_index: effectiveSelectedCandidate },
       });
     } catch (error) {
       console.error("选择候选方案失败:", error);
@@ -311,12 +334,11 @@ export default function FusionDetailPage() {
                 <Card
                   key={candidate.id}
                   className={cn(
-                    "bg-card/50 transition-all cursor-pointer",
-                    selectedCandidate === index
+                    "bg-card/50 transition-all",
+                    effectiveSelectedCandidate === index
                       ? "border-primary ring-2 ring-primary/20"
                       : "border-border/50 hover:border-primary/30"
                   )}
-                  onClick={() => setSelectedCandidate(index)}
                 >
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -330,59 +352,89 @@ export default function FusionDetailPage() {
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground line-clamp-3">
                       {candidate.summary}
                     </p>
 
-                    <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">亮点</Label>
-                      <div className="flex flex-wrap gap-1">
-                        {candidate.highlights.map((h) => (
-                          <Badge key={h} variant="secondary" className="text-xs">
-                            {h}
-                          </Badge>
-                        ))}
+                    {/* 独特亮点 */}
+                    {candidate.unique_hooks && candidate.unique_hooks.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Lightbulb className="h-3 w-3" />
+                          独特亮点
+                        </Label>
+                        <ul className="text-xs text-muted-foreground space-y-1">
+                          {candidate.unique_hooks.slice(0, 2).map((h, i) => (
+                            <li key={i} className="line-clamp-1">• {h}</li>
+                          ))}
+                          {candidate.unique_hooks.length > 2 && (
+                            <li className="text-primary">+{candidate.unique_hooks.length - 2} 更多...</li>
+                          )}
+                        </ul>
                       </div>
-                    </div>
+                    )}
 
-                    <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">风险</Label>
-                      <div className="flex flex-wrap gap-1">
-                        {candidate.risks.map((r) => (
-                          <Badge
-                            key={r}
-                            variant="outline"
-                            className="text-xs text-amber-500 border-amber-500/30"
-                          >
-                            {r}
-                          </Badge>
-                        ))}
+                    {/* 风险提示 */}
+                    {candidate.risks && candidate.risks.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          风险提示
+                        </Label>
+                        <div className="flex flex-wrap gap-1">
+                          {candidate.risks.slice(0, 2).map((r, i) => (
+                            <Badge
+                              key={i}
+                              variant="outline"
+                              className="text-xs text-amber-500 border-amber-500/30 line-clamp-1 max-w-full"
+                            >
+                              {r.length > 20 ? r.slice(0, 20) + "..." : r}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
-                    <Button
-                      className={cn(
-                        "w-full",
-                        selectedCandidate === index && "glow-green"
-                      )}
-                      variant={selectedCandidate === index ? "default" : "outline"}
-                    >
-                      {selectedCandidate === index ? (
-                        <>
-                          <Check className="mr-2 h-4 w-4" />
-                          已选择
-                        </>
-                      ) : (
-                        "选择此方案"
-                      )}
-                    </Button>
+                    {/* 操作按钮 */}
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDetailCandidate(candidate);
+                        }}
+                      >
+                        <Eye className="mr-1 h-4 w-4" />
+                        查看详情
+                      </Button>
+                      <Button
+                        className={cn(
+                          "flex-1",
+                          effectiveSelectedCandidate === index && "glow-green"
+                        )}
+                        size="sm"
+                        variant={effectiveSelectedCandidate === index ? "default" : "outline"}
+                        onClick={() => setSelectedCandidate(index)}
+                      >
+                        {effectiveSelectedCandidate === index ? (
+                          <>
+                            <Check className="mr-1 h-4 w-4" />
+                            已选
+                          </>
+                        ) : (
+                          "选择"
+                        )}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
 
             {/* 确认按钮 */}
-            {selectedCandidate !== null && (
+            {effectiveSelectedCandidate !== null && (
               <div className="flex justify-end gap-4">
                 <Button
                   className="glow-green"
@@ -524,6 +576,140 @@ export default function FusionDetailPage() {
               </AlertDescription>
             </Alert>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* 候选详情对话框 */}
+      <Dialog open={!!detailCandidate} onOpenChange={(open) => !open && setDetailCandidate(null)}>
+        <DialogContent className="sm:max-w-[90vw] md:max-w-[85vw] lg:max-w-[1200px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogHeader className="px-6 py-4 border-b shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <Blend className="h-5 w-5 text-primary" />
+              {detailCandidate?.name}
+            </DialogTitle>
+            <DialogDescription className="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline" className="font-mono">
+                原创度 {detailCandidate?.originality_score}
+              </Badge>
+              <span className="text-muted-foreground line-clamp-2">{detailCandidate?.summary}</span>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="space-y-6 max-w-4xl mx-auto">
+              {/* 世界观设定 */}
+              <section>
+                <h3 className="text-base font-semibold flex items-center gap-2 mb-3">
+                  <Globe className="h-5 w-5 text-primary" />
+                  世界观设定
+                </h3>
+                <div className="bg-muted/30 rounded-lg p-4">
+                  {detailCandidate?.worldview_doc && (
+                    <MarkdownContent content={detailCandidate.worldview_doc} />
+                  )}
+                </div>
+              </section>
+
+              {/* 剧情大纲 */}
+              <section>
+                <h3 className="text-base font-semibold flex items-center gap-2 mb-3">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  剧情大纲
+                </h3>
+                <div className="bg-muted/30 rounded-lg p-4">
+                  {detailCandidate?.plot_doc && (
+                    <MarkdownContent content={detailCandidate.plot_doc} />
+                  )}
+                </div>
+              </section>
+
+              {/* 主角设定 */}
+              <section>
+                <h3 className="text-base font-semibold flex items-center gap-2 mb-3">
+                  <User className="h-5 w-5 text-primary" />
+                  主角设定
+                </h3>
+                <div className="bg-muted/30 rounded-lg p-4">
+                  {detailCandidate?.protagonist_doc && (
+                    <MarkdownContent content={detailCandidate.protagonist_doc} />
+                  )}
+                </div>
+              </section>
+
+              {/* 独特亮点 */}
+              <section>
+                <h3 className="text-base font-semibold flex items-center gap-2 mb-3">
+                  <Lightbulb className="h-5 w-5 text-primary" />
+                  独特亮点
+                </h3>
+                <div className="bg-muted/30 rounded-lg p-4">
+                  {detailCandidate?.unique_hooks && detailCandidate.unique_hooks.length > 0 && (
+                    <ul className="space-y-3">
+                      {detailCandidate.unique_hooks.map((hook, i) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <Badge variant="secondary" className="mt-0.5 shrink-0">
+                            {i + 1}
+                          </Badge>
+                          <span className="text-sm">{hook}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </section>
+
+              {/* 风险提示 */}
+              {detailCandidate?.risks && detailCandidate.risks.length > 0 && (
+                <section>
+                  <h3 className="text-base font-semibold flex items-center gap-2 mb-3 text-amber-500">
+                    <AlertTriangle className="h-5 w-5" />
+                    风险提示
+                  </h3>
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                    <ul className="space-y-2">
+                      {detailCandidate.risks.map((risk, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          <span className="text-amber-500 shrink-0">•</span>
+                          {risk}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </section>
+              )}
+
+              {/* 市场评估 */}
+              <section>
+                <h3 className="text-base font-semibold flex items-center gap-2 mb-3">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  市场评估
+                </h3>
+                <div className="bg-muted/30 rounded-lg p-4 space-y-4">
+                  {detailCandidate?.market_assessment && (
+                    <MarkdownContent content={detailCandidate.market_assessment} />
+                  )}
+                  {detailCandidate?.source_elements && detailCandidate.source_elements.length > 0 && (
+                    <div className="pt-3 border-t border-border/50">
+                      <Label className="text-xs text-muted-foreground mb-2 block">素材来源</Label>
+                      <div className="flex flex-wrap gap-1">
+                        {detailCandidate.source_elements.map((el, i) => (
+                          <Badge key={i} variant="outline" className="text-xs font-mono">
+                            {el}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <DialogFooter className="px-6 py-3 border-t shrink-0">
+            <Button variant="outline" onClick={() => setDetailCandidate(null)}>
+              关闭
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </MainLayout>

@@ -61,12 +61,22 @@ export interface FusionCandidateRead {
   id: string;
   name: string;
   summary: string;
-  settings: Record<string, unknown>;
-  source_elements: string[];
+  /** 世界观设定文档 (Markdown) */
+  worldview_doc: string;
+  /** 剧情大纲文档 (Markdown) */
+  plot_doc: string;
+  /** 主角设定文档 (Markdown) */
+  protagonist_doc: string;
+  /** 独特亮点列表 */
+  unique_hooks: string[];
+  /** 原创度评分 */
   originality_score: number;
+  /** 素材来源元素列表 */
+  source_elements: string[];
+  /** 市场评估 (Markdown) */
   market_assessment: string;
+  /** 风险点列表 */
   risks: string[];
-  highlights: string[];
 }
 
 /** 融合任务详情（API 返回） */
