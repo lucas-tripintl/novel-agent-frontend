@@ -186,11 +186,21 @@ export interface StyleRead {
 
 // ============ 分析请求 ============
 
+/** 分析类型 */
+export type AnalysisType =
+  | "entity_extraction"  // 实体提取（角色、地点）
+  | "golden_finger"      // 金手指识别
+  | "plotline"           // 剧情线分析
+  | "worldview"          // 世界观提取
+  | "cool_point"         // 爽点分析
+  | "technique"          // 写作技巧分析
+  | "golden_opening";    // 黄金三章分析（固定分析前3章）
+
 export interface AnalyzeRequest {
+  analysis_types: AnalysisType[];
   start_chapter?: number;
   end_chapter?: number;
   force?: boolean;
-  use_v2?: boolean;
 }
 
 export interface SynthesizeRequest {

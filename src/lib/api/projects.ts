@@ -16,6 +16,7 @@ import type {
   StyleRead,
   TaskCreateResponse,
   AnalyzeRequest,
+  AnalysisType,
   StyleAnalyzeRequest,
   SynthesizeRequest,
 } from "@/types/api";
@@ -83,18 +84,20 @@ export async function getChapter(projectId: string, chapterNumber: number) {
 
 export async function analyzeProject(
   projectId: string,
-  config: AnalyzeRequest = {}
+  config: AnalyzeRequest
 ) {
   return apiClient.post<SuccessResponse<TaskCreateResponse>>(
     `/projects/${projectId}/analyze`,
     {
+      analysis_types: config.analysis_types,
       start_chapter: config.start_chapter ?? 1,
       end_chapter: config.end_chapter,
       force: config.force ?? false,
-      use_v2: config.use_v2 ?? true,
     }
   );
 }
+
+export { type AnalysisType };
 
 export async function synthesizeWorldview(
   projectId: string,

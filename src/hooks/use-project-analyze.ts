@@ -2,9 +2,10 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { analyzeProject, analyzeStyle, synthesizeWorldview } from "@/lib/api/projects";
-import type { SuccessResponse, TaskCreateResponse } from "@/types/api";
+import type { SuccessResponse, TaskCreateResponse, AnalysisType } from "@/types/api";
 
 interface AnalyzeConfig {
+  analysisTypes: AnalysisType[];
   startChapter?: number;
   endChapter?: number;
   force?: boolean;
@@ -16,10 +17,10 @@ export function useProjectAnalyze(projectId: string) {
   return useMutation<SuccessResponse<TaskCreateResponse>, Error, AnalyzeConfig>({
     mutationFn: async (config) => {
       return analyzeProject(projectId, {
+        analysis_types: config.analysisTypes,
         start_chapter: config.startChapter,
         end_chapter: config.endChapter,
         force: config.force,
-        use_v2: true, // 固定使用 V2
       });
     },
     onSuccess: () => {

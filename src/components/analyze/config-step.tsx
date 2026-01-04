@@ -7,19 +7,88 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
-import { ChevronLeft, ChevronRight, Loader2, Users, Earth, Zap, GitBranch, Sparkles } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Users,
+  Earth,
+  Zap,
+  GitBranch,
+  Sparkles,
+  PenTool,
+  BookOpen,
+  Flame,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import type { AnalysisType } from "@/types/api";
+
+/** 分析项目配置 */
+interface AnalysisTypeConfig {
+  type: AnalysisType;
+  label: string;
+  description: string;
+  icon: React.ElementType;
+  fixedChapters?: number; // 如果设置，固定分析前 N 章
+}
+
+/** 所有可用的分析类型 */
+const ANALYSIS_TYPES: AnalysisTypeConfig[] = [
+  {
+    type: "entity_extraction",
+    label: "实体提取",
+    description: "角色/地点/势力/道具/功法等",
+    icon: Users,
+  },
+  {
+    type: "golden_finger",
+    label: "金手指识别",
+    description: "主角外挂能力识别与追踪",
+    icon: Zap,
+  },
+  {
+    type: "plotline",
+    label: "剧情线分析",
+    description: "冲突/转折/高潮识别",
+    icon: GitBranch,
+  },
+  {
+    type: "worldview",
+    label: "世界观提取",
+    description: "背景设定/力量体系/社会结构",
+    icon: Earth,
+  },
+  {
+    type: "cool_point",
+    label: "爽点分析",
+    description: "情绪高潮/爽点密度/节奏感",
+    icon: Flame,
+  },
+  {
+    type: "technique",
+    label: "写作技巧分析",
+    description: "叙事手法/文笔风格/描写技巧",
+    icon: PenTool,
+  },
+  {
+    type: "golden_opening",
+    label: "黄金三章分析",
+    description: "开篇前3章深度分析（固定范围）",
+    icon: BookOpen,
+    fixedChapters: 3,
+  },
+];
 
 export interface AnalyzeConfig {
   projectId: string;
   projectName: string;
   totalChapters: number;
+  analysisTypes: AnalysisType[];
   startChapter: number;
   endChapter: number;
-  enableEntityExtract: boolean;
-  enableGoldenFinger: boolean;
-  enablePlotline: boolean;
-  enableWorldviewSynthesize: boolean;
+  force: boolean;
+  // 保留风格分析（独立 API）
   enableStyleAnalyze: boolean;
   styleSampleChapters: number;
 }
@@ -45,42 +114,65 @@ export function ConfigStep({
   isPending = false,
   error = null,
 }: ConfigStepProps) {
-  const [name, setName] = useState(projectName);
   const [startChapter, setStartChapter] = useState(1);
   const [endChapter, setEndChapter] = useState(importedChapters);
+  const [force, setForce] = useState(false);
 
-  // 分析项目开关
-  const [enableEntityExtract, setEnableEntityExtract] = useState(true);
-  const [enableGoldenFinger, setEnableGoldenFinger] = useState(true);
-  const [enablePlotline, setEnablePlotline] = useState(true);
-  const [enableWorldviewSynthesize, setEnableWorldviewSynthesize] = useState(true);
+  // 分析类型选择
+  const [selectedTypes, setSelectedTypes] = useState<Set<AnalysisType>>(
+    new Set(["entity_extraction"])
+  );
+
+  // 风格分析（独立控制）
   const [enableStyleAnalyze, setEnableStyleAnalyze] = useState(false);
   const [styleSampleChapters, setStyleSampleChapters] = useState(10);
 
+  // 切换分析类型
+  const toggleType = useCallback((type: AnalysisType) => {
+    setSelectedTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+  }, []);
+
+  // 全选/取消全选
+  const handleSelectAll = useCallback(() => {
+    if (selectedTypes.size === ANALYSIS_TYPES.length) {
+      setSelectedTypes(new Set());
+    } else {
+      setSelectedTypes(new Set(ANALYSIS_TYPES.map((t) => t.type)));
+    }
+  }, [selectedTypes.size]);
+
   const handleStart = useCallback(() => {
+    if (selectedTypes.size === 0 && !enableStyleAnalyze) {
+      return; // 至少选择一个分析项目
+    }
+
     onStart({
       projectId,
-      projectName: name,
+      projectName,
       totalChapters,
+      analysisTypes: Array.from(selectedTypes),
       startChapter,
       endChapter,
-      enableEntityExtract,
-      enableGoldenFinger,
-      enablePlotline,
-      enableWorldviewSynthesize,
+      force,
       enableStyleAnalyze,
       styleSampleChapters,
     });
   }, [
     projectId,
-    name,
+    projectName,
     totalChapters,
+    selectedTypes,
     startChapter,
     endChapter,
-    enableEntityExtract,
-    enableGoldenFinger,
-    enablePlotline,
-    enableWorldviewSynthesize,
+    force,
     enableStyleAnalyze,
     styleSampleChapters,
     onStart,
@@ -100,9 +192,18 @@ export function ConfigStep({
 
   // 处理结束章节输入变化
   const handleEndChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Math.max(startChapter, Math.min(Number(e.target.value) || importedChapters, importedChapters));
+    const value = Math.max(
+      startChapter,
+      Math.min(Number(e.target.value) || importedChapters, importedChapters)
+    );
     setEndChapter(value);
   };
+
+  // 检查是否选中了黄金三章分析
+  const hasGoldenOpening = selectedTypes.has("golden_opening");
+
+  // 是否有可以执行的分析
+  const canStart = selectedTypes.size > 0 || enableStyleAnalyze;
 
   return (
     <div className="space-y-6">
@@ -111,7 +212,7 @@ export function ConfigStep({
         <CardContent className="p-4 space-y-4">
           <div className="flex items-center gap-4">
             <Label className="w-20 shrink-0">作品名称</Label>
-            <span className="text-sm font-medium">{name}</span>
+            <span className="text-sm font-medium">{projectName}</span>
           </div>
 
           {/* 章节范围 */}
@@ -161,98 +262,135 @@ export function ConfigStep({
                 </div>
               </div>
             </div>
+
+            {/* 黄金三章提示 */}
+            {hasGoldenOpening && (
+              <div className="flex items-center gap-4">
+                <div className="w-20 shrink-0" />
+                <div className="text-xs text-amber-500 flex items-center gap-1">
+                  <BookOpen className="h-3 w-3" />
+                  黄金三章分析将固定分析前 3 章，不受上方范围限制
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 强制重新分析 */}
+          <div className="flex items-center gap-4">
+            <div className="w-20 shrink-0" />
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="force"
+                checked={force}
+                onCheckedChange={(checked) => setForce(!!checked)}
+              />
+              <Label htmlFor="force" className="text-sm text-muted-foreground cursor-pointer">
+                强制重新分析（覆盖已有结果）
+              </Label>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* 分析项目 */}
+      {/* 分析项目选择 */}
       <Card className="bg-card/50">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">分析项目</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">分析项目</CardTitle>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="font-mono">
+                {selectedTypes.size}/{ANALYSIS_TYPES.length}
+              </Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={handleSelectAll}
+              >
+                {selectedTypes.size === ANALYSIS_TYPES.length ? "取消全选" : "全选"}
+              </Button>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            选择要执行的分析任务（LLM 分析，速度较慢）
+          </p>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {/* 实体提取 */}
-          <div className="flex items-center space-x-3 p-2 rounded hover:bg-accent/50">
-            <Checkbox
-              id="entity-extract"
-              checked={enableEntityExtract}
-              onCheckedChange={(checked) => setEnableEntityExtract(!!checked)}
-            />
-            <Label htmlFor="entity-extract" className="flex items-center gap-2 cursor-pointer flex-1">
-              <Users className="h-4 w-4 text-primary" />
-              <div>
-                <span className="font-medium">实体提取</span>
-                <span className="text-sm text-muted-foreground ml-2">
-                  角色/地点/势力/道具/功法等
-                </span>
-              </div>
-            </Label>
-          </div>
+        <CardContent className="space-y-2">
+          {ANALYSIS_TYPES.map((item) => {
+            const Icon = item.icon;
+            const isSelected = selectedTypes.has(item.type);
 
-          {/* 金手指识别 */}
-          <div className="flex items-center space-x-3 p-2 rounded hover:bg-accent/50">
-            <Checkbox
-              id="golden-finger"
-              checked={enableGoldenFinger}
-              onCheckedChange={(checked) => setEnableGoldenFinger(!!checked)}
-            />
-            <Label htmlFor="golden-finger" className="flex items-center gap-2 cursor-pointer flex-1">
-              <Zap className="h-4 w-4 text-primary" />
-              <div>
-                <span className="font-medium">金手指识别</span>
-                <span className="text-sm text-muted-foreground ml-2">
-                  主角外挂能力识别与追踪
-                </span>
+            return (
+              <div
+                key={item.type}
+                className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  isSelected
+                    ? "bg-primary/5 border-primary/30"
+                    : "bg-transparent border-transparent hover:bg-accent/50"
+                }`}
+                onClick={() => toggleType(item.type)}
+              >
+                <Checkbox
+                  id={item.type}
+                  checked={isSelected}
+                  onCheckedChange={() => toggleType(item.type)}
+                />
+                <Label
+                  htmlFor={item.type}
+                  className="flex items-center gap-3 cursor-pointer flex-1"
+                >
+                  <Icon
+                    className={`h-4 w-4 ${
+                      isSelected ? "text-primary" : "text-muted-foreground"
+                    }`}
+                  />
+                  <div className="flex-1">
+                    <span className="font-medium">{item.label}</span>
+                    <span className="text-sm text-muted-foreground ml-2">
+                      {item.description}
+                    </span>
+                  </div>
+                  {item.fixedChapters && (
+                    <Badge variant="outline" className="text-xs">
+                      前 {item.fixedChapters} 章
+                    </Badge>
+                  )}
+                </Label>
               </div>
-            </Label>
-          </div>
+            );
+          })}
+        </CardContent>
+      </Card>
 
-          {/* 剧情线分析 */}
-          <div className="flex items-center space-x-3 p-2 rounded hover:bg-accent/50">
-            <Checkbox
-              id="plotline"
-              checked={enablePlotline}
-              onCheckedChange={(checked) => setEnablePlotline(!!checked)}
-            />
-            <Label htmlFor="plotline" className="flex items-center gap-2 cursor-pointer flex-1">
-              <GitBranch className="h-4 w-4 text-primary" />
-              <div>
-                <span className="font-medium">剧情线分析</span>
-                <span className="text-sm text-muted-foreground ml-2">
-                  冲突/转折/高潮识别
-                </span>
-              </div>
-            </Label>
-          </div>
-
-          {/* 世界观合成 */}
-          <div className="flex items-center space-x-3 p-2 rounded hover:bg-accent/50">
-            <Checkbox
-              id="worldview-synthesize"
-              checked={enableWorldviewSynthesize}
-              onCheckedChange={(checked) => setEnableWorldviewSynthesize(!!checked)}
-            />
-            <Label htmlFor="worldview-synthesize" className="flex items-center gap-2 cursor-pointer flex-1">
-              <Earth className="h-4 w-4 text-primary" />
-              <div>
-                <span className="font-medium">世界观合成</span>
-                <span className="text-sm text-muted-foreground ml-2">
-                  碎片整合为完整设定
-                </span>
-              </div>
-            </Label>
-          </div>
-
-          {/* 风格分析 */}
-          <div className="flex items-center space-x-3 p-2 rounded hover:bg-accent/50">
+      {/* 风格分析（独立 API） */}
+      <Card className="bg-card/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">附加分析</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div
+            className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+              enableStyleAnalyze
+                ? "bg-primary/5 border-primary/30"
+                : "bg-transparent border-transparent hover:bg-accent/50"
+            }`}
+            onClick={() => setEnableStyleAnalyze(!enableStyleAnalyze)}
+          >
             <Checkbox
               id="style-analyze"
               checked={enableStyleAnalyze}
               onCheckedChange={(checked) => setEnableStyleAnalyze(!!checked)}
             />
-            <Label htmlFor="style-analyze" className="flex items-center gap-2 cursor-pointer flex-1">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <div className="flex items-center gap-2">
+            <Label
+              htmlFor="style-analyze"
+              className="flex items-center gap-3 cursor-pointer flex-1"
+            >
+              <Sparkles
+                className={`h-4 w-4 ${
+                  enableStyleAnalyze ? "text-primary" : "text-muted-foreground"
+                }`}
+              />
+              <div className="flex items-center gap-2 flex-1">
                 <span className="font-medium">风格分析</span>
                 <span className="text-sm text-muted-foreground">采样</span>
                 <Input
@@ -263,6 +401,7 @@ export function ConfigStep({
                   onChange={(e) => setStyleSampleChapters(Number(e.target.value))}
                   className="w-16 h-7 text-sm"
                   disabled={!enableStyleAnalyze}
+                  onClick={(e) => e.stopPropagation()}
                 />
                 <span className="text-sm text-muted-foreground">章分析写作风格</span>
               </div>
@@ -286,7 +425,11 @@ export function ConfigStep({
           <ChevronLeft className="mr-2 h-4 w-4" />
           返回
         </Button>
-        <Button onClick={handleStart} disabled={isPending} className="glow-green">
+        <Button
+          onClick={handleStart}
+          disabled={isPending || !canStart}
+          className="glow-green"
+        >
           {isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
