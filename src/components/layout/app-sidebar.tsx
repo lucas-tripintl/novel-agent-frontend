@@ -51,11 +51,11 @@ const mainNavItems = [
     icon: Zap,
     href: "/analyze",
   },
-  {
-    title: "创意工具",
-    icon: Sparkles,
-    href: "/ideas",
-  },
+  // {
+  //   title: "创意工具",
+  //   icon: Sparkles,
+  //   href: "/ideas",
+  // },
 ];
 
 const analysisNavItems = [
