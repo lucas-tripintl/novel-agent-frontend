@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { useProject } from "@/hooks/use-projects";
+import { useProject, useProjectChapters } from "@/hooks/use-projects";
 import { useWritingStore } from "@/stores/writing-store";
 import { WritingPanel } from "@/components/write/writing-panel";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,17 +13,28 @@ export default function WritePage() {
   const projectId = params.projectId as string;
 
   const { data: project, isLoading, error } = useProject(projectId);
-  const setContext = useWritingStore((state) => state.setContext);
+  // 默认按 desc 排序，第一个就是最新章节
+  const { data: chaptersData } = useProjectChapters(projectId, { sort: "desc" });
+  const { chapterId, setContext } = useWritingStore();
 
-  // 设置当前项目上下文
+  // 从 infinite query 结构提取章节列表
+  const chapters = useMemo(() => {
+    if (!chaptersData?.pages) return [];
+    return chaptersData.pages.flatMap((page) => page.items);
+  }, [chaptersData?.pages]);
+
+  // 设置当前项目上下文，自动选择最新章节
   useEffect(() => {
-    if (projectId) {
+    if (projectId && chapters.length > 0) {
+      // 如果没有选中章节，自动选择第一个（因为已按 desc 排序，第一个就是最新的）
+      if (!chapterId) {
+        setContext(projectId, chapters[0].id);
+      }
+    } else if (projectId && !chapterId) {
+      // 没有章节时，只设置项目上下文
       setContext(projectId, null);
     }
-    return () => {
-      // 离开页面时不清空，保留草稿
-    };
-  }, [projectId, setContext]);
+  }, [projectId, chapters, chapterId, setContext]);
 
   if (isLoading) {
     return <WritingPageSkeleton />;

@@ -111,7 +111,7 @@ export default function ProjectDetailPage() {
 
   const {
     data: chaptersData,
-  } = useProjectChapters(projectId, { limit: 100 });
+  } = useProjectChapters(projectId);
 
   // 使用 useEntitiesOverview 获取所有设定信息
   const { stats, total: totalEntities, isLoading: isEntitiesLoading, entities } = useEntitiesOverview(
@@ -119,7 +119,14 @@ export default function ProjectDetailPage() {
     { enabled: !!projectId }
   );
 
-  const chapters = chaptersData?.items ?? [];
+  // 从 infinite query 结构提取章节列表
+  const chapters = useMemo(() => {
+    if (!chaptersData?.pages) return [];
+    return chaptersData.pages.flatMap((page) => page.items);
+  }, [chaptersData?.pages]);
+
+  // 章节总数
+  const totalChapters = chaptersData?.pages?.[0]?.total ?? 0;
 
   // 从已获取的实体中取最近的 6 个用于预览
   const recentEntities = useMemo(() => {

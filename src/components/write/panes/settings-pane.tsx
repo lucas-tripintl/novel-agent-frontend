@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useProjectChapters } from "@/hooks/use-projects";
 import { useWritingStore, useWritingMode } from "@/stores/writing-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

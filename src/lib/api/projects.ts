@@ -61,9 +61,11 @@ export async function deleteProject(projectId: string) {
 
 // ============ 章节 ============
 
+export type ChapterSortOrder = "asc" | "desc";
+
 export async function listChapters(
   projectId: string,
-  params?: { skip?: number; limit?: number }
+  params?: { skip?: number; limit?: number; sort?: ChapterSortOrder }
 ) {
   return apiClient.get<PaginatedResponse<ChapterRead>>(
     `/projects/${projectId}/chapters`,

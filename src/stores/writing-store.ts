@@ -212,11 +212,23 @@ export const useWritingStore = create<WritingState>()(
       setAutoSelectedEntities: (entities) =>
         set({ autoSelectedEntities: entities }),
 
-      setTitle: (title) => set({ title, isDirty: true }),
+      setTitle: (title) =>
+        set((state) => ({
+          title,
+          isDirty: title !== state.title ? true : state.isDirty,
+        })),
 
-      setOutline: (outline) => set({ outline, isDirty: true }),
+      setOutline: (outline) =>
+        set((state) => ({
+          outline,
+          isDirty: outline !== state.outline ? true : state.isDirty,
+        })),
 
-      setContent: (content) => set({ content, isDirty: true }),
+      setContent: (content) =>
+        set((state) => ({
+          content,
+          isDirty: content !== state.content ? true : state.isDirty,
+        })),
 
       markAsSaved: () => set({ isDirty: false, lastSavedAt: new Date() }),
 

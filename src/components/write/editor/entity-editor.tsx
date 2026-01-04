@@ -2,10 +2,11 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEntityEditing } from "@/stores/writing-store";
+import { useEntityEditing, useEditorSettings } from "@/stores/writing-store";
 import { updateEntity } from "@/lib/api/projects";
 import { getCategoryConfig } from "@/hooks/use-project-elements";
 import type { EntityRead } from "@/types/api";
+import { fontFamilies, type EditorFontFamily } from "@/types/writing";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,10 +19,10 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { ConfirmLeaveDialog } from "../confirm-leave-dialog";
 import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
-  Save,
   Code2,
   FileText,
   ChevronRight,
@@ -29,7 +30,6 @@ import {
   Trash2,
   AlertCircle,
   Check,
-  Loader2,
   User,
   Globe,
   Zap,
@@ -45,7 +45,13 @@ import {
   Circle,
   CheckCircle2,
   XCircle,
+  Edit3,
 } from "lucide-react";
+
+function getFontClass(fontFamily: EditorFontFamily): string {
+  const font = fontFamilies.find((f) => f.id === fontFamily);
+  return font?.fontClass ?? "font-sans";
+}
 
 // 图标映射
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -77,18 +83,23 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
     markEntityAsSaved,
     closeEntityEditor,
   } = useEntityEditing();
+  const { settings } = useEditorSettings();
 
   const [editMode, setEditMode] = useState<"visual" | "raw">("visual");
   const [name, setName] = useState(entity.name);
+  const [isEditingName, setIsEditingName] = useState(false);
   const [tags, setTags] = useState<string[]>(entity.tags || []);
   const [newTag, setNewTag] = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [shouldCloseAfterSave, setShouldCloseAfterSave] = useState(false);
 
   const queryClient = useQueryClient();
 
   // 当切换到不同设定时，同步更新本地状态
   useEffect(() => {
     setName(entity.name);
+    setIsEditingName(false);
     setTags(entity.tags || []);
     setEditMode("visual");
     setSaveStatus("idle");
@@ -120,10 +131,18 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
       markEntityAsSaved();
       queryClient.invalidateQueries({ queryKey: ["project-elements", projectId] });
       setSaveStatus("success");
-      setTimeout(() => setSaveStatus("idle"), 2000);
+
+      // 如果需要保存后关闭
+      if (shouldCloseAfterSave) {
+        setShouldCloseAfterSave(false);
+        closeEntityEditor();
+      } else {
+        setTimeout(() => setSaveStatus("idle"), 2000);
+      }
     },
     onError: () => {
       setSaveStatus("error");
+      setShouldCloseAfterSave(false);
       setTimeout(() => setSaveStatus("idle"), 3000);
     },
   });
@@ -136,12 +155,21 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
   // 处理返回
   const handleBack = () => {
     if (isEntityDirty) {
-      if (confirm("有未保存的更改，确定要放弃吗？")) {
-        closeEntityEditor();
-      }
+      setShowConfirmDialog(true);
     } else {
       closeEntityEditor();
     }
+  };
+
+  // 保存后关闭
+  const handleSaveAndClose = () => {
+    setShouldCloseAfterSave(true);
+    updateMutation.mutate();
+  };
+
+  // 放弃更改并关闭
+  const handleDiscardAndClose = () => {
+    closeEntityEditor();
   };
 
   // 添加标签
@@ -179,7 +207,17 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
   const Icon = iconMap[catConfig.icon] || Circle;
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <>
+      <ConfirmLeaveDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        title="设定有未保存的更改"
+        description="当前设定有未保存的更改，是否保存后再离开？"
+        onSave={handleSaveAndClose}
+        onDiscard={handleDiscardAndClose}
+        isSaving={updateMutation.isPending}
+      />
+      <div className="flex h-full flex-col bg-background">
       {/* 头部 */}
       <div className="flex items-center gap-3 px-6 py-4 border-b border-border/50">
         <Button
@@ -196,12 +234,29 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
         </div>
 
         <div className="flex-1 min-w-0">
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="text-lg font-semibold border-none px-0 h-auto focus-visible:ring-0"
-            placeholder="设定名称"
-          />
+          {isEditingName ? (
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={() => setIsEditingName(false)}
+              onKeyDown={(e) => e.key === "Enter" && setIsEditingName(false)}
+              className="text-lg font-semibold h-8"
+              placeholder="设定名称"
+              autoFocus
+            />
+          ) : (
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold truncate">{name || "未命名设定"}</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 shrink-0"
+                onClick={() => setIsEditingName(true)}
+              >
+                <Edit3 className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
           <p className="text-xs text-muted-foreground">{catConfig.label}</p>
         </div>
 
@@ -224,19 +279,6 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
               未保存
             </Badge>
           )}
-
-          <Button
-            onClick={handleSave}
-            disabled={updateMutation.isPending || !isEntityDirty}
-            className="gap-2"
-          >
-            {updateMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            保存
-          </Button>
         </div>
       </div>
 
@@ -312,7 +354,11 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
                   <Textarea
                     value={editingEntityContent}
                     onChange={(e) => setEditingEntityContent(e.target.value)}
-                    className="min-h-[400px] font-mono text-sm"
+                    className={cn("min-h-[400px]", getFontClass(settings.fontFamily))}
+                    style={{
+                      fontSize: `${settings.fontSize}px`,
+                      lineHeight: settings.lineHeight,
+                    }}
                     placeholder="输入设定内容..."
                   />
                 </div>
@@ -327,7 +373,11 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
               <Textarea
                 value={editingEntityContent}
                 onChange={(e) => setEditingEntityContent(e.target.value)}
-                className="min-h-[500px] font-mono text-sm"
+                className={cn("min-h-[500px]", getFontClass(settings.fontFamily))}
+                style={{
+                  fontSize: `${settings.fontSize}px`,
+                  lineHeight: settings.lineHeight,
+                }}
                 placeholder="输入 JSON 或纯文本..."
               />
               {parsedContent.isJson && (
@@ -340,7 +390,8 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
           </ScrollArea>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </>
   );
 }
 

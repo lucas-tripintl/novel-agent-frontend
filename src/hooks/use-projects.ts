@@ -2,7 +2,7 @@
  * 项目列表相关 hooks
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import {
   listProjects,
   deleteProject,
@@ -10,6 +10,7 @@ import {
   listChapters,
   getChapter,
   listGoldenFingers,
+  type ChapterSortOrder,
 } from "@/lib/api/projects";
 import type { ProjectList, ProjectStatus } from "@/types/api";
 
@@ -21,7 +22,7 @@ export const projectKeys = {
     [...projectKeys.lists(), params] as const,
   details: () => [...projectKeys.all, "detail"] as const,
   detail: (id: string) => [...projectKeys.details(), id] as const,
-  chapters: (projectId: string, params?: { skip?: number; limit?: number }) =>
+  chapters: (projectId: string, params?: { sort?: ChapterSortOrder }) =>
     [...projectKeys.detail(projectId), "chapters", params] as const,
   chapter: (projectId: string, chapterNumber: number) =>
     [...projectKeys.detail(projectId), "chapter", chapterNumber] as const,
@@ -54,22 +55,37 @@ export function useProject(projectId: string) {
   });
 }
 
+const CHAPTERS_PAGE_SIZE = 20;
+
 /**
- * 获取项目章节列表
+ * 获取项目章节列表（无限滚动）
  */
 export function useProjectChapters(
   projectId: string,
   params?: {
-    skip?: number;
-    limit?: number;
+    sort?: ChapterSortOrder;
   },
   options?: { enabled?: boolean }
 ) {
   const { enabled = true } = options ?? {};
+  const sort = params?.sort ?? "desc"; // 默认按最新排序
 
-  return useQuery({
-    queryKey: projectKeys.chapters(projectId, params),
-    queryFn: () => listChapters(projectId, params),
+  return useInfiniteQuery({
+    queryKey: projectKeys.chapters(projectId, { sort }),
+    queryFn: ({ pageParam = 0 }) =>
+      listChapters(projectId, {
+        skip: pageParam,
+        limit: CHAPTERS_PAGE_SIZE,
+        sort,
+      }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      const loadedCount = allPages.reduce((sum, page) => sum + page.items.length, 0);
+      if (loadedCount >= lastPage.total) {
+        return undefined; // 没有更多数据
+      }
+      return loadedCount;
+    },
     enabled: enabled && !!projectId,
   });
 }

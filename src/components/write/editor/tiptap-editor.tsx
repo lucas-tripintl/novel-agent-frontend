@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useMemo, useRef } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -29,6 +29,8 @@ export function TiptapEditor({
   className,
 }: TiptapEditorProps) {
   const { settings } = useEditorSettings();
+  // 用于区分程序设置内容和用户输入
+  const isSettingContentRef = useRef(false);
 
   const editor = useEditor({
     immediatelyRender: false, // 避免 SSR hydration 不匹配
@@ -66,7 +68,10 @@ export function TiptapEditor({
       },
     },
     onUpdate: ({ editor }) => {
-      onChange(editor.getText());
+      // 只有用户真正输入时才触发 onChange，程序设置内容时不触发
+      if (!isSettingContentRef.current) {
+        onChange(editor.getText());
+      }
     },
   });
 
@@ -76,7 +81,13 @@ export function TiptapEditor({
       // 只有当内容真正不同时才更新，避免光标跳动
       const currentContent = editor.getText();
       if (content !== currentContent) {
+        // 标记为程序设置内容，避免触发 onChange
+        isSettingContentRef.current = true;
         editor.commands.setContent(content || "");
+        // 使用 setTimeout 确保 onUpdate 回调执行完毕后再重置标记
+        setTimeout(() => {
+          isSettingContentRef.current = false;
+        }, 0);
       }
     }
   }, [editor, content]);
@@ -101,7 +112,7 @@ export function TiptapEditor({
   // 暴露 appendContent 方法供外部使用
   useEffect(() => {
     if (editor) {
-      // @ts-ignore - 临时挂载方法
+      // @ts-expect-error - 临时挂载方法
       editor.appendContent = appendContent;
     }
   }, [editor, appendContent]);
