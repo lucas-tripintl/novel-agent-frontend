@@ -13,6 +13,7 @@ import type {
   ChatMessage,
   ChapterDraft,
 } from "@/types/writing";
+import type { EntityRead } from "@/types/api";
 
 interface WritingState {
   // ============ 当前上下文 ============
@@ -56,6 +57,14 @@ interface WritingState {
   isLeftPaneCollapsed: boolean;
   /** 右栏是否折叠 */
   isRightPaneCollapsed: boolean;
+
+  // ============ 设定编辑 ============
+  /** 当前编辑的设定 */
+  editingEntity: EntityRead | null;
+  /** 编辑中的设定内容（用于检测未保存更改） */
+  editingEntityContent: string;
+  /** 设定是否有未保存的更改 */
+  isEntityDirty: boolean;
 
   // ============ Actions ============
   /** 设置当前项目和章节 */
@@ -103,6 +112,15 @@ interface WritingState {
   /** 切换右栏折叠 */
   toggleRightPane: () => void;
 
+  /** 设置当前编辑的设定 */
+  setEditingEntity: (entity: EntityRead | null) => void;
+  /** 更新编辑中的设定内容 */
+  setEditingEntityContent: (content: string) => void;
+  /** 标记设定为已保存 */
+  markEntityAsSaved: () => void;
+  /** 关闭设定编辑（返回章节编辑） */
+  closeEntityEditor: () => void;
+
   /** 重置状态 */
   reset: () => void;
 }
@@ -123,6 +141,9 @@ const initialState = {
   streamingBuffer: "",
   isLeftPaneCollapsed: false,
   isRightPaneCollapsed: false,
+  editingEntity: null,
+  editingEntityContent: "",
+  isEntityDirty: false,
 };
 
 export const useWritingStore = create<WritingState>()(
@@ -234,6 +255,34 @@ export const useWritingStore = create<WritingState>()(
       toggleRightPane: () =>
         set((state) => ({ isRightPaneCollapsed: !state.isRightPaneCollapsed })),
 
+      setEditingEntity: (entity) =>
+        set({
+          editingEntity: entity,
+          editingEntityContent: entity?.content || "",
+          isEntityDirty: false,
+        }),
+
+      setEditingEntityContent: (content) =>
+        set((state) => ({
+          editingEntityContent: content,
+          isEntityDirty: content !== (state.editingEntity?.content || ""),
+        })),
+
+      markEntityAsSaved: () =>
+        set((state) => ({
+          isEntityDirty: false,
+          editingEntity: state.editingEntity
+            ? { ...state.editingEntity, content: state.editingEntityContent }
+            : null,
+        })),
+
+      closeEntityEditor: () =>
+        set({
+          editingEntity: null,
+          editingEntityContent: "",
+          isEntityDirty: false,
+        }),
+
       reset: () => set(initialState),
     }),
     {
@@ -311,6 +360,21 @@ export function useWritingActions() {
       appendStreamingBuffer: state.appendStreamingBuffer,
       clearStreamingBuffer: state.clearStreamingBuffer,
       reset: state.reset,
+    }))
+  );
+}
+
+/** 获取设定编辑状态 */
+export function useEntityEditing() {
+  return useWritingStore(
+    useShallow((state) => ({
+      editingEntity: state.editingEntity,
+      editingEntityContent: state.editingEntityContent,
+      isEntityDirty: state.isEntityDirty,
+      setEditingEntity: state.setEditingEntity,
+      setEditingEntityContent: state.setEditingEntityContent,
+      markEntityAsSaved: state.markEntityAsSaved,
+      closeEntityEditor: state.closeEntityEditor,
     }))
   );
 }

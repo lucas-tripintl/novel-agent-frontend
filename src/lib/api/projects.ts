@@ -142,6 +142,23 @@ export async function getEntity(projectId: string, entityId: string) {
   return apiClient.get<EntityRead>(`/projects/${projectId}/entities/${entityId}`);
 }
 
+export interface EntityUpdateData {
+  name?: string;
+  content?: string;
+  tags?: string[];
+}
+
+export async function updateEntity(
+  projectId: string,
+  entityId: string,
+  data: EntityUpdateData
+) {
+  return apiClient.patch<EntityRead>(
+    `/projects/${projectId}/entities/${entityId}`,
+    data
+  );
+}
+
 // ============ 金手指 ============
 
 export async function listGoldenFingers(

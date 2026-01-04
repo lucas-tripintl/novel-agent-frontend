@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { useWritingStore, useStreamingState } from "@/stores/writing-store";
+import { useWritingStore, useStreamingState, useEntityEditing } from "@/stores/writing-store";
 import { useProjectChapters, useChapter } from "@/hooks/use-projects";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TiptapEditor } from "../editor/tiptap-editor";
 import { ChapterHeader } from "../editor/chapter-header";
+import { EntityEditor } from "../editor/entity-editor";
 import { FileText, Sparkles } from "lucide-react";
 
 interface EditorPaneProps {
@@ -15,6 +16,7 @@ interface EditorPaneProps {
 export function EditorPane({ projectId }: EditorPaneProps) {
   const { chapterId, content, setContent, loadDraft } = useWritingStore();
   const { isStreaming } = useStreamingState();
+  const { editingEntity } = useEntityEditing();
   const { data: chaptersData } = useProjectChapters(projectId);
 
   // 从章节列表获取当前章节的 chapter_number
@@ -36,6 +38,11 @@ export function EditorPane({ projectId }: EditorPaneProps) {
       });
     }
   }, [chapterDetail, loadDraft]);
+
+  // 设定编辑模式
+  if (editingEntity) {
+    return <EntityEditor entity={editingEntity} projectId={projectId} />;
+  }
 
   // 空状态
   if (!chapterId) {

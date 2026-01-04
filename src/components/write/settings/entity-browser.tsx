@@ -7,7 +7,7 @@ import {
   groupEntitiesByCategory,
   getCategoryConfig,
 } from "@/hooks/use-project-elements";
-import { useWritingStore, useWritingMode } from "@/stores/writing-store";
+import { useWritingStore, useWritingMode, useEntityEditing } from "@/stores/writing-store";
 import type { EntityRead, EntityType } from "@/types/api";
 import type { SelectedEntity } from "@/types/writing";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -45,6 +45,7 @@ import {
   Plus,
   Check,
   Loader2,
+  Edit3,
 } from "lucide-react";
 
 // 图标映射
@@ -75,6 +76,7 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
   const { data, isLoading } = useProjectElements(projectId, true);
   const mode = useWritingMode();
   const { selectedEntities, addEntity, removeEntity } = useWritingStore();
+  const { setEditingEntity } = useEntityEditing();
 
   const entities = data?.items ?? [];
 
@@ -113,6 +115,11 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
     } else {
       addEntity(selectedEntity);
     }
+  };
+
+  // 打开设定编辑
+  const openEntityEditor = (entity: EntityRead) => {
+    setEditingEntity(entity);
   };
 
   if (isLoading) {
@@ -215,6 +222,7 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
                             isSelected={isEntitySelected(entity.id)}
                             isSelectable={mode === "director"}
                             onToggle={() => toggleEntity(entity)}
+                            onEdit={() => openEntityEditor(entity)}
                           />
                         ))}
                       </div>
@@ -237,6 +245,7 @@ interface EntityRowProps {
   isSelected: boolean;
   isSelectable: boolean;
   onToggle: () => void;
+  onEdit: () => void;
 }
 
 function EntityRow({
@@ -244,21 +253,22 @@ function EntityRow({
   isSelected,
   isSelectable,
   onToggle,
+  onEdit,
 }: EntityRowProps) {
   return (
     <HoverCard openDelay={300} closeDelay={100}>
       <HoverCardTrigger asChild>
         <div
           className={cn(
-            "flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors",
+            "flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors group",
             isSelectable && "cursor-pointer",
             isSelected
               ? "bg-primary/10 border border-primary/30"
               : isSelectable
               ? "hover:bg-muted/50 border border-transparent"
-              : "border border-transparent"
+              : "hover:bg-muted/50 border border-transparent"
           )}
-          onClick={isSelectable ? onToggle : undefined}
+          onClick={isSelectable ? onToggle : onEdit}
         >
           {/* 选择指示器 */}
           {isSelectable && (
@@ -283,11 +293,24 @@ function EntityRow({
               {entity.tags[0]}
             </Badge>
           )}
+
+          {/* 编辑按钮 */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+          >
+            <Edit3 className="h-3 w-3" />
+          </Button>
         </div>
       </HoverCardTrigger>
 
       <HoverCardContent side="right" align="start" className="w-72 p-3">
-        <EntityPreview entity={entity} />
+        <EntityPreview entity={entity} onEdit={onEdit} />
       </HoverCardContent>
     </HoverCard>
   );
@@ -297,9 +320,10 @@ function EntityRow({
 
 interface EntityPreviewProps {
   entity: EntityRead;
+  onEdit: () => void;
 }
 
-function EntityPreview({ entity }: EntityPreviewProps) {
+function EntityPreview({ entity, onEdit }: EntityPreviewProps) {
   const catConfig = getCategoryConfig(entity.entity_type);
   const Icon = iconMap[catConfig.icon] || Circle;
 
@@ -338,6 +362,17 @@ function EntityPreview({ entity }: EntityPreviewProps) {
           )}
         </div>
       )}
+
+      {/* 编辑按钮 */}
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full mt-2 gap-1.5"
+        onClick={onEdit}
+      >
+        <Edit3 className="h-3 w-3" />
+        查看/编辑设定
+      </Button>
     </div>
   );
 }
