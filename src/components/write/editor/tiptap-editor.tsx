@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { cn } from "@/lib/utils";
+import { useEditorSettings } from "@/stores/writing-store";
+import { fontFamilies, type EditorFontFamily } from "@/types/writing";
 
 interface TiptapEditorProps {
   content: string;
@@ -14,6 +16,11 @@ interface TiptapEditorProps {
   className?: string;
 }
 
+function getFontClass(fontFamily: EditorFontFamily): string {
+  const font = fontFamilies.find((f) => f.id === fontFamily);
+  return font?.fontClass ?? "font-sans";
+}
+
 export function TiptapEditor({
   content,
   onChange,
@@ -21,6 +28,8 @@ export function TiptapEditor({
   placeholder = "开始书写...",
   className,
 }: TiptapEditorProps) {
+  const { settings } = useEditorSettings();
+
   const editor = useEditor({
     immediatelyRender: false, // 避免 SSR hydration 不匹配
     extensions: [
@@ -49,8 +58,7 @@ export function TiptapEditor({
           "prose prose-sm sm:prose-base dark:prose-invert max-w-none",
           "focus:outline-none",
           "min-h-[50vh]",
-          // 自定义样式
-          "[&_p]:my-3 [&_p]:leading-relaxed",
+          // 自定义样式 - 不设置段落行高，由外部控制
           "[&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mt-8 [&_h1]:mb-4",
           "[&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mt-6 [&_h2]:mb-3",
           "[&_h3]:text-lg [&_h3]:font-medium [&_h3]:mt-4 [&_h3]:mb-2"
@@ -98,13 +106,25 @@ export function TiptapEditor({
     }
   }, [editor, appendContent]);
 
+  // 段落样式直接用 style 对象控制
+  const paragraphStyle = useMemo(
+    () => ({
+      "--editor-font-size": `${settings.fontSize}px`,
+      "--editor-line-height": settings.lineHeight,
+      "--editor-paragraph-spacing": `${settings.paragraphSpacing}px`,
+    }),
+    [settings.fontSize, settings.lineHeight, settings.paragraphSpacing]
+  );
+
   return (
     <div
       className={cn(
-        "relative",
+        "relative editor-wrapper",
         isReadOnly && "opacity-80",
+        getFontClass(settings.fontFamily),
         className
       )}
+      style={paragraphStyle as React.CSSProperties}
     >
       <EditorContent
         editor={editor}

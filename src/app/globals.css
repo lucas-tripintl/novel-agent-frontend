@@ -8,6 +8,14 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* 系统内置中文字体 */
+  --font-kai: "KaiTi", "STKaiti", "楷体", "Kaiti SC", serif;
+  --font-song: "SimSun", "STSong", "宋体", "Songti SC", serif;
+  --font-fangsong: "FangSong", "STFangsong", "仿宋", "Fangsong SC", serif;
+  /* 开源可商用字体 (需用户安装或通过 Web Font 加载) */
+  --font-source-han-sans: "Source Han Sans SC", "Noto Sans SC", "Source Han Sans CN", "思源黑体", var(--font-geist-sans), sans-serif;
+  --font-source-han-serif: "Source Han Serif SC", "Noto Serif SC", "Source Han Serif CN", "思源宋体", "Songti SC", serif;
+  --font-lxgw-wenkai: "LXGW WenKai", "霞鹜文楷", "LXGWWenKai", var(--font-kai), serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -175,6 +183,32 @@
   .font-mono {
     font-family: var(--font-geist-mono), ui-monospace, monospace;
   }
+
+  /* 系统内置字体 */
+  .font-kai {
+    font-family: var(--font-kai);
+  }
+
+  .font-song {
+    font-family: var(--font-song);
+  }
+
+  .font-fangsong {
+    font-family: var(--font-fangsong);
+  }
+
+  /* 开源可商用字体 */
+  .font-source-han-sans {
+    font-family: var(--font-source-han-sans);
+  }
+
+  .font-source-han-serif {
+    font-family: var(--font-source-han-serif);
+  }
+
+  .font-lxgw-wenkai {
+    font-family: var(--font-lxgw-wenkai);
+  }
 }
 
 /* 自定义滚动条 */
@@ -311,6 +345,20 @@
 .prose-writer {
   line-height: 1.9;
   letter-spacing: 0.02em;
+}
+
+/* 编辑器动态样式 - 使用 CSS 变量控制 */
+.editor-wrapper .ProseMirror {
+  font-size: var(--editor-font-size, 16px);
+  line-height: var(--editor-line-height, 1.8);
+}
+
+.editor-wrapper .ProseMirror p {
+  margin-bottom: var(--editor-paragraph-spacing, 16px);
+}
+
+.editor-wrapper .ProseMirror p:last-child {
+  margin-bottom: 0;
 }
 
 /* 主题切换动画 */

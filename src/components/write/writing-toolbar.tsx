@@ -28,8 +28,8 @@ import {
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
-  Loader2,
 } from "lucide-react";
+import { EditorSettings } from "./editor/editor-settings";
 
 interface WritingToolbarProps {
   project: ProjectRead;
@@ -250,6 +250,9 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
               {isRightPaneCollapsed ? "展开 AI 助手" : "折叠 AI 助手"}
             </TooltipContent>
           </Tooltip>
+
+          {/* 编辑器设置 */}
+          <EditorSettings />
         </div>
       </div>
     </header>

@@ -12,6 +12,7 @@ import type {
   SelectedEntity,
   ChatMessage,
   ChapterDraft,
+  EditorSettings,
 } from "@/types/writing";
 import type { EntityRead } from "@/types/api";
 
@@ -65,6 +66,10 @@ interface WritingState {
   editingEntityContent: string;
   /** 设定是否有未保存的更改 */
   isEntityDirty: boolean;
+
+  // ============ 编辑器设置 ============
+  /** 编辑器样式设置 */
+  editorSettings: EditorSettings;
 
   // ============ Actions ============
   /** 设置当前项目和章节 */
@@ -121,9 +126,19 @@ interface WritingState {
   /** 关闭设定编辑（返回章节编辑） */
   closeEntityEditor: () => void;
 
+  /** 更新编辑器设置 */
+  updateEditorSettings: (settings: Partial<EditorSettings>) => void;
+
   /** 重置状态 */
   reset: () => void;
 }
+
+const defaultEditorSettings: EditorSettings = {
+  fontFamily: "fangsong",
+  fontSize: 16,
+  lineHeight: 1.8,
+  paragraphSpacing: 16,
+};
 
 const initialState = {
   projectId: null,
@@ -144,6 +159,7 @@ const initialState = {
   editingEntity: null,
   editingEntityContent: "",
   isEntityDirty: false,
+  editorSettings: defaultEditorSettings,
 };
 
 export const useWritingStore = create<WritingState>()(
@@ -283,6 +299,11 @@ export const useWritingStore = create<WritingState>()(
           isEntityDirty: false,
         }),
 
+      updateEditorSettings: (settings) =>
+        set((state) => ({
+          editorSettings: { ...state.editorSettings, ...settings },
+        })),
+
       reset: () => set(initialState),
     }),
     {
@@ -292,6 +313,7 @@ export const useWritingStore = create<WritingState>()(
         mode: state.mode,
         isLeftPaneCollapsed: state.isLeftPaneCollapsed,
         isRightPaneCollapsed: state.isRightPaneCollapsed,
+        editorSettings: state.editorSettings,
       }),
     }
   )
@@ -336,6 +358,16 @@ export function useStreamingState() {
 /** 获取对话消息 */
 export function useChatMessages() {
   return useWritingStore((state) => state.messages);
+}
+
+/** 获取编辑器设置 */
+export function useEditorSettings() {
+  return useWritingStore(
+    useShallow((state) => ({
+      settings: state.editorSettings,
+      updateSettings: state.updateEditorSettings,
+    }))
+  );
 }
 
 /** 获取写作操作方法 */

@@ -183,3 +183,126 @@ export interface EditorState {
   /** 字符数 */
   charCount: number;
 }
+
+// ============ 编辑器设置 ============
+
+/** 字体系列选项 */
+export type EditorFontFamily =
+  | "system"
+  | "serif"
+  | "sans"
+  | "mono"
+  // 开源可商用字体
+  | "source-han-sans"
+  | "source-han-serif"
+  | "lxgw-wenkai"
+  // 系统内置
+  | "kai"
+  | "song"
+  | "fangsong";
+
+/** 字体系列配置 */
+export interface FontFamilyConfig {
+  id: EditorFontFamily;
+  name: string;
+  fontClass: string;
+  preview: string;
+  /** 字体分组 */
+  group: "basic" | "opensource" | "system";
+}
+
+/** 可用字体列表 - 按分组排序 */
+export const fontFamilies: FontFamilyConfig[] = [
+  // 基础字体
+  {
+    id: "system",
+    name: "系统默认",
+    fontClass: "font-sans",
+    preview: "系统默认字体",
+    group: "basic",
+  },
+  {
+    id: "serif",
+    name: "衬线体",
+    fontClass: "font-serif",
+    preview: "优雅的衬线字体",
+    group: "basic",
+  },
+  {
+    id: "sans",
+    name: "无衬线",
+    fontClass: "font-sans",
+    preview: "简洁的无衬线",
+    group: "basic",
+  },
+  {
+    id: "mono",
+    name: "等宽体",
+    fontClass: "font-mono",
+    preview: "编程等宽字体",
+    group: "basic",
+  },
+  // 开源可商用字体 (需用户系统安装或 Web Font)
+  {
+    id: "source-han-sans",
+    name: "思源黑体",
+    fontClass: "font-source-han-sans",
+    preview: "Adobe & Google 开源黑体",
+    group: "opensource",
+  },
+  {
+    id: "source-han-serif",
+    name: "思源宋体",
+    fontClass: "font-source-han-serif",
+    preview: "Adobe & Google 开源宋体",
+    group: "opensource",
+  },
+  {
+    id: "lxgw-wenkai",
+    name: "霞鹜文楷",
+    fontClass: "font-lxgw-wenkai",
+    preview: "开源楷体，适合正文阅读",
+    group: "opensource",
+  },
+  // 系统内置字体
+  {
+    id: "kai",
+    name: "楷体",
+    fontClass: "font-kai",
+    preview: "系统楷体",
+    group: "system",
+  },
+  {
+    id: "song",
+    name: "宋体",
+    fontClass: "font-song",
+    preview: "系统宋体",
+    group: "system",
+  },
+  {
+    id: "fangsong",
+    name: "仿宋",
+    fontClass: "font-fangsong",
+    preview: "系统仿宋体",
+    group: "system",
+  },
+];
+
+/** 字体分组名称 */
+export const fontGroupNames: Record<FontFamilyConfig["group"], string> = {
+  basic: "基础字体",
+  opensource: "开源字体",
+  system: "系统字体",
+};
+
+/** 编辑器设置 */
+export interface EditorSettings {
+  /** 字体系列 */
+  fontFamily: EditorFontFamily;
+  /** 字体大小 (px) */
+  fontSize: number;
+  /** 行高 (倍数) */
+  lineHeight: number;
+  /** 段落间距 (px) */
+  paragraphSpacing: number;
+}
