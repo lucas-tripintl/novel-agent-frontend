@@ -25,12 +25,13 @@ import {
   BookOpen,
   FileText,
   Plus,
-  Sparkles,
   Upload,
   MoreHorizontal,
   Trash2,
   AlertCircle,
   RefreshCw,
+  Eye,
+  PenLine,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -48,14 +49,21 @@ const projectTypeBadgeStyles: Record<ProjectType, string> = {
 // 项目卡片骨架屏
 function ProjectCardSkeleton() {
   return (
-    <Card className="bg-card/50 border-border/50 backdrop-blur-sm overflow-hidden p-0 gap-0">
-      <div className="aspect-[4/5] bg-gradient-to-br from-muted/50 to-muted/30 flex items-center justify-center">
-        <Skeleton className="h-12 w-12 rounded-full" />
+    <Card className="bg-card/50 border-border/50 backdrop-blur-sm overflow-hidden p-4">
+      <div className="space-y-3">
+        <div className="flex items-start justify-between">
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-5 w-5 rounded" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-4 w-12 rounded-full" />
+          <Skeleton className="h-4 w-16 rounded-full" />
+        </div>
+        <div className="flex gap-2 pt-2">
+          <Skeleton className="h-8 flex-1" />
+          <Skeleton className="h-8 flex-1" />
+        </div>
       </div>
-      <CardContent className="p-3 space-y-2">
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-3 w-1/2" />
-      </CardContent>
     </Card>
   );
 }
@@ -118,65 +126,26 @@ function ProjectCard({
       : 0;
 
   return (
-    <Card className="bg-card/50 border-border/50 backdrop-blur-sm hover:border-primary/30 transition-all group cursor-pointer overflow-hidden p-0 gap-0 relative">
-      <Link href={`/projects/${project.id}`} className="block">
-        {/* 书籍封面 */}
-        <div className="aspect-[4/5] bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 relative flex items-center justify-center group-hover:from-primary/30 group-hover:to-accent/30 transition-all">
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.03)_50%,transparent_100%)]" />
-          <Sparkles className="h-12 w-12 text-primary/40 group-hover:text-primary/60 transition-colors" />
+    <Card className="bg-card/50 border-border/50 backdrop-blur-sm hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 group overflow-hidden relative">
+      {/* 顶部装饰线 - 科技感 */}
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
-          {/* 项目类型徽章 */}
-          <div className="absolute top-2 left-2">
-            <Badge
-              variant="outline"
-              className={`text-[10px] ${projectTypeBadgeStyles[project.project_type]}`}
-            >
-              {projectTypeLabels[project.project_type]}
-            </Badge>
-          </div>
+      {/* 背景网格纹理 */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:20px_20px] opacity-0 group-hover:opacity-100 transition-opacity" />
 
-          {/* 状态徽章 - 只在非完成状态显示 */}
-          {project.status !== "completed" && (
-            <div className="absolute top-2 right-2">
-              <ProjectStatusBadge status={project.status} />
-            </div>
-          )}
-
-          {/* 进度条 */}
-          {project.status === "in_progress" && project.total_chapters > 0 && (
-            <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-background/80 to-transparent">
-              <Progress value={progress} className="h-1 bg-muted/50" />
-              <span className="text-[10px] font-mono text-primary mt-1 block text-center">
-                {project.current_chapter}/{project.total_chapters} 章
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* 书籍信息 */}
-        <CardContent className="p-3 space-y-1.5">
-          <h3 className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
+      <CardContent className="p-4 relative">
+        {/* 头部：标题 + 操作菜单 */}
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <h3 className="font-semibold text-base leading-tight group-hover:text-primary transition-colors line-clamp-2">
             {project.name}
           </h3>
-          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <FileText className="h-3 w-3" />
-              <span className="font-mono">{project.total_chapters} 章</span>
-            </div>
-          </div>
-        </CardContent>
-      </Link>
 
-      {/* 操作菜单 */}
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-        {project.status === "completed" && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 bg-background/80 backdrop-blur-sm"
-                onClick={(e) => e.preventDefault()}
+                className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
@@ -184,18 +153,69 @@ function ProjectCard({
             <DropdownMenuContent align="end">
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onDelete(project.id);
-                }}
+                onClick={() => onDelete(project.id)}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 删除
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        </div>
+
+        {/* 徽章行 */}
+        <div className="flex flex-wrap items-center gap-1.5 mb-4">
+          <Badge
+            variant="outline"
+            className={`text-[10px] px-1.5 py-0 ${projectTypeBadgeStyles[project.project_type]}`}
+          >
+            {projectTypeLabels[project.project_type]}
+          </Badge>
+
+          {project.status !== "completed" && (
+            <ProjectStatusBadge status={project.status} />
+          )}
+
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground ml-auto">
+            <FileText className="h-3 w-3" />
+            <span className="font-mono">{project.total_chapters} 章</span>
+          </div>
+        </div>
+
+        {/* 进度条 - 分析中时显示 */}
+        {project.status === "in_progress" && project.total_chapters > 0 && (
+          <div className="mb-4">
+            <Progress value={progress} className="h-1.5 bg-muted/50" />
+            <span className="text-[10px] font-mono text-muted-foreground mt-1 block">
+              分析进度: {project.current_chapter}/{project.total_chapters}
+            </span>
+          </div>
         )}
-      </div>
+
+        {/* 操作按钮 */}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 h-9 text-xs border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all"
+            asChild
+          >
+            <Link href={`/projects/${project.id}`}>
+              <Eye className="mr-1.5 h-3.5 w-3.5" />
+              查看
+            </Link>
+          </Button>
+          <Button
+            size="sm"
+            className="flex-1 h-9 text-xs bg-primary/90 hover:bg-primary glow-primary transition-all"
+            asChild
+          >
+            <Link href={`/write/${project.id}`}>
+              <PenLine className="mr-1.5 h-3.5 w-3.5" />
+              创作
+            </Link>
+          </Button>
+        </div>
+      </CardContent>
     </Card>
   );
 }
@@ -276,8 +296,8 @@ export function DashboardContent() {
         </div>
 
         {isLoading ? (
-          <div className="grid gap-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {Array.from({ length: 6 }).map((_, i) => (
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
               <ProjectCardSkeleton key={i} />
             ))}
           </div>
@@ -286,7 +306,7 @@ export function DashboardContent() {
         ) : projects.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid gap-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {projects.map((project) => (
               <ProjectCard
                 key={project.id}
