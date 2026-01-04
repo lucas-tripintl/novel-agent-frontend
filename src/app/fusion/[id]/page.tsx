@@ -4,102 +4,176 @@ import { MainLayout } from "@/components/layout/main-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Blend,
   ChevronLeft,
   ChevronRight,
   Loader2,
   Check,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FusionStatusBadge } from "@/components/common/status-badge";
 import { cn } from "@/lib/utils";
 import {
-  type FusionTask,
-  type FusionCandidate,
-  fusionModes,
-} from "@/types/fusion";
-
-// 模拟融合任务详情
-const mockTask: FusionTask = {
-  id: "task-1",
-  status: "completed",
-  sourceProjectIds: ["1", "2"],
-  sourceProjects: [
-    { id: "1", name: "斗破苍穹", color: "#22c55e" },
-    { id: "2", name: "遮天", color: "#a855f7" },
-  ],
-  mode: "mashup",
-  candidateCount: 3,
-  candidates: [
-    {
-      id: "c1",
-      name: "天道觉醒",
-      summary:
-        "融合斗气与仙道体系，主角在两界交融中觉醒天道意志，以炼药为核心成长路线，结合遮天的大帝之路与斗破的异火系统。",
-      settings: {},
-      sourceElements: ["斗气体系", "仙道修炼", "异火系统"],
-      originalityScore: 85,
-      marketAssessment: "爽文市场潜力大",
-      highlights: ["双体系融合", "创新成长路线", "视觉冲击强"],
-      risks: ["设定复杂", "可能影响阅读流畅度"],
-    },
-    {
-      id: "c2",
-      name: "万古帝尊",
-      summary:
-        "以遮天的荒古背景为主，融入斗破的家族势力斗争，主角从废物到大帝的逆袭之路，强调命运与轮回的主题。",
-      settings: {},
-      sourceElements: ["荒古设定", "家族斗争", "轮回体系"],
-      originalityScore: 72,
-      marketAssessment: "符合市场主流偏好",
-      highlights: ["故事张力强", "人物群像丰富", "主题深刻"],
-      risks: ["与原作相似度高", "需要大量原创剧情"],
-    },
-    {
-      id: "c3",
-      name: "药道通天",
-      summary:
-        "以炼药为主线的全新世界观，结合两本书的丹药体系和天才设定，创造一个以药道定天下的修炼世界。",
-      settings: {},
-      sourceElements: ["炼药体系", "天才设定", "势力争霸"],
-      originalityScore: 91,
-      marketAssessment: "差异化竞争优势明显",
-      highlights: ["独特的主线设定", "创新的战斗方式", "完整的升级体系"],
-      risks: ["受众可能较窄", "需要精心设计战斗场面"],
-    },
-  ],
-  progress: 100,
-  extracted: {
-    powerSystems: 8,
-    plotPatterns: 12,
-    archetypes: 6,
-    worldview: 10,
-  },
-  createdAt: "2024-01-12",
-  updatedAt: "2024-01-14",
-};
+  useFusionTask,
+  useFusionModes,
+  useSelectFusionCandidate,
+  useBuildFusionProject,
+} from "@/hooks/use-fusion";
+import { formatTimeAgo } from "@/lib/utils/time";
+import type { FusionCandidateRead } from "@/types/fusion";
 
 export default function FusionDetailPage() {
   const params = useParams();
   const router = useRouter();
   const taskId = params.id as string;
   const [selectedCandidate, setSelectedCandidate] = useState<number | null>(null);
+  const [showBuildDialog, setShowBuildDialog] = useState(false);
+  const [projectName, setProjectName] = useState("");
 
-  // 实际项目中应该从 API 获取数据
-  const task = mockTask;
+  // 获取任务详情
+  const {
+    data: task,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useFusionTask(taskId);
 
-  // 确认选择
-  const handleConfirmSelection = async () => {
-    if (selectedCandidate === null) return;
-    // 模拟创建项目
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    router.push("/projects/new-fusion-project");
+  // 进行中的任务定时刷新
+  const isInProgress = task && (
+    task.status === "extracting" ||
+    task.status === "fusing" ||
+    task.status === "building" ||
+    task.status === "pending"
+  );
+
+  useEffect(() => {
+    if (!isInProgress) return;
+
+    const interval = setInterval(() => {
+      refetch();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [isInProgress, refetch]);
+
+  // 获取融合模式信息
+  const { data: modesData } = useFusionModes();
+
+  // 选择候选方案
+  const selectCandidate = useSelectFusionCandidate();
+
+  // 创建项目
+  const buildProject = useBuildFusionProject();
+
+  // 同步已选择的候选
+  useEffect(() => {
+    if (task?.selected_candidate_index !== null && task?.selected_candidate_index !== undefined) {
+      setSelectedCandidate(task.selected_candidate_index);
+    }
+  }, [task?.selected_candidate_index]);
+
+  // 获取融合模式名称
+  const getModeName = (mode: string) => {
+    const modeInfo = modesData?.find((m) => m.mode === mode);
+    return modeInfo?.name ?? mode;
   };
+
+  // 确认选择候选方案
+  const handleSelectCandidate = async () => {
+    if (selectedCandidate === null) return;
+
+    try {
+      await selectCandidate.mutateAsync({
+        taskId,
+        request: { candidate_index: selectedCandidate },
+      });
+    } catch (error) {
+      console.error("选择候选方案失败:", error);
+    }
+  };
+
+  // 创建项目
+  const handleBuildProject = async () => {
+    if (!projectName.trim()) return;
+
+    try {
+      await buildProject.mutateAsync({
+        taskId,
+        request: { project_name: projectName.trim() },
+      });
+      setShowBuildDialog(false);
+    } catch (error) {
+      console.error("创建项目失败:", error);
+    }
+  };
+
+  // 加载状态
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-48" />
+          </div>
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // 错误状态
+  if (isError || !task) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/fusion">
+                <ChevronLeft className="h-4 w-4" />
+              </Link>
+            </Button>
+            <h1 className="text-2xl font-bold">融合任务</h1>
+          </div>
+          <Card className="bg-destructive/10 border-destructive/30">
+            <CardContent className="flex items-center gap-4 py-6">
+              <AlertCircle className="h-8 w-8 text-destructive" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-destructive">加载失败</h3>
+                <p className="text-sm text-muted-foreground">
+                  {error instanceof Error ? error.message : "无法加载任务详情"}
+                </p>
+              </div>
+              <Button variant="outline" onClick={() => refetch()}>
+                重试
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  const candidates = task.candidates as FusionCandidateRead[];
 
   return (
     <MainLayout>
@@ -124,118 +198,116 @@ export default function FusionDetailPage() {
                 <FusionStatusBadge status={task.status} />
               </div>
               <div className="flex items-center gap-2 mt-1">
-                {task.sourceProjects.map((project) => (
-                  <Badge
-                    key={project.id}
-                    variant="outline"
-                    style={{ borderColor: project.color, color: project.color }}
-                    className="text-xs"
-                  >
-                    {project.name}
-                  </Badge>
-                ))}
+                <Badge variant="outline" className="text-xs">
+                  {task.source_project_ids.length} 个源项目
+                </Badge>
                 <span className="text-muted-foreground">·</span>
                 <span className="text-sm text-muted-foreground">
-                  {fusionModes.find((m) => m.id === task.mode)?.name}
+                  {getModeName(task.fusion_mode)}
+                </span>
+                <span className="text-muted-foreground">·</span>
+                <span className="text-xs text-muted-foreground">
+                  {formatTimeAgo(task.created_at)}
                 </span>
               </div>
             </div>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+            />
+            刷新
+          </Button>
         </div>
 
-        {/* 根据状态显示不同内容 */}
-        {(task.status === "extracting" || task.status === "fusing") && (
-          /* 进度展示 */
-          <div className="space-y-6">
-            {/* 阶段指示 */}
-            <div className="flex items-center gap-4">
-              <div
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-lg",
-                  task.status === "extracting"
-                    ? "bg-primary/10 text-primary"
-                    : "bg-muted text-muted-foreground"
-                )}
-              >
-                <div className="h-6 w-6 rounded-full bg-current/20 flex items-center justify-center text-xs font-mono">
-                  1
-                </div>
-                <span className="font-medium">元素提取</span>
-                {task.status === "extracting" && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                )}
-              </div>
-              <div className="h-px flex-1 bg-border" />
-              <div
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-lg",
-                  task.status === "fusing"
-                    ? "bg-primary/10 text-primary"
-                    : "bg-muted text-muted-foreground"
-                )}
-              >
-                <div className="h-6 w-6 rounded-full bg-current/20 flex items-center justify-center text-xs font-mono">
-                  2
-                </div>
-                <span className="font-medium">融合生成</span>
-                {task.status === "fusing" && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                )}
-              </div>
-            </div>
-
-            {/* 进度详情 */}
-            <Card className="bg-card/50">
-              <CardContent className="p-6 space-y-4">
-                <Progress value={task.progress} className="h-2" />
-
-                {task.status === "extracting" && task.extracted && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <div className="font-mono text-2xl text-primary">
-                        {task.extracted.powerSystems}
-                      </div>
-                      <div className="text-xs text-muted-foreground">力量体系</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-mono text-2xl text-primary">
-                        {task.extracted.plotPatterns}
-                      </div>
-                      <div className="text-xs text-muted-foreground">剧情模式</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-mono text-2xl text-primary">
-                        {task.extracted.archetypes}
-                      </div>
-                      <div className="text-xs text-muted-foreground">角色原型</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-mono text-2xl text-primary">
-                        {task.extracted.worldview}
-                      </div>
-                      <div className="text-xs text-muted-foreground">世界观模式</div>
-                    </div>
-                  </div>
-                )}
-
-                {task.status === "fusing" && (
-                  <p className="text-center text-muted-foreground">
-                    正在生成 {task.candidateCount} 个候选方案...
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+        {/* 失败状态 */}
+        {task.status === "failed" && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {task.error_message || "融合任务失败，请重试"}
+            </AlertDescription>
+          </Alert>
         )}
 
-        {task.status === "completed" && (
-          /* 方案对比 */
+        {/* 进行中状态 */}
+        {(task.status === "pending" || task.status === "extracting" || task.status === "fusing") && (
+          <Card className="bg-card/50">
+            <CardContent className="p-6 space-y-4">
+              {/* 阶段指示 */}
+              <div className="flex items-center gap-4">
+                <div
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-lg",
+                    task.status === "extracting"
+                      ? "bg-primary/10 text-primary"
+                      : task.status === "pending"
+                      ? "bg-muted text-muted-foreground"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  <div className="h-6 w-6 rounded-full bg-current/20 flex items-center justify-center text-xs font-mono">
+                    1
+                  </div>
+                  <span className="font-medium">元素提取</span>
+                  {task.status === "extracting" && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                  {task.status === "fusing" && (
+                    <Check className="h-4 w-4" />
+                  )}
+                </div>
+                <div className="h-px flex-1 bg-border" />
+                <div
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-lg",
+                    task.status === "fusing"
+                      ? "bg-primary/10 text-primary"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  <div className="h-6 w-6 rounded-full bg-current/20 flex items-center justify-center text-xs font-mono">
+                    2
+                  </div>
+                  <span className="font-medium">融合生成</span>
+                  {task.status === "fusing" && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                </div>
+              </div>
+
+              {/* 进度说明 */}
+              <div className="text-center text-muted-foreground">
+                {task.status === "pending" && "准备开始..."}
+                {task.status === "extracting" && "正在从源项目提取可复用元素..."}
+                {task.status === "fusing" && `正在生成 ${task.candidate_count} 个候选方案...`}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 方案对比 - 完成状态 */}
+        {task.status === "completed" && candidates.length > 0 && (
           <div className="space-y-6">
             <h2 className="text-lg font-semibold">选择你喜欢的方案</h2>
 
+            {/* 对比说明 */}
+            {task.comparison_summary && (
+              <Card className="bg-muted/30">
+                <CardContent className="p-4">
+                  <p className="text-sm text-muted-foreground">{task.comparison_summary}</p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* 方案卡片 */}
             <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-              {task.candidates.map((candidate, index) => (
+              {candidates.map((candidate, index) => (
                 <Card
                   key={candidate.id}
                   className={cn(
@@ -250,7 +322,7 @@ export default function FusionDetailPage() {
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg">方案 {index + 1}</CardTitle>
                       <Badge variant="outline" className="font-mono">
-                        原创度 {candidate.originalityScore}
+                        原创度 {candidate.originality_score}
                       </Badge>
                     </div>
                     <p className="text-xl font-semibold text-primary">
@@ -312,21 +384,76 @@ export default function FusionDetailPage() {
             {/* 确认按钮 */}
             {selectedCandidate !== null && (
               <div className="flex justify-end gap-4">
-                <Button variant="outline" asChild>
-                  <Link href={`/fusion/${task.id}/candidate/${selectedCandidate}`}>
-                    查看详情
-                  </Link>
-                </Button>
-                <Button className="glow-green" onClick={handleConfirmSelection}>
-                  确认选择并创建项目
+                <Button
+                  className="glow-green"
+                  onClick={handleSelectCandidate}
+                  disabled={selectCandidate.isPending}
+                >
+                  {selectCandidate.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      确认中...
+                    </>
+                  ) : (
+                    "确认选择"
+                  )}
                 </Button>
               </div>
+            )}
+
+            {/* 错误提示 */}
+            {selectCandidate.error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {selectCandidate.error instanceof Error
+                    ? selectCandidate.error.message
+                    : "选择失败，请重试"}
+                </AlertDescription>
+              </Alert>
             )}
           </div>
         )}
 
+        {/* 已选择状态 - 可以创建项目 */}
+        {task.status === "selected" && task.selected_candidate_index !== null && (
+          <div className="space-y-6">
+            <Card className="bg-card/50 border-primary/30">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
+                  <Check className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">已选择方案</h3>
+                <p className="text-muted-foreground text-center max-w-sm mb-2">
+                  {candidates[task.selected_candidate_index]?.name ?? `方案 ${task.selected_candidate_index + 1}`}
+                </p>
+                <p className="text-sm text-muted-foreground text-center max-w-md mb-6">
+                  {candidates[task.selected_candidate_index]?.summary}
+                </p>
+                <Button className="glow-green" onClick={() => setShowBuildDialog(true)}>
+                  创建项目
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* 创建中状态 */}
+        {task.status === "building" && (
+          <Card className="bg-card/50">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+              <h3 className="text-lg font-semibold mb-2">正在创建项目</h3>
+              <p className="text-muted-foreground text-center max-w-sm">
+                基于选中的候选方案创建新项目...
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 已完成状态 */}
         {task.status === "done" && (
-          /* 已完成 */
           <Card className="bg-card/50 border-primary/30">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
@@ -336,16 +463,69 @@ export default function FusionDetailPage() {
               <p className="text-muted-foreground text-center max-w-sm mb-6">
                 已成功创建新项目，你可以前往项目详情页查看
               </p>
-              <Button asChild className="glow-green">
-                <Link href={`/projects/${task.resultProjectId}`}>
-                  查看项目
-                  <ChevronRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
+              {task.result_project_id && (
+                <Button asChild className="glow-green">
+                  <Link href={`/projects/${task.result_project_id}`}>
+                    查看项目
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}
       </div>
+
+      {/* 创建项目对话框 */}
+      <Dialog open={showBuildDialog} onOpenChange={setShowBuildDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>创建项目</DialogTitle>
+            <DialogDescription>
+              基于选中的融合方案创建新项目
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="projectName">项目名称</Label>
+            <Input
+              id="projectName"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              placeholder="输入项目名称..."
+              className="mt-2"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBuildDialog(false)}>
+              取消
+            </Button>
+            <Button
+              onClick={handleBuildProject}
+              disabled={!projectName.trim() || buildProject.isPending}
+              className="glow-green"
+            >
+              {buildProject.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  创建中...
+                </>
+              ) : (
+                "创建项目"
+              )}
+            </Button>
+          </DialogFooter>
+          {buildProject.error && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {buildProject.error instanceof Error
+                  ? buildProject.error.message
+                  : "创建失败，请重试"}
+              </AlertDescription>
+            </Alert>
+          )}
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }

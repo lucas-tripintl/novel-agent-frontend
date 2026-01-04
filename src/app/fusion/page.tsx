@@ -4,70 +4,33 @@ import { MainLayout } from "@/components/layout/main-layout";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Blend, Plus, ChevronRight } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Blend, Plus, ChevronRight, RefreshCw, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { FusionStatusBadge } from "@/components/common/status-badge";
-import { type FusionTask, fusionModes } from "@/types/fusion";
-
-// 模拟融合任务数据
-const mockTasks: FusionTask[] = [
-  {
-    id: "task-1",
-    status: "completed",
-    sourceProjectIds: ["1", "2"],
-    sourceProjects: [
-      { id: "1", name: "斗破苍穹", color: "#22c55e" },
-      { id: "2", name: "遮天", color: "#a855f7" },
-    ],
-    mode: "mashup",
-    candidateCount: 3,
-    candidates: [],
-    progress: 100,
-    createdAt: "2024-01-12",
-    updatedAt: "2024-01-14",
-  },
-  {
-    id: "task-2",
-    status: "fusing",
-    sourceProjectIds: ["1", "3"],
-    sourceProjects: [
-      { id: "1", name: "斗破苍穹", color: "#22c55e" },
-      { id: "3", name: "完美世界", color: "#06b6d4" },
-    ],
-    mode: "abstract_recombine",
-    candidateCount: 2,
-    candidates: [],
-    progress: 65,
-    extracted: {
-      powerSystems: 8,
-      plotPatterns: 12,
-      archetypes: 6,
-      worldview: 10,
-    },
-    createdAt: "2024-01-14",
-    updatedAt: "2024-01-14",
-  },
-  {
-    id: "task-3",
-    status: "done",
-    sourceProjectIds: ["2", "4"],
-    sourceProjects: [
-      { id: "2", name: "遮天", color: "#a855f7" },
-      { id: "4", name: "凡人修仙传", color: "#f97316" },
-    ],
-    mode: "twist",
-    candidateCount: 3,
-    candidates: [],
-    selectedCandidateIndex: 1,
-    resultProjectId: "5",
-    progress: 100,
-    createdAt: "2024-01-08",
-    updatedAt: "2024-01-12",
-  },
-];
+import { useFusionTasks, useFusionModes } from "@/hooks/use-fusion";
+import { formatTimeAgo } from "@/lib/utils/time";
 
 export default function FusionPage() {
+  const {
+    data: tasksData,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useFusionTasks({ limit: 20 });
+
+  const { data: modesData } = useFusionModes();
+
+  const tasks = tasksData?.items ?? [];
+
+  // 获取融合模式名称
+  const getModeName = (mode: string) => {
+    const modeInfo = modesData?.find((m) => m.mode === mode);
+    return modeInfo?.name ?? mode;
+  };
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -82,18 +45,73 @@ export default function FusionPage() {
               将多本书的元素融合，创造全新设定
             </p>
           </div>
-          <Button asChild className="glow-green">
-            <Link href="/fusion/create">
-              <Plus className="mr-2 h-4 w-4" />
-              新建融合
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+              />
+              刷新
+            </Button>
+            <Button asChild className="glow-green">
+              <Link href="/fusion/create">
+                <Plus className="mr-2 h-4 w-4" />
+                新建融合
+              </Link>
+            </Button>
+          </div>
         </div>
 
-        {/* 任务列表 */}
-        {mockTasks.length > 0 ? (
+        {/* 加载状态 */}
+        {isLoading && (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {mockTasks.map((task) => (
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="bg-card/50 border-border/50">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-5 w-16" />
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Skeleton className="h-5 w-32" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-6 w-16" />
+                    <Skeleton className="h-6 w-20" />
+                  </div>
+                  <Skeleton className="h-9 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* 错误状态 */}
+        {isError && (
+          <Card className="bg-destructive/10 border-destructive/30">
+            <CardContent className="flex items-center gap-4 py-6">
+              <AlertCircle className="h-8 w-8 text-destructive" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-destructive">加载失败</h3>
+                <p className="text-sm text-muted-foreground">
+                  {error instanceof Error ? error.message : "无法加载融合任务"}
+                </p>
+              </div>
+              <Button variant="outline" onClick={() => refetch()}>
+                重试
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 任务列表 */}
+        {!isLoading && !isError && tasks.length > 0 && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {tasks.map((task) => (
               <Card
                 key={task.id}
                 className="bg-card/50 border-border/50 hover:border-primary/30 transition-all cursor-pointer"
@@ -107,36 +125,27 @@ export default function FusionPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {/* 源项目 */}
-                  <div className="flex flex-wrap gap-1">
-                    {task.sourceProjects.map((project) => (
-                      <Badge
-                        key={project.id}
-                        variant="outline"
-                        style={{ borderColor: project.color, color: project.color }}
-                        className="text-xs"
-                      >
-                        {project.name}
-                      </Badge>
-                    ))}
+                  {/* 源项目数量 */}
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      {task.source_project_count} 个源项目
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {formatTimeAgo(task.created_at)}
+                    </span>
                   </div>
 
                   {/* 融合模式 */}
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="text-xs">
-                      {fusionModes.find((m) => m.id === task.mode)?.name}
+                      {getModeName(task.fusion_mode)}
                     </Badge>
-                    {task.candidateCount > 0 && (
+                    {task.candidate_count > 0 && (
                       <span className="text-xs text-muted-foreground">
-                        {task.candidateCount} 个方案
+                        {task.candidate_count} 个方案
                       </span>
                     )}
                   </div>
-
-                  {/* 进度 */}
-                  {(task.status === "extracting" || task.status === "fusing") && (
-                    <Progress value={task.progress} className="h-1.5" />
-                  )}
 
                   {/* 操作 */}
                   <div className="flex justify-end">
@@ -151,8 +160,10 @@ export default function FusionPage() {
               </Card>
             ))}
           </div>
-        ) : (
-          /* 空状态 */
+        )}
+
+        {/* 空状态 */}
+        {!isLoading && !isError && tasks.length === 0 && (
           <Card className="bg-card/30 border-dashed border-2">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">

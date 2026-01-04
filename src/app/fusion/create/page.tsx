@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Blend,
   ChevronLeft,
@@ -30,14 +31,16 @@ import {
   RefreshCw,
   Layers,
   Swords,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useCallback, useMemo } from "react";
 import { Steps } from "@/components/common/steps";
 import { cn } from "@/lib/utils";
-import { type FusionMode, type SelectedElement, fusionModes } from "@/types/fusion";
 import { ProjectElementSelector } from "@/components/fusion/project-element-selector";
+import { useFusionModes, useCreateFusionTask, useRunFusionPipeline } from "@/hooks/use-fusion";
+import type { FusionMode, SelectedElement } from "@/types/fusion";
 
 // 融合模式图标映射
 const fusionModeIcons: Record<FusionMode, React.ComponentType<{ className?: string }>> = {
@@ -63,12 +66,25 @@ export default function FusionCreatePage() {
   const [selectedMode, setSelectedMode] = useState<FusionMode | null>(null);
   const [userIdeas, setUserIdeas] = useState("");
   const [candidateCount, setCandidateCount] = useState(3);
-  const [isCreating, setIsCreating] = useState(false);
+
+  // API hooks
+  const { data: modesData, isLoading: isLoadingModes } = useFusionModes();
+  const createTask = useCreateFusionTask();
+  const runPipeline = useRunFusionPipeline();
+
+  const isCreating = createTask.isPending || runPipeline.isPending;
+  const createError = createTask.error || runPipeline.error;
 
   // 处理元素选择变化
   const handleElementsChange = useCallback((elements: SelectedElement[]) => {
     setSelectedElements(elements);
   }, []);
+
+  // 从选中元素中提取唯一项目 ID
+  const uniqueProjectIds = useMemo(() => {
+    const ids = new Set(selectedElements.map((el) => el.projectId));
+    return Array.from(ids);
+  }, [selectedElements]);
 
   // 按项目分组的元素统计
   const elementsByProject = useMemo(() => {
@@ -85,16 +101,30 @@ export default function FusionCreatePage() {
   }, [selectedElements]);
 
   // 涉及的项目数量
-  const involvedProjectCount = elementsByProject.length;
+  const involvedProjectCount = uniqueProjectIds.length;
 
   // 创建融合任务
   const handleCreate = useCallback(async () => {
-    setIsCreating(true);
-    // 模拟创建过程
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    // 跳转到任务详情页
-    router.push("/fusion/task-new");
-  }, [router]);
+    if (selectedMode === null || uniqueProjectIds.length < 2) return;
+
+    try {
+      // 1. 创建任务
+      const task = await createTask.mutateAsync({
+        source_project_ids: uniqueProjectIds,
+        fusion_mode: selectedMode,
+        user_ideas: userIdeas || null,
+        candidate_count: candidateCount,
+      });
+
+      // 2. 启动流水线
+      await runPipeline.mutateAsync(task.id);
+
+      // 3. 跳转到任务详情页
+      router.push(`/fusion/${task.id}`);
+    } catch (error) {
+      console.error("创建融合任务失败:", error);
+    }
+  }, [selectedMode, uniqueProjectIds, userIdeas, candidateCount, createTask, runPipeline, router]);
 
   // 下一步
   const nextStep = useCallback(() => {
@@ -110,8 +140,8 @@ export default function FusionCreatePage() {
   const canProceed = () => {
     switch (currentStep) {
       case 0:
-        // 只要选中至少1个元素即可
-        return selectedElements.length >= 1;
+        // 需要至少选中来自 2 个不同项目的元素
+        return uniqueProjectIds.length >= 2;
       case 1:
         return selectedMode !== null;
       case 2:
@@ -122,6 +152,9 @@ export default function FusionCreatePage() {
         return false;
     }
   };
+
+  // 获取融合模式列表
+  const fusionModes = modesData ?? [];
 
   return (
     <MainLayout>
@@ -171,11 +204,11 @@ export default function FusionCreatePage() {
                   minSelection={1}
                 />
 
-                {selectedElements.length < 1 && (
+                {uniqueProjectIds.length < 2 && (
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      请至少选择 1 个元素进行融合
+                      请选择来自至少 2 个不同项目的元素进行融合
                     </AlertDescription>
                   </Alert>
                 )}
@@ -187,43 +220,51 @@ export default function FusionCreatePage() {
               <div className="flex-1 flex flex-col space-y-4 min-h-0">
                 <Label className="text-lg font-semibold">选择融合模式</Label>
 
-                <RadioGroup
-                  value={selectedMode || ""}
-                  onValueChange={(value) => setSelectedMode(value as FusionMode)}
-                >
+                {isLoadingModes ? (
                   <div className="grid gap-4 grid-cols-2">
-                    {fusionModes.map((mode) => {
-                      const Icon = fusionModeIcons[mode.id];
-                      return (
-                        <Card
-                          key={mode.id}
-                          className={cn(
-                            "cursor-pointer transition-all",
-                            selectedMode === mode.id
-                              ? "border-primary bg-primary/5"
-                              : "bg-card/50 border-border/50 hover:border-primary/30"
-                          )}
-                          onClick={() => setSelectedMode(mode.id)}
-                        >
-                          <CardContent className="p-4">
-                            <div className="flex items-start gap-3">
-                              <RadioGroupItem value={mode.id} className="mt-1" />
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <Icon className="h-4 w-4 text-primary" />
-                                  <h4 className="font-medium">{mode.name}</h4>
-                                </div>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {mode.description}
-                                </p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
+                    {[1, 2, 3, 4].map((i) => (
+                      <Skeleton key={i} className="h-24" />
+                    ))}
                   </div>
-                </RadioGroup>
+                ) : (
+                  <RadioGroup
+                    value={selectedMode || ""}
+                    onValueChange={(value) => setSelectedMode(value as FusionMode)}
+                  >
+                    <div className="grid gap-4 grid-cols-2">
+                      {fusionModes.map((mode) => {
+                        const Icon = fusionModeIcons[mode.mode] || Layers;
+                        return (
+                          <Card
+                            key={mode.mode}
+                            className={cn(
+                              "cursor-pointer transition-all",
+                              selectedMode === mode.mode
+                                ? "border-primary bg-primary/5"
+                                : "bg-card/50 border-border/50 hover:border-primary/30"
+                            )}
+                            onClick={() => setSelectedMode(mode.mode)}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-start gap-3">
+                                <RadioGroupItem value={mode.mode} className="mt-1" />
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <Icon className="h-4 w-4 text-primary" />
+                                    <h4 className="font-medium">{mode.name}</h4>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    {mode.description}
+                                  </p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </RadioGroup>
+                )}
               </div>
             )}
 
@@ -298,7 +339,7 @@ export default function FusionCreatePage() {
                   <div className="flex items-center justify-between py-2 border-b border-border/50">
                     <span className="text-muted-foreground">融合模式</span>
                     <Badge variant="outline">
-                      {fusionModes.find((m) => m.id === selectedMode)?.name}
+                      {fusionModes.find((m) => m.mode === selectedMode)?.name ?? selectedMode}
                     </Badge>
                   </div>
 
@@ -314,6 +355,16 @@ export default function FusionCreatePage() {
                     </div>
                   )}
                 </div>
+
+                {/* 错误提示 */}
+                {createError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      {createError instanceof Error ? createError.message : "创建失败，请重试"}
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             )}
 
@@ -322,7 +373,7 @@ export default function FusionCreatePage() {
               <Button
                 variant="outline"
                 onClick={prevStep}
-                disabled={currentStep === 0}
+                disabled={currentStep === 0 || isCreating}
               >
                 <ChevronLeft className="mr-2 h-4 w-4" />
                 上一步
@@ -339,8 +390,17 @@ export default function FusionCreatePage() {
                   disabled={isCreating}
                   className="glow-green"
                 >
-                  {isCreating ? "创建中..." : "开始融合"}
-                  <Blend className="ml-2 h-4 w-4" />
+                  {isCreating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      创建中...
+                    </>
+                  ) : (
+                    <>
+                      开始融合
+                      <Blend className="ml-2 h-4 w-4" />
+                    </>
+                  )}
                 </Button>
               )}
             </div>

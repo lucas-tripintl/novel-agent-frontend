@@ -1,6 +1,8 @@
 import type { EntityType, EntityRead } from "@/types/api";
 
-// 融合任务类型定义
+// ============ API 枚举类型 ============
+
+/** 融合任务状态（对应后端 FusionStatus） */
 export type FusionStatus =
   | "pending"
   | "extracting"
@@ -11,12 +13,90 @@ export type FusionStatus =
   | "done"
   | "failed";
 
+/** 融合模式（对应后端 FusionMode） */
 export type FusionMode =
   | "mashup"
   | "twist"
   | "abstract_recombine"
   | "conflict_merge"
   | "custom";
+
+// ============ API 请求类型 ============
+
+/** 创建融合任务请求 */
+export interface FusionTaskCreateRequest {
+  source_project_ids: string[];
+  fusion_mode?: FusionMode;
+  custom_instruction?: string | null;
+  user_ideas?: string | null;
+  candidate_count?: number;
+  element_type_filters?: string[];
+}
+
+/** 选择候选方案请求 */
+export interface FusionSelectRequest {
+  candidate_index: number;
+}
+
+/** 创建项目请求 */
+export interface FusionBuildRequest {
+  project_name: string;
+}
+
+// ============ API 响应类型 ============
+
+/** 融合模式信息（API 返回） */
+export interface FusionModeRead {
+  mode: FusionMode;
+  name: string;
+  description: string;
+  instruction: string;
+}
+
+/** 融合候选方案（API 返回） */
+export interface FusionCandidateRead {
+  id: string;
+  name: string;
+  summary: string;
+  settings: Record<string, unknown>;
+  source_elements: string[];
+  originality_score: number;
+  market_assessment: string;
+  risks: string[];
+  highlights: string[];
+}
+
+/** 融合任务详情（API 返回） */
+export interface FusionTaskRead {
+  id: string;
+  team_id: string;
+  user_id: string;
+  source_project_ids: string[];
+  fusion_mode: FusionMode;
+  custom_instruction: string | null;
+  user_ideas: string | null;
+  candidate_count: number;
+  status: FusionStatus;
+  error_message: string | null;
+  candidates: FusionCandidateRead[];
+  comparison_summary: string | null;
+  selected_candidate_index: number | null;
+  result_project_id: string | null;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+}
+
+/** 融合任务列表项（API 返回） */
+export interface FusionTaskList {
+  id: string;
+  fusion_mode: FusionMode;
+  status: FusionStatus;
+  source_project_count: number;
+  candidate_count: number;
+  selected_candidate_index: number | null;
+  created_at: string;
+}
 
 // ============ 元素选择相关类型 ============
 
@@ -71,48 +151,7 @@ export interface ProjectElementSelectorProps {
   showSearch?: boolean;
 }
 
-export interface FusionSourceProject {
-  id: string;
-  name: string;
-  color: string;
-}
-
-export interface FusionCandidate {
-  id: string;
-  name: string;
-  summary: string;
-  settings: Record<string, unknown>;
-  sourceElements: string[];
-  originalityScore: number;
-  marketAssessment: string;
-  risks: string[];
-  highlights: string[];
-}
-
-export interface FusionExtracted {
-  powerSystems: number;
-  plotPatterns: number;
-  archetypes: number;
-  worldview: number;
-}
-
-export interface FusionTask {
-  id: string;
-  status: FusionStatus;
-  sourceProjectIds: string[];
-  sourceProjects: FusionSourceProject[];
-  mode: FusionMode;
-  customInstruction?: string;
-  userIdeas?: string;
-  candidateCount: number;
-  candidates: FusionCandidate[];
-  selectedCandidateIndex?: number;
-  resultProjectId?: string;
-  progress: number;
-  extracted?: FusionExtracted;
-  createdAt: string;
-  updatedAt: string;
-}
+// ============ UI 辅助类型 ============
 
 // 融合状态样式
 export const fusionStatusVariants: Record<FusionStatus, string> = {
