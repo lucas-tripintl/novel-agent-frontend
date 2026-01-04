@@ -88,15 +88,16 @@ const analysisNavItems = [
 
 const creationNavItems = [
   {
-    title: "元素融合",
-    icon: Blend,
-    href: "/fusion",
-  },
-  {
     title: "元素库",
     icon: Library,
     href: "/elements",
   },
+  {
+    title: "元素融合",
+    icon: Blend,
+    href: "/fusion",
+  },
+
 ];
 
 export function AppSidebar() {
