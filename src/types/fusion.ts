@@ -25,7 +25,10 @@ export type FusionMode =
 
 /** 创建融合任务请求 */
 export interface FusionTaskCreateRequest {
-  source_project_ids: string[];
+  /** 来源项目 ID 列表（与 source_pattern_ids 二选一） */
+  source_project_ids?: string[];
+  /** 来源抽象模式 ID 列表（与 source_project_ids 二选一） */
+  source_pattern_ids?: string[];
   fusion_mode?: FusionMode;
   custom_instruction?: string | null;
   user_ideas?: string | null;
@@ -100,10 +103,17 @@ export interface FusionTaskList {
 
 // ============ 元素选择相关类型 ============
 
-/** 选中的元素 */
+/** 选中的元素（项目实体） */
 export interface SelectedElement {
   projectId: string;
   entityId: string;
+  entityType: EntityType;
+  name: string;
+}
+
+/** 选中的抽象模式（Pattern） */
+export interface SelectedPattern {
+  patternId: string;
   entityType: EntityType;
   name: string;
 }

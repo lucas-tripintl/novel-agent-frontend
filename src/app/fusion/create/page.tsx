@@ -38,9 +38,9 @@ import { useRouter } from "next/navigation";
 import { useState, useCallback, useMemo } from "react";
 import { Steps } from "@/components/common/steps";
 import { cn } from "@/lib/utils";
-import { ProjectElementSelector } from "@/components/fusion/project-element-selector";
+import { PatternSelector } from "@/components/fusion/pattern-selector";
 import { useFusionModes, useCreateFusionTask, useRunFusionPipeline } from "@/hooks/use-fusion";
-import type { FusionMode, SelectedElement } from "@/types/fusion";
+import type { FusionMode, SelectedPattern } from "@/types/fusion";
 
 // 融合模式图标映射
 const fusionModeIcons: Record<FusionMode, React.ComponentType<{ className?: string }>> = {
@@ -62,7 +62,7 @@ const createSteps = [
 export default function FusionCreatePage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
-  const [selectedElements, setSelectedElements] = useState<SelectedElement[]>([]);
+  const [selectedPatterns, setSelectedPatterns] = useState<SelectedPattern[]>([]);
   const [selectedMode, setSelectedMode] = useState<FusionMode | null>(null);
   const [userIdeas, setUserIdeas] = useState("");
   const [candidateCount, setCandidateCount] = useState(3);
@@ -75,42 +75,36 @@ export default function FusionCreatePage() {
   const isCreating = createTask.isPending || runPipeline.isPending;
   const createError = createTask.error || runPipeline.error;
 
-  // 处理元素选择变化
-  const handleElementsChange = useCallback((elements: SelectedElement[]) => {
-    setSelectedElements(elements);
+  // 处理模式选择变化
+  const handlePatternsChange = useCallback((patterns: SelectedPattern[]) => {
+    setSelectedPatterns(patterns);
   }, []);
 
-  // 从选中元素中提取唯一项目 ID
-  const uniqueProjectIds = useMemo(() => {
-    const ids = new Set(selectedElements.map((el) => el.projectId));
-    return Array.from(ids);
-  }, [selectedElements]);
-
-  // 按项目分组的元素统计
-  const elementsByProject = useMemo(() => {
-    const map = new Map<string, { projectId: string; count: number; types: Set<string> }>();
-    selectedElements.forEach((el) => {
-      if (!map.has(el.projectId)) {
-        map.set(el.projectId, { projectId: el.projectId, count: 0, types: new Set() });
-      }
-      const item = map.get(el.projectId)!;
-      item.count++;
-      item.types.add(el.entityType);
+  // 按类型分组的模式统计
+  const patternsByType = useMemo(() => {
+    const map = new Map<string, number>();
+    selectedPatterns.forEach((p) => {
+      map.set(p.entityType, (map.get(p.entityType) || 0) + 1);
     });
-    return Array.from(map.values());
-  }, [selectedElements]);
+    return map;
+  }, [selectedPatterns]);
 
-  // 涉及的项目数量
-  const involvedProjectCount = uniqueProjectIds.length;
+  // 涉及的类型数量
+  const involvedTypeCount = patternsByType.size;
+
+  // 获取选中的模式 ID 列表
+  const selectedPatternIds = useMemo(() => {
+    return selectedPatterns.map((p) => p.patternId);
+  }, [selectedPatterns]);
 
   // 创建融合任务
   const handleCreate = useCallback(async () => {
-    if (selectedMode === null || uniqueProjectIds.length < 2) return;
+    if (selectedMode === null || selectedPatternIds.length < 2) return;
 
     try {
       // 1. 创建任务
       const task = await createTask.mutateAsync({
-        source_project_ids: uniqueProjectIds,
+        source_pattern_ids: selectedPatternIds,
         fusion_mode: selectedMode,
         user_ideas: userIdeas || null,
         candidate_count: candidateCount,
@@ -124,7 +118,7 @@ export default function FusionCreatePage() {
     } catch (error) {
       console.error("创建融合任务失败:", error);
     }
-  }, [selectedMode, uniqueProjectIds, userIdeas, candidateCount, createTask, runPipeline, router]);
+  }, [selectedMode, selectedPatternIds, userIdeas, candidateCount, createTask, runPipeline, router]);
 
   // 下一步
   const nextStep = useCallback(() => {
@@ -140,8 +134,8 @@ export default function FusionCreatePage() {
   const canProceed = () => {
     switch (currentStep) {
       case 0:
-        // 需要至少选中来自 2 个不同项目的元素
-        return uniqueProjectIds.length >= 2;
+        // 需要至少选中 2 个模式
+        return selectedPatterns.length >= 2;
       case 1:
         return selectedMode !== null;
       case 2:
@@ -187,28 +181,28 @@ export default function FusionCreatePage() {
             {currentStep === 0 && (
               <div className="flex-1 flex flex-col space-y-4 min-h-0">
                 <div className="flex items-center justify-between">
-                  <Label className="text-lg font-semibold">选择要融合的元素</Label>
+                  <Label className="text-lg font-semibold">从元素库选择要融合的模式</Label>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="font-mono">
-                      已选 {selectedElements.length} 个元素
+                      已选 {selectedPatterns.length} 个模式
                     </Badge>
                     <Badge variant="secondary" className="font-mono">
-                      来自 {involvedProjectCount} 个项目
+                      涉及 {involvedTypeCount} 种类型
                     </Badge>
                   </div>
                 </div>
 
-                <ProjectElementSelector
-                  onSelectionChange={handleElementsChange}
-                  initialSelection={selectedElements}
-                  minSelection={1}
+                <PatternSelector
+                  onSelectionChange={handlePatternsChange}
+                  initialSelection={selectedPatterns}
+                  minSelection={2}
                 />
 
-                {uniqueProjectIds.length < 2 && (
+                {selectedPatterns.length < 2 && (
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      请选择来自至少 2 个不同项目的元素进行融合
+                      请从元素库选择至少 2 个模式进行融合
                     </AlertDescription>
                   </Alert>
                 )}
@@ -314,23 +308,23 @@ export default function FusionCreatePage() {
                 <Label className="text-lg font-semibold">确认融合配置</Label>
 
                 <div className="space-y-4">
-                  {/* 已选元素统计 */}
+                  {/* 已选模式统计 */}
                   <div className="py-2 border-b border-border/50">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-muted-foreground">选中元素</span>
+                      <span className="text-muted-foreground">选中模式</span>
                       <Badge variant="outline" className="font-mono">
-                        {selectedElements.length} 个元素，来自 {involvedProjectCount} 个项目
+                        {selectedPatterns.length} 个模式，涉及 {involvedTypeCount} 种类型
                       </Badge>
                     </div>
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      {selectedElements.slice(0, 10).map((el) => (
-                        <Badge key={el.entityId} variant="secondary" className="text-xs">
-                          {el.name}
+                      {selectedPatterns.slice(0, 10).map((p) => (
+                        <Badge key={p.patternId} variant="secondary" className="text-xs">
+                          {p.name}
                         </Badge>
                       ))}
-                      {selectedElements.length > 10 && (
+                      {selectedPatterns.length > 10 && (
                         <Badge variant="outline" className="text-xs">
-                          +{selectedElements.length - 10} 更多
+                          +{selectedPatterns.length - 10} 更多
                         </Badge>
                       )}
                     </div>
