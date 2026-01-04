@@ -72,13 +72,6 @@ export function ProcessingList() {
         <div className="space-y-4">
             {extractTasks.map((task) => {
                 const meta = task.meta as TaskMeta | undefined;
-                // 处理时间显示，如果后端返回的时间没有时区信息，默认视为 UTC
-                const dateStr = task.created_at;
-                const date = new Date(
-                    dateStr.endsWith('Z') || dateStr.includes('+')
-                        ? dateStr
-                        : `${dateStr}Z`
-                );
 
                 return (
                     <Card key={task.id} className="bg-card/50">
@@ -95,7 +88,7 @@ export function ProcessingList() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs text-muted-foreground">
-                                        开始于 {formatTimeAgo(date)}
+                                        开始于 {formatTimeAgo(task.created_at)}
                                     </span>
                                     <Button
                                         variant="ghost"
