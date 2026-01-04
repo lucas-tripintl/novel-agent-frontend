@@ -134,8 +134,8 @@ interface WritingState {
 }
 
 const defaultEditorSettings: EditorSettings = {
-  fontFamily: "fangsong",
-  fontSize: 16,
+  fontFamily: "lxgw-wenkai",
+  fontSize: 18,
   lineHeight: 1.8,
   paragraphSpacing: 16,
 };

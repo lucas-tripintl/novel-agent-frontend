@@ -30,8 +30,8 @@ import {
 import { cn } from "@/lib/utils";
 
 const defaultSettings = {
-  fontFamily: "fangsong" as EditorFontFamily,
-  fontSize: 16,
+  fontFamily: "lxgw-wenkai" as EditorFontFamily,
+  fontSize: 18,
   lineHeight: 1.8,
   paragraphSpacing: 16,
 };
