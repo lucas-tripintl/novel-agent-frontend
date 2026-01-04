@@ -128,7 +128,7 @@ export default function FusionPage() {
                   {/* 源项目数量 */}
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">
-                      {task.source_project_count} 个源项目
+                      {(task.source_pattern_count || task.source_project_count || 0)} 个源
                     </Badge>
                     <span className="text-xs text-muted-foreground">
                       {formatTimeAgo(task.created_at)}

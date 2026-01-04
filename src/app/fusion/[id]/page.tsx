@@ -199,7 +199,7 @@ export default function FusionDetailPage() {
               </div>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="outline" className="text-xs">
-                  {task.source_project_ids.length} 个源项目
+                  {(task.source_pattern_ids?.length || task.source_project_ids?.length || 0)} 个源
                 </Badge>
                 <span className="text-muted-foreground">·</span>
                 <span className="text-sm text-muted-foreground">
@@ -247,8 +247,8 @@ export default function FusionDetailPage() {
                     task.status === "extracting"
                       ? "bg-primary/10 text-primary"
                       : task.status === "pending"
-                      ? "bg-muted text-muted-foreground"
-                      : "bg-muted text-muted-foreground"
+                        ? "bg-muted text-muted-foreground"
+                        : "bg-muted text-muted-foreground"
                   )}
                 >
                   <div className="h-6 w-6 rounded-full bg-current/20 flex items-center justify-center text-xs font-mono">

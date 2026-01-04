@@ -74,7 +74,8 @@ export interface FusionTaskRead {
   id: string;
   team_id: string;
   user_id: string;
-  source_project_ids: string[];
+  source_pattern_ids: string[];
+  source_project_ids?: string[];
   fusion_mode: FusionMode;
   custom_instruction: string | null;
   user_ideas: string | null;
@@ -95,7 +96,8 @@ export interface FusionTaskList {
   id: string;
   fusion_mode: FusionMode;
   status: FusionStatus;
-  source_project_count: number;
+  source_pattern_count: number;
+  source_project_count?: number;
   candidate_count: number;
   selected_candidate_index: number | null;
   created_at: string;
