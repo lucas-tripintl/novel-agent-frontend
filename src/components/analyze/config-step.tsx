@@ -36,6 +36,13 @@ interface AnalysisTypeConfig {
 /** 所有可用的分析类型 */
 const ANALYSIS_TYPES: AnalysisTypeConfig[] = [
   {
+    type: "golden_opening",
+    label: "黄金三章分析",
+    description: "开篇前3章深度分析（固定范围）",
+    icon: BookOpen,
+    fixedChapters: 3,
+  },
+  {
     type: "entity_extraction",
     label: "实体提取",
     description: "角色/地点/势力/道具/功法等",
@@ -71,13 +78,7 @@ const ANALYSIS_TYPES: AnalysisTypeConfig[] = [
     description: "叙事手法/文笔风格/描写技巧",
     icon: PenTool,
   },
-  {
-    type: "golden_opening",
-    label: "黄金三章分析",
-    description: "开篇前3章深度分析（固定范围）",
-    icon: BookOpen,
-    fixedChapters: 3,
-  },
+
 ];
 
 export interface AnalyzeConfig {
@@ -285,7 +286,7 @@ export function ConfigStep({
                 onCheckedChange={(checked) => setForce(!!checked)}
               />
               <Label htmlFor="force" className="text-sm text-muted-foreground cursor-pointer">
-                强制重新分析（覆盖已有结果）
+                重新分析（覆盖已有结果）
               </Label>
             </div>
           </div>
@@ -312,7 +313,7 @@ export function ConfigStep({
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            选择要执行的分析任务（LLM 分析，速度较慢）
+            选择要执行的分析任务
           </p>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -323,11 +324,10 @@ export function ConfigStep({
             return (
               <div
                 key={item.type}
-                className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                  isSelected
-                    ? "bg-primary/5 border-primary/30"
-                    : "bg-transparent border-transparent hover:bg-accent/50"
-                }`}
+                className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${isSelected
+                  ? "bg-primary/5 border-primary/30"
+                  : "bg-transparent border-transparent hover:bg-accent/50"
+                  }`}
                 onClick={() => toggleType(item.type)}
               >
                 <Checkbox
@@ -340,9 +340,8 @@ export function ConfigStep({
                   className="flex items-center gap-3 cursor-pointer flex-1"
                 >
                   <Icon
-                    className={`h-4 w-4 ${
-                      isSelected ? "text-primary" : "text-muted-foreground"
-                    }`}
+                    className={`h-4 w-4 ${isSelected ? "text-primary" : "text-muted-foreground"
+                      }`}
                   />
                   <div className="flex-1">
                     <span className="font-medium">{item.label}</span>
@@ -369,11 +368,10 @@ export function ConfigStep({
         </CardHeader>
         <CardContent>
           <div
-            className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-              enableStyleAnalyze
-                ? "bg-primary/5 border-primary/30"
-                : "bg-transparent border-transparent hover:bg-accent/50"
-            }`}
+            className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${enableStyleAnalyze
+              ? "bg-primary/5 border-primary/30"
+              : "bg-transparent border-transparent hover:bg-accent/50"
+              }`}
             onClick={() => setEnableStyleAnalyze(!enableStyleAnalyze)}
           >
             <Checkbox
@@ -386,9 +384,8 @@ export function ConfigStep({
               className="flex items-center gap-3 cursor-pointer flex-1"
             >
               <Sparkles
-                className={`h-4 w-4 ${
-                  enableStyleAnalyze ? "text-primary" : "text-muted-foreground"
-                }`}
+                className={`h-4 w-4 ${enableStyleAnalyze ? "text-primary" : "text-muted-foreground"
+                  }`}
               />
               <div className="flex items-center gap-2 flex-1">
                 <span className="font-medium">风格分析</span>

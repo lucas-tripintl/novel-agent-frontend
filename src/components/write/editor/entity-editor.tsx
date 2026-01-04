@@ -245,155 +245,155 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
         isSaving={updateMutation.isPending}
       />
       <div className="flex h-full flex-col bg-background">
-      {/* 头部 */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-border/50">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleBack}
-          className="shrink-0"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+        {/* 头部 */}
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-border/50">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleBack}
+            className="shrink-0"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
 
-        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-          <Icon className="h-5 w-5 text-primary" />
+          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <Icon className="h-5 w-5 text-primary" />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            {isEditingName ? (
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onBlur={() => setIsEditingName(false)}
+                onKeyDown={(e) => e.key === "Enter" && setIsEditingName(false)}
+                className="text-lg font-semibold h-8"
+                placeholder="设定名称"
+                autoFocus
+              />
+            ) : (
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold truncate">{name || "未命名设定"}</h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0"
+                  onClick={() => setIsEditingName(true)}
+                >
+                  <Edit3 className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">{catConfig.label}</p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {saveStatus === "success" && (
+              <Badge variant="outline" className="text-green-500 border-green-500/50">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                已保存
+              </Badge>
+            )}
+            {saveStatus === "error" && (
+              <Badge variant="outline" className="text-red-500 border-red-500/50">
+                <XCircle className="h-3 w-3 mr-1" />
+                保存失败
+              </Badge>
+            )}
+            {saveStatus === "idle" && isEntityDirty && (
+              <Badge variant="outline" className="text-orange-500 border-orange-500/50">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                未保存
+              </Badge>
+            )}
+          </div>
         </div>
 
-        <div className="flex-1 min-w-0">
-          {isEditingName ? (
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onBlur={() => setIsEditingName(false)}
-              onKeyDown={(e) => e.key === "Enter" && setIsEditingName(false)}
-              className="text-lg font-semibold h-8"
-              placeholder="设定名称"
-              autoFocus
-            />
-          ) : (
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold truncate">{name || "未命名设定"}</h2>
+        {/* 标签编辑区 */}
+        <div className="px-6 py-3 border-b border-border/30 bg-muted/30">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-muted-foreground">标签:</span>
+            {tags.map((tag) => (
+              <Badge
+                key={tag}
+                variant="secondary"
+                className="gap-1 pr-1"
+              >
+                {getTagLabel(tag, getLabel, getFieldValueLabel)}
+                <button
+                  onClick={() => handleRemoveTag(tag)}
+                  className="ml-1 rounded-full hover:bg-destructive/20 p-0.5"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+            <div className="flex items-center gap-1">
+              <Input
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
+                placeholder="添加标签..."
+                className="h-6 w-24 text-xs"
+              />
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 shrink-0"
-                onClick={() => setIsEditingName(true)}
+                className="h-6 w-6"
+                onClick={handleAddTag}
               >
-                <Edit3 className="h-3 w-3" />
+                <Plus className="h-3 w-3" />
               </Button>
             </div>
-          )}
-          <p className="text-xs text-muted-foreground">{catConfig.label}</p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {saveStatus === "success" && (
-            <Badge variant="outline" className="text-green-500 border-green-500/50">
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              已保存
-            </Badge>
-          )}
-          {saveStatus === "error" && (
-            <Badge variant="outline" className="text-red-500 border-red-500/50">
-              <XCircle className="h-3 w-3 mr-1" />
-              保存失败
-            </Badge>
-          )}
-          {saveStatus === "idle" && isEntityDirty && (
-            <Badge variant="outline" className="text-orange-500 border-orange-500/50">
-              <AlertCircle className="h-3 w-3 mr-1" />
-              未保存
-            </Badge>
-          )}
-        </div>
-      </div>
-
-      {/* 标签编辑区 */}
-      <div className="px-6 py-3 border-b border-border/30 bg-muted/30">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-muted-foreground">标签:</span>
-          {tags.map((tag) => (
-            <Badge
-              key={tag}
-              variant="secondary"
-              className="gap-1 pr-1"
-            >
-              {getTagLabel(tag, getLabel, getFieldValueLabel)}
-              <button
-                onClick={() => handleRemoveTag(tag)}
-                className="ml-1 rounded-full hover:bg-destructive/20 p-0.5"
-              >
-                <Trash2 className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
-          <div className="flex items-center gap-1">
-            <Input
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
-              placeholder="添加标签..."
-              className="h-6 w-24 text-xs"
+        {/* 属性编辑区 */}
+        {Object.keys(attributes).length > 0 && (
+          <div className="px-6 py-4 border-b border-border/30 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">属性</span>
+              <Badge variant="outline" className="ml-auto font-mono text-[10px]">
+                {Object.keys(attributes).length} 项
+              </Badge>
+            </div>
+            <AttributesEditor
+              entityType={entity.entity_type}
+              attributes={attributes}
+              onChange={setAttributes}
+              getLabel={getLabel}
+              getFieldValueLabel={getFieldValueLabel}
             />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              onClick={handleAddTag}
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* 属性编辑区 */}
-      {Object.keys(attributes).length > 0 && (
-        <div className="px-6 py-4 border-b border-border/30 space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">属性</span>
-            <Badge variant="outline" className="ml-auto font-mono text-[10px]">
-              {Object.keys(attributes).length} 项
-            </Badge>
-          </div>
-          <AttributesEditor
-            entityType={entity.entity_type}
-            attributes={attributes}
-            onChange={setAttributes}
-            getLabel={getLabel}
-            getFieldValueLabel={getFieldValueLabel}
-          />
-        </div>
-      )}
-
-      {/* 内容编辑区 */}
-      <div className="flex-1 min-h-0 bg-background">
-        <ScrollArea className="h-full">
-          <div className="p-6 pt-4">
-            {parsedContent.isJson ? (
-              <JsonVisualEditor
-                data={parsedContent.data}
-                onUpdate={updateJsonField}
-              />
-            ) : (
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">内容</Label>
-                <Textarea
-                  value={editingEntityContent}
-                  onChange={(e) => setEditingEntityContent(e.target.value)}
-                  className={cn("min-h-[400px]", getFontClass(settings.fontFamily))}
-                  style={{
-                    fontSize: `${settings.fontSize}px`,
-                    lineHeight: settings.lineHeight,
-                  }}
-                  placeholder="输入设定内容..."
+        {/* 内容编辑区 */}
+        <div className="flex-1 min-h-0 bg-background">
+          <ScrollArea className="h-full">
+            <div className="p-6 pt-4">
+              {parsedContent.isJson ? (
+                <JsonVisualEditor
+                  data={parsedContent.data}
+                  onUpdate={updateJsonField}
                 />
-              </div>
-            )}
-          </div>
-        </ScrollArea>
-      </div>
+              ) : (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">内容</Label>
+                  <Textarea
+                    value={editingEntityContent}
+                    onChange={(e) => setEditingEntityContent(e.target.value)}
+                    className={cn("min-h-[400px]", getFontClass(settings.fontFamily))}
+                    style={{
+                      fontSize: `${settings.fontSize}px`,
+                      lineHeight: settings.lineHeight,
+                    }}
+                    placeholder="输入设定内容..."
+                  />
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
       </div>
     </>
   );
@@ -605,6 +605,7 @@ const attributeFieldConfig: Record<string, {
   role: { label: "角色类型", type: "select", enumName: "CharacterRole" },
   importance: { label: "重要性", type: "select", enumName: "CharacterImportance" },
   category: { label: "类别", type: "select", enumName: "WorldviewCategory" },
+  gf_type: { label: "金手指类型", type: "select" },
   personality: { label: "性格特点", type: "array" },
   abilities: { label: "能力", type: "array" },
   power_level: { label: "力量等级", type: "text" },
