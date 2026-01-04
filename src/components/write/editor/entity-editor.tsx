@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEntityEditing, useEditorSettings } from "@/stores/writing-store";
+import { useEnumStore } from "@/stores/enum-store";
 import { updateEntity } from "@/lib/api/projects";
 import { getCategoryConfig } from "@/hooks/use-project-elements";
 import type { EntityRead } from "@/types/api";
@@ -70,6 +71,20 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Circle,
 };
 
+// 标签本地化函数
+function getTagLabel(tag: string, getLabel: (enumName: string, value: string) => string): string {
+  // 如果已经是中文，直接返回
+  if (/[\u4e00-\u9fa5]/.test(tag)) return tag;
+
+  // 尝试从各种枚举获取标签
+  const enums = ["CharacterRole", "CharacterImportance", "WorldviewCategory", "EntityType"];
+  for (const enumName of enums) {
+    const label = getLabel(enumName, tag);
+    if (label !== tag) return label;
+  }
+  return tag;
+}
+
 interface EntityEditorProps {
   entity: EntityRead;
   projectId: string;
@@ -84,12 +99,14 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
     closeEntityEditor,
   } = useEntityEditing();
   const { settings } = useEditorSettings();
+  const getLabel = useEnumStore((state) => state.getLabel);
 
   const [editMode, setEditMode] = useState<"visual" | "raw">("visual");
   const [name, setName] = useState(entity.name);
   const [isEditingName, setIsEditingName] = useState(false);
   const [tags, setTags] = useState<string[]>(entity.tags || []);
   const [newTag, setNewTag] = useState("");
+  const [attributes, setAttributes] = useState<Record<string, unknown>>(entity.attributes || {});
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [shouldCloseAfterSave, setShouldCloseAfterSave] = useState(false);
@@ -101,9 +118,10 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
     setName(entity.name);
     setIsEditingName(false);
     setTags(entity.tags || []);
+    setAttributes(entity.attributes || {});
     setEditMode("visual");
     setSaveStatus("idle");
-  }, [entity.id, entity.name, entity.tags]);
+  }, [entity.id, entity.name, entity.tags, entity.attributes]);
 
   // 解析 JSON 内容
   const parsedContent = useMemo(() => {
@@ -125,6 +143,7 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
         name,
         content: editingEntityContent,
         tags,
+        attributes,
       });
     },
     onSuccess: () => {
@@ -292,7 +311,7 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
               variant="secondary"
               className="gap-1 pr-1"
             >
-              {tag}
+              {getTagLabel(tag, getLabel)}
               <button
                 onClick={() => handleRemoveTag(tag)}
                 className="ml-1 rounded-full hover:bg-destructive/20 p-0.5"
@@ -320,6 +339,29 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
           </div>
         </div>
       </div>
+
+      {/* 属性编辑区 */}
+      {Object.keys(attributes).length > 0 && (
+        <div className="px-6 py-3 border-b border-border/30">
+          <Collapsible defaultOpen>
+            <CollapsibleTrigger className="flex items-center gap-2 w-full hover:bg-muted/50 rounded-md px-2 py-1.5 -ml-2">
+              <ChevronRight className="h-4 w-4 transition-transform data-[state=open]:rotate-90" />
+              <span className="text-sm font-medium">属性</span>
+              <Badge variant="outline" className="ml-auto font-mono text-[10px]">
+                {Object.keys(attributes).length} 项
+              </Badge>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-3 space-y-3">
+              <AttributesEditor
+                entityType={entity.entity_type}
+                attributes={attributes}
+                onChange={setAttributes}
+                getLabel={getLabel}
+              />
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+      )}
 
       {/* 编辑模式切换 */}
       <Tabs
@@ -586,6 +628,153 @@ function JsonField({ fieldKey, value, path, onUpdate }: JsonFieldProps) {
         className="text-sm"
         placeholder="(空)"
       />
+    </div>
+  );
+}
+
+// ============ 属性编辑器 ============
+
+// 属性字段配置
+const attributeFieldConfig: Record<string, {
+  label: string;
+  type: "text" | "select" | "array";
+  enumName?: string;
+}> = {
+  role: { label: "角色类型", type: "select", enumName: "CharacterRole" },
+  importance: { label: "重要性", type: "select", enumName: "CharacterImportance" },
+  category: { label: "类别", type: "select", enumName: "WorldviewCategory" },
+  personality: { label: "性格特点", type: "array" },
+  abilities: { label: "能力", type: "array" },
+  power_level: { label: "力量等级", type: "text" },
+  faction: { label: "所属阵营", type: "text" },
+};
+
+interface AttributesEditorProps {
+  entityType: string;
+  attributes: Record<string, unknown>;
+  onChange: (attrs: Record<string, unknown>) => void;
+  getLabel: (enumName: string, value: string) => string;
+}
+
+function AttributesEditor({
+  entityType,
+  attributes,
+  onChange,
+  getLabel,
+}: AttributesEditorProps) {
+  // 更新单个属性
+  const updateAttribute = (key: string, value: unknown) => {
+    onChange({ ...attributes, [key]: value });
+  };
+
+  // 格式化属性名
+  const formatAttrName = (key: string) => {
+    const config = attributeFieldConfig[key];
+    if (config) return config.label;
+    return key
+      .replace(/_/g, " ")
+      .replace(/([A-Z])/g, " $1")
+      .replace(/^./, (str) => str.toUpperCase())
+      .trim();
+  };
+
+  // 获取属性显示值
+  const getDisplayValue = (key: string, value: unknown): string => {
+    const config = attributeFieldConfig[key];
+    if (config?.enumName && typeof value === "string") {
+      const label = getLabel(config.enumName, value);
+      return label !== value ? label : value;
+    }
+    if (Array.isArray(value)) {
+      return value.join(", ");
+    }
+    return String(value ?? "");
+  };
+
+  return (
+    <div className="space-y-3">
+      {Object.entries(attributes).map(([key, value]) => {
+        const config = attributeFieldConfig[key];
+
+        // 数组类型
+        if (config?.type === "array" || Array.isArray(value)) {
+          const arrayValue = Array.isArray(value) ? value : [];
+          return (
+            <div key={key} className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                {formatAttrName(key)}
+              </Label>
+              <div className="flex flex-wrap gap-1.5">
+                {arrayValue.map((item, idx) => (
+                  <Badge
+                    key={idx}
+                    variant="secondary"
+                    className="gap-1 pr-1"
+                  >
+                    {String(item)}
+                    <button
+                      onClick={() => {
+                        const newArr = arrayValue.filter((_, i) => i !== idx);
+                        updateAttribute(key, newArr);
+                      }}
+                      className="ml-1 rounded-full hover:bg-destructive/20 p-0.5"
+                    >
+                      <Trash2 className="h-2.5 w-2.5" />
+                    </button>
+                  </Badge>
+                ))}
+                <Input
+                  placeholder="添加..."
+                  className="h-6 w-20 text-xs"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const target = e.target as HTMLInputElement;
+                      if (target.value.trim()) {
+                        updateAttribute(key, [...arrayValue, target.value.trim()]);
+                        target.value = "";
+                      }
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          );
+        }
+
+        // 下拉选择类型 - 显示为只读，因为枚举值需要从后端获取
+        if (config?.type === "select") {
+          return (
+            <div key={key} className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                {formatAttrName(key)}
+              </Label>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">
+                  {getDisplayValue(key, value)}
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  (由系统分析设定)
+                </span>
+              </div>
+            </div>
+          );
+        }
+
+        // 文本类型
+        return (
+          <div key={key} className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">
+              {formatAttrName(key)}
+            </Label>
+            <Input
+              value={String(value ?? "")}
+              onChange={(e) => updateAttribute(key, e.target.value)}
+              className="text-sm"
+              placeholder={`输入${formatAttrName(key)}...`}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }

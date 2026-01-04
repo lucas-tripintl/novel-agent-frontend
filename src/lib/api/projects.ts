@@ -148,6 +148,7 @@ export interface EntityUpdateData {
   name?: string;
   content?: string;
   tags?: string[];
+  attributes?: Record<string, unknown>;
 }
 
 export async function updateEntity(

@@ -50,6 +50,20 @@ import {
   Edit3,
 } from "lucide-react";
 
+// 标签本地化函数
+function getTagLabel(tag: string, getLabel: (enumName: string, value: string) => string): string {
+  // 如果已经是中文，直接返回
+  if (/[\u4e00-\u9fa5]/.test(tag)) return tag;
+
+  // 尝试从各种枚举获取标签
+  const enums = ["CharacterRole", "CharacterImportance", "WorldviewCategory", "EntityType"];
+  for (const enumName of enums) {
+    const label = getLabel(enumName, tag);
+    if (label !== tag) return label;
+  }
+  return tag;
+}
+
 // 图标映射
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   User,
@@ -238,6 +252,7 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
                             isSelectable={mode === "director"}
                             onToggle={() => toggleEntity(entity)}
                             onEdit={() => openEntityEditor(entity)}
+                            getLabel={getLabel}
                           />
                         ))}
                       </div>
@@ -261,6 +276,7 @@ interface EntityRowProps {
   isSelectable: boolean;
   onToggle: () => void;
   onEdit: () => void;
+  getLabel: (enumName: string, value: string) => string;
 }
 
 function EntityRow({
@@ -269,6 +285,7 @@ function EntityRow({
   isSelectable,
   onToggle,
   onEdit,
+  getLabel,
 }: EntityRowProps) {
   return (
     <HoverCard openDelay={300} closeDelay={100}>
@@ -305,7 +322,7 @@ function EntityRow({
           {/* 标签 */}
           {entity.tags && entity.tags.length > 0 && (
             <Badge variant="outline" className="text-[10px] shrink-0">
-              {entity.tags[0]}
+              {getTagLabel(entity.tags[0], getLabel)}
             </Badge>
           )}
 
@@ -376,7 +393,7 @@ function EntityPreview({ entity, onEdit }: EntityPreviewProps) {
         <div className="flex flex-wrap gap-1">
           {entity.tags.slice(0, 4).map((tag) => (
             <Badge key={tag} variant="secondary" className="text-[10px]">
-              {tag}
+              {getTagLabel(tag, getLabel)}
             </Badge>
           ))}
           {entity.tags.length > 4 && (

@@ -76,6 +76,97 @@ src/
 - **TanStack Query**: 异步数据获取 (配置在 `providers.tsx`)
 - **Zustand**: 客户端状态 (主题等)
 
+### 枚举本地化系统
+
+后端 API 返回的枚举值（如 `protagonist`、`supporting`）需要在前端显示为中文（如"主角"、"配角"）。
+
+#### 核心机制
+
+1. **枚举数据来源**: 后端 `/enums` API 返回枚举定义
+2. **状态管理**: `src/stores/enum-store.ts` (Zustand) 缓存枚举数据
+3. **初始化**: `src/hooks/use-enums-init.ts` 在应用启动时加载枚举
+
+#### 可用枚举类型
+
+| 枚举名 | 用途 | 示例值 |
+|--------|------|--------|
+| `EntityType` | 实体类型 | character → 角色, worldview → 世界观 |
+| `CharacterRole` | 角色类型 | protagonist → 主角, supporting → 配角 |
+| `CharacterImportance` | 角色重要性 | core → 核心角色, important → 重要角色 |
+| `WorldviewCategory` | 世界观类别 | geography → 地理环境, power_system → 力量体系 |
+| `SourceType` | 来源类型 | extracted → AI提取, manual → 手动添加 |
+
+#### 使用方法
+
+```tsx
+import { useEnumStore } from "@/stores/enum-store";
+
+function MyComponent() {
+  // 订阅 loaded 状态确保枚举加载后重渲染
+  const enumsLoaded = useEnumStore((state) => state.loaded);
+  const getLabel = useEnumStore((state) => state.getLabel);
+
+  // 获取本地化标签
+  const label = getLabel("CharacterRole", "protagonist"); // 返回 "主角"
+}
+```
+
+#### 通用标签本地化函数
+
+当标签可能来自多个枚举时，使用通用函数：
+
+```tsx
+function getTagLabel(tag: string, getLabel: (enumName: string, value: string) => string): string {
+  // 如果已经是中文，直接返回
+  if (/[\u4e00-\u9fa5]/.test(tag)) return tag;
+
+  // 尝试从各种枚举获取标签
+  const enums = ["CharacterRole", "CharacterImportance", "WorldviewCategory", "EntityType"];
+  for (const enumName of enums) {
+    const label = getLabel(enumName, tag);
+    if (label !== tag) return label;
+  }
+  return tag;
+}
+```
+
+#### 需要注意本地化的文件
+
+| 文件 | 说明 |
+|------|------|
+| `src/app/worldview/page.tsx` | 世界观页面，使用 `WorldviewCategory` |
+| `src/app/characters/page.tsx` | 人物页面，使用 `CharacterRole`, `CharacterImportance` |
+| `src/components/write/settings/entity-browser.tsx` | 设定浏览器，标签本地化 |
+| `src/components/write/editor/entity-editor.tsx` | 设定编辑器，标签和属性本地化 |
+
+#### 实体数据结构
+
+API 返回的实体包含结构化属性：
+
+```typescript
+interface EntityRead {
+  id: string;
+  name: string;
+  content: string;           // 纯文本内容
+  tags: string[];            // 标签（需本地化）
+  entity_type: EntityType;   // 实体类型
+  attributes?: {             // 结构化属性
+    role?: string;           // 角色类型 (CharacterRole)
+    importance?: string;     // 重要性 (CharacterImportance)
+    category?: string;       // 世界观类别 (WorldviewCategory)
+    personality?: string[];  // 性格特点
+    abilities?: string[];    // 能力
+    power_level?: string;    // 力量等级
+    // ...
+  };
+  metadata_?: {              // 元数据
+    aliases?: string[];      // 别名
+  };
+}
+```
+
+**注意**: `content` 通常是纯文本，结构化数据在 `attributes` 中。
+
 ### 样式约定
 
 - 使用 Tailwind CSS 类名
