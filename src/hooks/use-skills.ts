@@ -203,6 +203,21 @@ export const SKILL_VISIBILITY_OPTIONS = [
   { value: "team", label: "用户自建" },
 ] as const;
 
+/** 技能排序选项 */
+export const SKILL_SORT_OPTIONS = [
+  { value: "updated_at", label: "更新时间" },
+  { value: "created_at", label: "创建时间" },
+  { value: "downloads", label: "下载量" },
+  { value: "rating", label: "评分" },
+  { value: "name", label: "名称" },
+] as const;
+
+/** 排序方向选项 */
+export const SORT_ORDER_OPTIONS = [
+  { value: "desc", label: "降序" },
+  { value: "asc", label: "升序" },
+] as const;
+
 /** 获取分类标签 */
 export function getSkillCategoryLabel(category: string): string {
   const option = SKILL_CATEGORY_OPTIONS.find((o) => o.value === category);
@@ -220,4 +235,10 @@ export function getSkillVisibilityLabel(visibility: string): string {
   if (visibility === "system") return "系统";
   if (visibility === "team") return "自建";
   return visibility;
+}
+
+/** 获取排序字段标签 */
+export function getSkillSortLabel(sortBy: string): string {
+  const option = SKILL_SORT_OPTIONS.find((o) => o.value === sortBy);
+  return option?.label ?? sortBy;
 }

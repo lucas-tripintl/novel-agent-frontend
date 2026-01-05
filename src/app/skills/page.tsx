@@ -26,6 +26,11 @@ import {
   Plus,
   Star,
   Lock,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import {
@@ -33,11 +38,15 @@ import {
   SKILL_CATEGORY_OPTIONS,
   SKILL_STAGE_OPTIONS,
   SKILL_VISIBILITY_OPTIONS,
+  SKILL_SORT_OPTIONS,
   getSkillCategoryLabel,
   getSkillStageLabel,
 } from "@/hooks/use-skills";
-import type { SkillCategory, SkillStage, SkillVisibility, SkillBrief } from "@/types/skills";
+import type { SkillCategory, SkillStage, SkillVisibility, SkillSortBy, SortOrder, SkillBrief } from "@/types/skills";
 import { SkillDialog } from "@/components/skills/skill-dialog";
+
+/** 每页显示数量 */
+const PAGE_SIZE = 12;
 
 export default function SkillsPage() {
   const [categoryFilter, setCategoryFilter] = useState<SkillCategory | "all">("all");
@@ -45,6 +54,9 @@ export default function SkillsPage() {
   const [visibilityFilter, setVisibilityFilter] = useState<SkillVisibility | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sortBy, setSortBy] = useState<SkillSortBy>("updated_at");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [currentPage, setCurrentPage] = useState(0);
 
   // 对话框状态
   const [selectedSkill, setSelectedSkill] = useState<SkillBrief | null>(null);
@@ -63,18 +75,24 @@ export default function SkillsPage() {
     stage: stageFilter === "all" ? undefined : stageFilter,
     visibility: visibilityFilter === "all" ? undefined : visibilityFilter,
     keyword: debouncedSearch || undefined,
-    limit: 50,
+    sort_by: sortBy,
+    sort_order: sortOrder,
+    skip: currentPage * PAGE_SIZE,
+    limit: PAGE_SIZE,
   });
 
-  // 防抖搜索
+  // 防抖搜索 - 搜索时重置分页
   useMemo(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
+      setCurrentPage(0);
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
   const skills = skillsData?.items ?? [];
+  const totalItems = skillsData?.total ?? 0;
+  const totalPages = Math.ceil(totalItems / PAGE_SIZE);
 
   const handleViewSkill = useCallback((skill: SkillBrief) => {
     setSelectedSkill(skill);
@@ -103,6 +121,36 @@ export default function SkillsPage() {
     setCategoryFilter("all");
     setStageFilter("all");
     setVisibilityFilter("all");
+    setSortBy("updated_at");
+    setSortOrder("desc");
+    setCurrentPage(0);
+  }, []);
+
+  // 筛选变化时重置分页
+  const handleCategoryChange = useCallback((v: string) => {
+    setCategoryFilter(v as SkillCategory | "all");
+    setCurrentPage(0);
+  }, []);
+
+  const handleStageChange = useCallback((v: string) => {
+    setStageFilter(v as SkillStage | "all");
+    setCurrentPage(0);
+  }, []);
+
+  const handleVisibilityChange = useCallback((v: string) => {
+    setVisibilityFilter(v as SkillVisibility | "all");
+    setCurrentPage(0);
+  }, []);
+
+  const handleSortByChange = useCallback((v: string) => {
+    setSortBy(v as SkillSortBy);
+    setCurrentPage(0);
+  }, []);
+
+  // 切换排序方向
+  const toggleSortOrder = useCallback(() => {
+    setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"));
+    setCurrentPage(0);
   }, []);
 
   const hasFilters = searchQuery || categoryFilter !== "all" || stageFilter !== "all" || visibilityFilter !== "all";
@@ -132,7 +180,7 @@ export default function SkillsPage() {
           {/* 分类筛选 */}
           <Select
             value={categoryFilter}
-            onValueChange={(v) => setCategoryFilter(v as SkillCategory | "all")}
+            onValueChange={handleCategoryChange}
           >
             <SelectTrigger className="w-32">
               <SelectValue placeholder="分类" />
@@ -149,7 +197,7 @@ export default function SkillsPage() {
           {/* 阶段筛选 */}
           <Select
             value={stageFilter}
-            onValueChange={(v) => setStageFilter(v as SkillStage | "all")}
+            onValueChange={handleStageChange}
           >
             <SelectTrigger className="w-32">
               <SelectValue placeholder="阶段" />
@@ -166,7 +214,7 @@ export default function SkillsPage() {
           {/* 来源筛选 */}
           <Select
             value={visibilityFilter}
-            onValueChange={(v) => setVisibilityFilter(v as SkillVisibility | "all")}
+            onValueChange={handleVisibilityChange}
           >
             <SelectTrigger className="w-32">
               <SelectValue placeholder="来源" />
@@ -189,6 +237,39 @@ export default function SkillsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
             />
+          </div>
+
+          {/* 排序 */}
+          <div className="flex items-center gap-1">
+            <Select
+              value={sortBy}
+              onValueChange={handleSortByChange}
+            >
+              <SelectTrigger className="w-auto min-w-[100px]">
+                <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground shrink-0" />
+                <SelectValue placeholder="排序" />
+              </SelectTrigger>
+              <SelectContent>
+                {SKILL_SORT_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              onClick={toggleSortOrder}
+              title={sortOrder === "desc" ? "降序（点击切换为升序）" : "升序（点击切换为降序）"}
+            >
+              {sortOrder === "desc" ? (
+                <ArrowDown className="h-4 w-4" />
+              ) : (
+                <ArrowUp className="h-4 w-4" />
+              )}
+            </Button>
           </div>
 
           {/* 统计 */}
@@ -244,77 +325,106 @@ export default function SkillsPage() {
 
         {/* 技能网格 */}
         {!isLoading && !isError && skills.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {skills.map((skill) => (
-              <Card
-                key={skill.id}
-                className="bg-card/50 border-border/50 hover:border-primary/30 transition-all cursor-pointer"
-                onClick={() => handleViewSkill(skill)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">
-                        {getSkillCategoryLabel(skill.category)}
-                      </Badge>
-                      {skill.is_featured && (
-                        <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+          <>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {skills.map((skill) => (
+                <Card
+                  key={skill.id}
+                  className="bg-card/50 border-border/50 hover:border-primary/30 transition-all cursor-pointer"
+                  onClick={() => handleViewSkill(skill)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          {getSkillCategoryLabel(skill.category)}
+                        </Badge>
+                        {skill.is_featured && (
+                          <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+                        )}
+                      </div>
+                      {skill.visibility === "system" ? (
+                        <Badge variant="secondary" className="text-xs">
+                          <Lock className="h-3 w-3 mr-1" />
+                          系统
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          自建
+                        </Badge>
                       )}
                     </div>
-                    {skill.visibility === "system" ? (
-                      <Badge variant="secondary" className="text-xs">
-                        <Lock className="h-3 w-3 mr-1" />
-                        系统
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs">
-                        自建
-                      </Badge>
-                    )}
-                  </div>
-                  <CardTitle className="text-base">{skill.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {/* 描述 */}
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {skill.description || "暂无描述"}
-                  </p>
+                    <CardTitle className="text-base">{skill.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {/* 描述 */}
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {skill.description || "暂无描述"}
+                    </p>
 
-                  {/* 适用阶段 */}
-                  <div className="flex flex-wrap gap-1.5">
-                    {skill.applicable_stages.slice(0, 3).map((stage) => (
-                      <Badge
-                        key={stage}
-                        variant="secondary"
-                        className="text-xs"
-                      >
-                        {getSkillStageLabel(stage)}
-                      </Badge>
-                    ))}
-                    {skill.applicable_stages.length > 3 && (
-                      <Badge variant="secondary" className="text-xs">
-                        +{skill.applicable_stages.length - 3}
-                      </Badge>
-                    )}
-                  </div>
+                    {/* 适用阶段 */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {skill.applicable_stages.slice(0, 3).map((stage) => (
+                        <Badge
+                          key={stage}
+                          variant="secondary"
+                          className="text-xs"
+                        >
+                          {getSkillStageLabel(stage)}
+                        </Badge>
+                      ))}
+                      {skill.applicable_stages.length > 3 && (
+                        <Badge variant="secondary" className="text-xs">
+                          +{skill.applicable_stages.length - 3}
+                        </Badge>
+                      )}
+                    </div>
 
-                  {/* 操作按钮 */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewSkill(skill);
-                    }}
-                  >
-                    <Eye className="mr-2 h-4 w-4" />
-                    查看详情
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    {/* 操作按钮 */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewSkill(skill);
+                      }}
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      查看详情
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* 分页控件 */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 pt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === 0}
+                  onClick={() => setCurrentPage((p) => p - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  上一页
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  第 {currentPage + 1} / {totalPages} 页
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage >= totalPages - 1}
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                >
+                  下一页
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            )}
+          </>
         )}
 
         {/* 空状态 */}

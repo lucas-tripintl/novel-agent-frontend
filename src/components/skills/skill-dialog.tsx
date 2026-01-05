@@ -337,7 +337,7 @@ function SkillDialogContent({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <div className="flex items-center justify-between gap-4 pr-8">
               <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -390,7 +390,7 @@ function SkillDialogContent({
 
           {/* 内容区域 */}
           {(!isLoadingDetail || isCreateMode) && (
-            <ScrollArea className="flex-1 min-h-0">
+            <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
               <div className="pl-1 pr-4 py-1 space-y-4">
                 {/* 描述 */}
                 {isEditing ? (
@@ -529,12 +529,12 @@ function SkillDialogContent({
                       value={editedContent}
                       onChange={(e) => setEditedContent(e.target.value)}
                       placeholder="输入技能的 prompt 内容（支持 Markdown 格式）..."
-                      className="min-h-[200px] font-mono text-sm"
+                      className="min-h-[200px] max-h-[300px] font-mono text-sm resize-y"
                     />
                   ) : (
-                    <div className="prose prose-sm dark:prose-invert max-w-none bg-muted/30 rounded-md p-4">
+                    <div className="prose prose-sm dark:prose-invert max-w-none bg-muted/30 rounded-md p-4 overflow-auto max-h-[300px]">
                       {renderContent ? (
-                        <pre className="whitespace-pre-wrap font-mono text-sm">
+                        <pre className="whitespace-pre-wrap font-mono text-sm break-words">
                           {renderContent}
                         </pre>
                       ) : (

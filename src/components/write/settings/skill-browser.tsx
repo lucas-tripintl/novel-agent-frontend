@@ -28,6 +28,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { SkillDialog } from "@/components/skills/skill-dialog";
 import {
@@ -39,11 +42,21 @@ import {
   getSkillStageLabel,
   SKILL_STAGE_OPTIONS,
   SKILL_CATEGORY_OPTIONS,
+  SKILL_SORT_OPTIONS,
 } from "@/hooks/use-skills";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type {
   SkillBrief,
   SkillStage,
   SkillCategory,
+  SkillSortBy,
+  SortOrder,
   ProjectSkillRead,
 } from "@/types/skills";
 import { cn } from "@/lib/utils";
@@ -71,6 +84,8 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
     "all"
   );
   const [currentPage, setCurrentPage] = useState(0);
+  const [sortBy, setSortBy] = useState<SkillSortBy>("updated_at");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
   // 获取项目已启用技能
   const {
@@ -83,9 +98,11 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
   // 获取可用技能列表 - 使用服务端分页
   const { data: availableSkills, isLoading: isLoadingAvailable, refetch: refetchSkills } = useSkills({
     limit: PAGE_SIZE,
-    offset: currentPage * PAGE_SIZE,
+    skip: currentPage * PAGE_SIZE,
     category: categoryFilter === "all" ? undefined : categoryFilter,
-    search: searchQuery || undefined,
+    keyword: searchQuery || undefined,
+    sort_by: sortBy,
+    sort_order: sortOrder,
   });
 
   // Mutations
@@ -119,12 +136,24 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
     setCurrentPage(0);
   }, []);
 
+  const handleSortChange = useCallback((value: SkillSortBy) => {
+    setSortBy(value);
+    setCurrentPage(0);
+  }, []);
+
+  const toggleSortOrder = useCallback(() => {
+    setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"));
+    setCurrentPage(0);
+  }, []);
+
   const handleOpenAddDialog = useCallback(() => {
     setSelectedSkillToAdd(null);
     setSelectedStages([]);
     setSearchQuery("");
     setCategoryFilter("all");
     setCurrentPage(0);
+    setSortBy("updated_at");
+    setSortOrder("desc");
     setIsAddDialogOpen(true);
   }, []);
 
@@ -291,15 +320,47 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
 
             {/* 右侧内容 */}
             <div className="flex-1 flex flex-col min-h-0 min-w-0 p-4 overflow-hidden">
-              {/* 搜索框 */}
-              <div className="relative mb-4 shrink-0">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="搜索技能名称或描述..."
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  className="pl-9"
-                />
+              {/* 搜索框和排序 */}
+              <div className="flex items-center gap-2 mb-4 shrink-0">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="搜索技能名称或描述..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                {/* 排序控件 */}
+                <Select
+                  value={sortBy}
+                  onValueChange={(v) => handleSortChange(v as SkillSortBy)}
+                >
+                  <SelectTrigger className="w-auto min-w-[90px] shrink-0">
+                    <ArrowUpDown className="h-3 w-3 mr-1 text-muted-foreground shrink-0" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SKILL_SORT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  onClick={toggleSortOrder}
+                  title={sortOrder === "desc" ? "降序" : "升序"}
+                >
+                  {sortOrder === "desc" ? (
+                    <ArrowDown className="h-4 w-4" />
+                  ) : (
+                    <ArrowUp className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
 
               {/* 技能列表 - 固定高度区域 */}

@@ -25,6 +25,17 @@ export type SkillVisibility =
   | "system"  // 系统预置
   | "team";   // 用户自建
 
+/** 技能列表排序字段 */
+export type SkillSortBy =
+  | "updated_at"   // 更新时间
+  | "created_at"   // 创建时间
+  | "downloads"    // 下载量
+  | "rating"       // 评分
+  | "name";        // 名称
+
+/** 排序方向 */
+export type SortOrder = "asc" | "desc";
+
 // ============ 技能库 ============
 
 /** 技能简要信息（列表展示用） */
@@ -110,6 +121,8 @@ export interface SkillListParams {
   stage?: SkillStage;
   visibility?: SkillVisibility;
   keyword?: string;
+  sort_by?: SkillSortBy;
+  sort_order?: SortOrder;
   skip?: number;
   limit?: number;
 }
