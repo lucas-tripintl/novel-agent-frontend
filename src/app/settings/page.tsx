@@ -448,12 +448,72 @@ export default function SettingsOverviewPage() {
           )}
         </div>
 
-        {/* 项目选择器 */}
-        <Card className="bg-card/50 border-border/50">
-          <CardContent className="pt-4">
-            <NovelFilter autoSelectFirst />
-          </CardContent>
-        </Card>
+        {/* 筛选栏 */}
+        <div className="flex items-center gap-4 flex-wrap">
+          {/* 项目选择器 */}
+          <NovelFilter autoSelectFirst />
+
+          {/* 搜索框 */}
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="搜索设定..."
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          {/* 类型过滤 */}
+          <Select value={selectedType} onValueChange={handleTypeChange}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="全部类型" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">
+                全部类型 ({entities.length})
+              </SelectItem>
+              {commonEntityTypes.map((type) => {
+                const config = getEntityConfig(type);
+                const count = typeStats[type] || 0;
+                if (count === 0 && selectedType !== type) return null;
+                return (
+                  <SelectItem key={type} value={type}>
+                    <span className="flex items-center gap-2">
+                      <config.icon className={cn("h-4 w-4", config.color)} />
+                      {config.label} ({count})
+                    </span>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+
+          {/* 展开/收起按钮 */}
+          <div className="flex gap-2 ml-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExpandAll}
+              disabled={
+                paginatedEntities.length === 0 ||
+                expandedItems.length === paginatedEntities.length
+              }
+            >
+              <ChevronsUpDown className="h-4 w-4 mr-1" />
+              全部展开
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCollapseAll}
+              disabled={expandedItems.length === 0}
+            >
+              <ChevronsDownUp className="h-4 w-4 mr-1" />
+              全部收起
+            </Button>
+          </div>
+        </div>
 
         {/* 未选择项目提示 */}
         {!selectedProjectId && (
@@ -470,69 +530,6 @@ export default function SettingsOverviewPage() {
         {/* 主内容区 */}
         {selectedProjectId && (
           <>
-            {/* 筛选栏 */}
-            <div className="flex items-center gap-4 flex-wrap">
-              {/* 搜索框 */}
-              <div className="relative flex-1 min-w-[200px] max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="搜索设定..."
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-
-              {/* 类型过滤 */}
-              <Select value={selectedType} onValueChange={handleTypeChange}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="全部类型" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">
-                    全部类型 ({entities.length})
-                  </SelectItem>
-                  {commonEntityTypes.map((type) => {
-                    const config = getEntityConfig(type);
-                    const count = typeStats[type] || 0;
-                    if (count === 0 && selectedType !== type) return null;
-                    return (
-                      <SelectItem key={type} value={type}>
-                        <span className="flex items-center gap-2">
-                          <config.icon className={cn("h-4 w-4", config.color)} />
-                          {config.label} ({count})
-                        </span>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-
-              {/* 展开/收起按钮 */}
-              <div className="flex gap-2 ml-auto">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExpandAll}
-                  disabled={
-                    paginatedEntities.length === 0 ||
-                    expandedItems.length === paginatedEntities.length
-                  }
-                >
-                  <ChevronsUpDown className="h-4 w-4 mr-1" />
-                  全部展开
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCollapseAll}
-                  disabled={expandedItems.length === 0}
-                >
-                  <ChevronsDownUp className="h-4 w-4 mr-1" />
-                  全部收起
-                </Button>
-              </div>
-            </div>
 
             {/* 加载中 */}
             {isLoading && (
