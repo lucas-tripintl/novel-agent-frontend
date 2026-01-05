@@ -1,13 +1,21 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   useWritingStore,
   useWritingMode,
   useContextEntities,
-  useChatMessages,
-  useStreamingState,
+  useChatSessionState,
+  useSelectedTextContext,
+  useSelectedSkill,
+  useSelectedModel,
+  useEditorContent,
 } from "@/stores/writing-store";
+import {
+  useChatSessions,
+  useCreateChatSession,
+  useSendChatMessage,
+} from "@/hooks/use-chat";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,13 +26,26 @@ import {
   Sparkles,
   Film,
   Send,
-  X,
-  User as UserIcon,
   Loader2,
-  Trash2,
+  StopCircle,
 } from "lucide-react";
 import { SelectedContext } from "../assistant/selected-context";
 import { ChatMessage } from "../assistant/chat-message";
+import {
+  TextContextChip,
+  EnableTextContextButton,
+} from "../assistant/text-context-chip";
+import { SkillSelector } from "../assistant/skill-selector";
+import { ToolCallIndicator } from "../assistant/tool-call-indicator";
+import { SessionHistory } from "../assistant/session-history";
+import { ModelSelector } from "../assistant/model-selector";
+import type { ChatMessage as ChatMessageType } from "@/types/writing";
+import type { SendChatMessageRequest } from "@/types/chat";
+
+// 生成唯一 ID
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
 
 interface AssistantPaneProps {
   projectId: string;
@@ -32,45 +53,174 @@ interface AssistantPaneProps {
 
 export function AssistantPane({ projectId }: AssistantPaneProps) {
   const [inputValue, setInputValue] = useState("");
+  const [localMessages, setLocalMessages] = useState<ChatMessageType[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const mode = useWritingMode();
   const contextEntities = useContextEntities();
-  const messages = useChatMessages();
-  const { isStreaming } = useStreamingState();
-  const { addMessage, clearMessages } = useWritingStore();
+  const { content: editorContent } = useEditorContent();
+  const { selectedTextContext } = useSelectedTextContext();
+  const { selectedSkillId } = useSelectedSkill();
+  const { selectedModelId } = useSelectedModel();
+  const {
+    currentSessionId,
+    streamingContent,
+    activeToolCalls,
+    setCurrentChatSession,
+    setStreamingChatContent,
+    setActiveToolCalls,
+  } = useChatSessionState();
+
+  // 获取会话列表（用于自动创建会话）
+  const { data: sessionsData } = useChatSessions(projectId, { status: "active" });
+  const sessions = sessionsData?.items ?? [];
+
+  // 创建会话
+  const createSession = useCreateChatSession(projectId);
+
+  // 发送消息
+  const {
+    sendMessage,
+    cancel: cancelMessage,
+    isStreaming,
+    currentText,
+    toolCalls,
+  } = useSendChatMessage(projectId, currentSessionId ?? "", {
+    onTextContent: (delta, fullText) => {
+      setStreamingChatContent(fullText);
+    },
+    onToolCallStart: (tc) => {
+      setActiveToolCalls([...activeToolCalls, tc]);
+    },
+    onToolCallEnd: (id) => {
+      setActiveToolCalls(
+        activeToolCalls.map((tc) =>
+          tc.id === id ? { ...tc, isComplete: true } : tc
+        )
+      );
+    },
+    onTextEnd: () => {
+      setStreamingChatContent("");
+      setActiveToolCalls([]);
+    },
+    onFinish: () => {
+      setStreamingChatContent("");
+      setActiveToolCalls([]);
+      // 清空本地消息（已同步到服务器）
+      setLocalMessages([]);
+    },
+    onError: (error) => {
+      console.error("消息发送失败:", error);
+      // 添加错误消息到本地
+      setLocalMessages((prev) => [
+        ...prev,
+        {
+          id: generateId(),
+          role: "assistant",
+          type: "error",
+          content: error.message,
+          timestamp: new Date(),
+          isComplete: true,
+        },
+      ]);
+      setStreamingChatContent("");
+      setActiveToolCalls([]);
+    },
+  });
+
+  // 合并消息（本地消息 + 流式消息）
+  const displayMessages = streamingContent
+    ? [
+        ...localMessages,
+        {
+          id: "streaming",
+          role: "assistant" as const,
+          type: "text" as const,
+          content: streamingContent,
+          timestamp: new Date(),
+          isComplete: false,
+        },
+      ]
+    : localMessages;
 
   // 自动滚动到底部
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [displayMessages.length, streamingContent]);
 
-  const handleSend = () => {
+  // 自动选择或创建会话
+  useEffect(() => {
+    if (!currentSessionId && sessions.length > 0) {
+      setCurrentChatSession(sessions[0].id);
+    }
+  }, [currentSessionId, sessions, setCurrentChatSession]);
+
+  const handleSend = useCallback(async () => {
     if (!inputValue.trim() || isStreaming) return;
 
-    // 添加用户消息
-    addMessage({
+    let sessionId = currentSessionId;
+
+    // 如果没有会话，先创建一个
+    if (!sessionId) {
+      try {
+        const newSession = await createSession.mutateAsync({
+          model_id: selectedModelId ?? undefined,
+        });
+        sessionId = newSession.id;
+        setCurrentChatSession(sessionId);
+      } catch (error) {
+        console.error("创建会话失败:", error);
+        return;
+      }
+    }
+
+    // 添加用户消息到本地
+    const userMessage: ChatMessageType = {
+      id: generateId(),
       role: "user",
       type: "text",
       content: inputValue.trim(),
-    });
-
-    // TODO: 发送到 AI 服务
-    console.log("发送消息:", inputValue);
-
+      timestamp: new Date(),
+      isComplete: true,
+    };
+    setLocalMessages((prev) => [...prev, userMessage]);
     setInputValue("");
 
-    // 模拟 AI 回复
-    setTimeout(() => {
-      addMessage({
-        role: "assistant",
-        type: "text",
-        content: "收到你的消息，正在思考中...",
-        isComplete: true,
-      });
-    }, 500);
-  };
+    // 组装请求
+    const request: SendChatMessageRequest = {
+      messages: [{ role: "user", content: userMessage.content }],
+      state: {
+        // 设定引用
+        context_entity_ids:
+          contextEntities.length > 0
+            ? contextEntities.map((e) => e.id)
+            : undefined,
+        // 选中文本或本章内容
+        selected_text:
+          selectedTextContext?.enabled
+            ? selectedTextContext.text ?? editorContent
+            : undefined,
+        // 技能
+        skill_id: selectedSkillId ?? undefined,
+      },
+    };
+
+    // 发送消息
+    await sendMessage(request);
+  }, [
+    inputValue,
+    isStreaming,
+    currentSessionId,
+    contextEntities,
+    selectedTextContext,
+    editorContent,
+    selectedSkillId,
+    selectedModelId,
+    createSession,
+    setCurrentChatSession,
+    sendMessage,
+  ]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -107,25 +257,29 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
           </Badge>
         </div>
 
-        {messages.length > 0 && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={clearMessages}
-          >
-            <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <ModelSelector />
+          <SessionHistory projectId={projectId} />
+        </div>
       </div>
 
-      {/* 当前上下文设定 */}
+      {/* 上下文区域 */}
       <SelectedContext entities={contextEntities} mode={mode} />
+
+      {/* 附加上下文（文本 + 技能） */}
+      <div className="px-4 py-2 border-b border-border/50 flex flex-wrap gap-2">
+        <TextContextChip />
+        <EnableTextContextButton />
+        <SkillSelector />
+      </div>
+
+      {/* 工具调用指示器 */}
+      <ToolCallIndicator toolCalls={toolCalls} />
 
       {/* 对话区域 */}
       <ScrollArea className="flex-1 min-h-0">
         <div className="p-4 space-y-4">
-          {messages.length === 0 ? (
+          {displayMessages.length === 0 ? (
             <div className="flex flex-col items-center py-8 text-center">
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
                 <Bot className="h-6 w-6 text-primary" />
@@ -136,7 +290,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
               </p>
             </div>
           ) : (
-            messages.map((message) => (
+            displayMessages.map((message) => (
               <ChatMessage key={message.id} message={message} />
             ))
           )}
@@ -159,21 +313,33 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
               "focus-visible:ring-1 focus-visible:ring-primary/30"
             )}
           />
-          <Button
-            size="icon"
-            className={cn(
-              "absolute right-2 bottom-2 h-8 w-8",
-              !inputValue.trim() && "opacity-50"
-            )}
-            onClick={handleSend}
-            disabled={!inputValue.trim() || isStreaming}
-          >
-            {isStreaming ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
+          {isStreaming ? (
+            <Button
+              size="icon"
+              variant="destructive"
+              className="absolute right-2 bottom-2 h-8 w-8"
+              onClick={cancelMessage}
+              title="停止生成"
+            >
+              <StopCircle className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              size="icon"
+              className={cn(
+                "absolute right-2 bottom-2 h-8 w-8",
+                !inputValue.trim() && "opacity-50"
+              )}
+              onClick={handleSend}
+              disabled={!inputValue.trim()}
+            >
+              {createSession.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          )}
         </div>
         <p className="mt-2 text-[10px] text-muted-foreground text-center">
           按 Enter 发送，Shift + Enter 换行

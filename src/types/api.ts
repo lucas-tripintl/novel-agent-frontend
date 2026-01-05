@@ -76,6 +76,7 @@ export interface ProjectList {
   status: ProjectStatus;
   current_chapter: number;
   total_chapters: number;
+  updated_at: string;
 }
 
 // ============ 章节相关 ============

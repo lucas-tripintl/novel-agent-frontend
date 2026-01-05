@@ -5,7 +5,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { cn } from "@/lib/utils";
-import { useEditorSettings } from "@/stores/writing-store";
+import { useEditorSettings, useSelectedTextContext } from "@/stores/writing-store";
 import { fontFamilies, type EditorFontFamily } from "@/types/writing";
 
 interface TiptapEditorProps {
@@ -29,8 +29,20 @@ export function TiptapEditor({
   className,
 }: TiptapEditorProps) {
   const { settings } = useEditorSettings();
+  const { selectedTextContext, setSelectedTextContext } = useSelectedTextContext();
   // 用于区分程序设置内容和用户输入
   const isSettingContentRef = useRef(false);
+
+  // 计算位置对应的行号（基于段落）
+  const getLineNumber = useCallback((doc: { nodesBetween: (from: number, to: number, callback: (node: { isBlock: boolean }, pos: number) => void) => void }, pos: number): number => {
+    let lineNumber = 1;
+    doc.nodesBetween(0, pos, (node, nodePos) => {
+      if (node.isBlock && nodePos < pos) {
+        lineNumber++;
+      }
+    });
+    return lineNumber;
+  }, []);
 
   const editor = useEditor({
     immediatelyRender: false, // 避免 SSR hydration 不匹配
@@ -109,6 +121,47 @@ export function TiptapEditor({
       editor.setEditable(!isReadOnly);
     }
   }, [editor, isReadOnly]);
+
+  // 监听选区变化，更新 selectedTextContext
+  useEffect(() => {
+    if (!editor) return;
+
+    const handleSelectionUpdate = () => {
+      // 如果上下文未启用，不更新
+      if (!selectedTextContext?.enabled) return;
+
+      const { from, to } = editor.state.selection;
+      const hasSelection = from !== to;
+
+      if (hasSelection) {
+        // 有选中文本
+        const text = editor.state.doc.textBetween(from, to);
+        const fromLine = getLineNumber(editor.state.doc, from);
+        const toLine = getLineNumber(editor.state.doc, to);
+
+        setSelectedTextContext({
+          enabled: true,
+          text,
+          lineRange: [fromLine, toLine],
+          charCount: text.length,
+        });
+      } else if (selectedTextContext?.text !== null) {
+        // 取消选中时，重置为全章内容（仅当之前有选中时才更新，避免无限循环）
+        setSelectedTextContext({
+          enabled: true,
+          text: null,
+          lineRange: null,
+          charCount: 0,
+        });
+      }
+    };
+
+    editor.on("selectionUpdate", handleSelectionUpdate);
+
+    return () => {
+      editor.off("selectionUpdate", handleSelectionUpdate);
+    };
+  }, [editor, selectedTextContext?.enabled, selectedTextContext?.text, setSelectedTextContext, getLineNumber]);
 
   // 流式写入：追加内容到末尾
   const appendContent = useCallback(

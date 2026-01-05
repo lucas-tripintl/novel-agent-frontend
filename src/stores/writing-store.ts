@@ -15,6 +15,12 @@ import type {
   EditorSettings,
 } from "@/types/writing";
 import type { EntityRead } from "@/types/api";
+import type { SelectedTextContext, ToolCallState } from "@/types/chat";
+
+// 生成唯一 ID（兼容非 HTTPS 环境）
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
 
 interface WritingState {
   // ============ 当前上下文 ============
@@ -54,6 +60,34 @@ interface WritingState {
   isStreaming: boolean;
   /** 流式内容缓冲 */
   streamingBuffer: string;
+
+  // ============ Chat 会话 ============
+  /** 当前聊天会话 ID */
+  currentChatSessionId: string | null;
+  /** Chat 是否正在流式响应 */
+  isChatStreaming: boolean;
+  /** 当前会话的流式文本（未完成） */
+  streamingChatContent: string;
+  /** 当前工具调用状态 */
+  activeToolCalls: ToolCallState[];
+
+  // ============ 文本上下文 ============
+  /** 选中的文本上下文 */
+  selectedTextContext: SelectedTextContext | null;
+
+  // ============ 技能选择 ============
+  /** 选中的技能 ID */
+  selectedSkillId: string | null;
+  /** 选中的技能信息（用于 UI 显示） */
+  selectedSkillInfo: {
+    name: string;
+    description: string;
+    category: string;
+  } | null;
+
+  // ============ 模型选择 ============
+  /** 选中的模型 ID */
+  selectedModelId: string | null;
 
   // ============ UI 状态 ============
   /** 左栏是否折叠 */
@@ -114,6 +148,37 @@ interface WritingState {
   /** 清空流式缓冲 */
   clearStreamingBuffer: () => void;
 
+  // ============ Chat 会话 Actions ============
+  /** 设置当前聊天会话 */
+  setCurrentChatSession: (sessionId: string | null) => void;
+  /** 设置聊天流式状态 */
+  setChatStreaming: (isStreaming: boolean) => void;
+  /** 设置流式聊天内容 */
+  setStreamingChatContent: (content: string) => void;
+  /** 追加流式聊天内容 */
+  appendStreamingChatContent: (delta: string) => void;
+  /** 清空流式聊天内容 */
+  clearStreamingChatContent: () => void;
+  /** 设置工具调用状态 */
+  setActiveToolCalls: (toolCalls: ToolCallState[]) => void;
+
+  // ============ 文本上下文 Actions ============
+  /** 设置选中的文本上下文 */
+  setSelectedTextContext: (context: SelectedTextContext | null) => void;
+  /** 清空选中的文本上下文 */
+  clearSelectedTextContext: () => void;
+
+  // ============ 技能选择 Actions ============
+  /** 设置选中的技能 */
+  setSelectedSkill: (
+    skillId: string | null,
+    info?: { name: string; description: string; category: string }
+  ) => void;
+
+  // ============ 模型选择 Actions ============
+  /** 设置选中的模型 */
+  setSelectedModel: (modelId: string | null) => void;
+
   /** 切换左栏折叠 */
   toggleLeftPane: () => void;
   /** 切换右栏折叠 */
@@ -157,6 +222,24 @@ const initialState = {
   messages: [],
   isStreaming: false,
   streamingBuffer: "",
+  // Chat 会话
+  currentChatSessionId: null,
+  isChatStreaming: false,
+  streamingChatContent: "",
+  activeToolCalls: [] as ToolCallState[],
+  // 文本上下文（默认启用，表示"本章内容"）
+  selectedTextContext: {
+    enabled: true,
+    text: null,
+    lineRange: null,
+    charCount: 0,
+  } as SelectedTextContext,
+  // 技能选择
+  selectedSkillId: null,
+  selectedSkillInfo: null,
+  // 模型选择
+  selectedModelId: null,
+  // UI 状态
   isLeftPaneCollapsed: false,
   isRightPaneCollapsed: false,
   editingEntity: null,
@@ -248,7 +331,7 @@ export const useWritingStore = create<WritingState>()(
       addMessage: (message) => {
         const newMessage: ChatMessage = {
           ...message,
-          id: crypto.randomUUID(),
+          id: generateId(),
           timestamp: new Date(),
         };
         set((state) => ({ messages: [...state.messages, newMessage] }));
@@ -280,6 +363,54 @@ export const useWritingStore = create<WritingState>()(
         })),
 
       clearStreamingBuffer: () => set({ streamingBuffer: "" }),
+
+      // Chat 会话 Actions
+      setCurrentChatSession: (sessionId) =>
+        set({
+          currentChatSessionId: sessionId,
+          // 切换会话时清空流式内容
+          streamingChatContent: "",
+          activeToolCalls: [],
+        }),
+
+      setChatStreaming: (isStreaming) => set({ isChatStreaming: isStreaming }),
+
+      setStreamingChatContent: (content) =>
+        set({ streamingChatContent: content }),
+
+      appendStreamingChatContent: (delta) =>
+        set((state) => ({
+          streamingChatContent: state.streamingChatContent + delta,
+        })),
+
+      clearStreamingChatContent: () =>
+        set({ streamingChatContent: "", activeToolCalls: [] }),
+
+      setActiveToolCalls: (toolCalls) => set({ activeToolCalls: toolCalls }),
+
+      // 文本上下文 Actions
+      setSelectedTextContext: (context) =>
+        set({ selectedTextContext: context }),
+
+      clearSelectedTextContext: () =>
+        set({
+          selectedTextContext: {
+            enabled: true,
+            text: null,
+            lineRange: null,
+            charCount: 0,
+          },
+        }),
+
+      // 技能选择 Actions
+      setSelectedSkill: (skillId, info) =>
+        set({
+          selectedSkillId: skillId,
+          selectedSkillInfo: skillId && info ? info : null,
+        }),
+
+      // 模型选择 Actions
+      setSelectedModel: (modelId) => set({ selectedModelId: modelId }),
 
       toggleLeftPane: () =>
         set((state) => ({ isLeftPaneCollapsed: !state.isLeftPaneCollapsed })),
@@ -423,6 +554,56 @@ export function useEntityEditing() {
       setEditingEntityContent: state.setEditingEntityContent,
       markEntityAsSaved: state.markEntityAsSaved,
       closeEntityEditor: state.closeEntityEditor,
+    }))
+  );
+}
+
+/** 获取 Chat 会话状态 */
+export function useChatSessionState() {
+  return useWritingStore(
+    useShallow((state) => ({
+      currentSessionId: state.currentChatSessionId,
+      isChatStreaming: state.isChatStreaming,
+      streamingContent: state.streamingChatContent,
+      activeToolCalls: state.activeToolCalls,
+      setCurrentChatSession: state.setCurrentChatSession,
+      setChatStreaming: state.setChatStreaming,
+      setStreamingChatContent: state.setStreamingChatContent,
+      appendStreamingChatContent: state.appendStreamingChatContent,
+      clearStreamingChatContent: state.clearStreamingChatContent,
+      setActiveToolCalls: state.setActiveToolCalls,
+    }))
+  );
+}
+
+/** 获取选中的文本上下文 */
+export function useSelectedTextContext() {
+  return useWritingStore(
+    useShallow((state) => ({
+      selectedTextContext: state.selectedTextContext,
+      setSelectedTextContext: state.setSelectedTextContext,
+      clearSelectedTextContext: state.clearSelectedTextContext,
+    }))
+  );
+}
+
+/** 获取选中的技能 */
+export function useSelectedSkill() {
+  return useWritingStore(
+    useShallow((state) => ({
+      selectedSkillId: state.selectedSkillId,
+      selectedSkillInfo: state.selectedSkillInfo,
+      setSelectedSkill: state.setSelectedSkill,
+    }))
+  );
+}
+
+/** 获取选中的模型 */
+export function useSelectedModel() {
+  return useWritingStore(
+    useShallow((state) => ({
+      selectedModelId: state.selectedModelId,
+      setSelectedModel: state.setSelectedModel,
     }))
   );
 }

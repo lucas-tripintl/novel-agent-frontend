@@ -7,7 +7,7 @@ Chat API 提供写作面板的 AI 助手功能，支持：
 - 文本处理：润色、扩写、改写、续写
 - 设定咨询：查询角色、世界观信息
 - 技能加持：使用预置写作技能处理文本
-- 流式输出：通过 AG-UI 协议实时推送响应
+- 流式输出：通过 **AG-UI 协议** 实时推送响应
 
 ## 认证
 
@@ -49,8 +49,8 @@ interface ChatSession {
 
 | 类型 | 格式 | 示例 | 计费 |
 |------|------|------|------|
-| 系统模型 | 模型名称 | `"gemini-2.5-flash"` | ✅ 扣除用户余额 |
-| 用户模型 | `user:{uuid}` | `"user:550e8400-e29b-41d4-a716-446655440000"` | ❌ 不扣费（使用用户自己的 API Key） |
+| 系统模型 | 模型名称 | `"gemini-2.5-flash"` | 扣除用户余额 |
+| 用户模型 | `user:{uuid}` | `"user:550e8400-e29b-41d4-a716-446655440000"` | 不扣费（使用用户自己的 API Key） |
 
 ### ChatMessage（消息）
 
@@ -234,7 +234,7 @@ GET /api/v1/projects/{project_id}/chat/sessions/{session_id}/messages?skip=0&lim
 }
 ```
 
-### 7. 发送消息（核心 - SSE 流式）
+### 7. 发送消息（核心 - AG-UI SSE 流式）
 
 ```http
 POST /api/v1/projects/{project_id}/chat/sessions/{session_id}/message
@@ -242,25 +242,36 @@ Content-Type: application/json
 Accept: text/event-stream
 
 {
+  "thread_id": "session-uuid",
+  "run_id": "unique-run-uuid-每次请求唯一",
   "messages": [
-    {"role": "user", "content": "帮我润色这段话"}
+    {"id": "msg-1", "role": "user", "content": "帮我润色这段话"}
   ],
   "state": {
     "selected_text": "萧炎站在云岚宗门前，心中充满了复杂的情绪。",
     "skill_id": "550e8400-e29b-41d4-a716-446655440001",
     "context_entity_ids": ["entity-uuid-1", "entity-uuid-2"]
-  }
+  },
+  "tools": [],
+  "context": [],
+  "forwarded_props": {}
 }
 ```
 
-**请求参数说明：**
+**AG-UI 请求参数说明：**
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| messages | array | 是 | 消息数组，最后一条必须是 user 角色 |
+| thread_id | string | 是 | 会话 ID（通常与 session_id 相同） |
+| run_id | string | 是 | 本次运行的唯一 ID（UUID v4） |
+| messages | array | 是 | 消息数组，必须包含 id 和 role |
+| state | object | 否 | 前端状态，会自动注入到 Agent |
 | state.selected_text | string | 否 | 编辑器中选中的文本 |
 | state.skill_id | string | 否 | 要使用的技能 ID |
 | state.context_entity_ids | array | 否 | 引用的实体（角色/设定）ID 列表 |
+| tools | array | 否 | 前端工具定义（当前未使用） |
+| context | array | 否 | 额外上下文（当前未使用） |
+| forwarded_props | object | 否 | 透传属性（当前未使用） |
 
 **响应：** SSE 事件流（见下方 AG-UI 协议）
 
@@ -312,6 +323,9 @@ GET /api/v1/projects/{project_id}/chat/sessions/{session_id}/status
 | `TOOL_CALL_START` | 工具调用开始 |
 | `TOOL_CALL_ARGS` | 工具参数 |
 | `TOOL_CALL_END` | 工具调用结束 |
+| `TOOL_CALL_RESULT` | 工具执行结果 |
+| `STATE_SNAPSHOT` | 状态快照 |
+| `STATE_DELTA` | 状态增量更新 |
 | `RUN_FINISHED` | 运行结束 |
 | `RUN_ERROR` | 运行出错 |
 
@@ -319,34 +333,36 @@ GET /api/v1/projects/{project_id}/chat/sessions/{session_id}/status
 
 ```
 event: RUN_STARTED
-data: {"type": "RUN_STARTED", "thread_id": "...", "run_id": "..."}
+data: {"type": "RUN_STARTED", "threadId": "...", "runId": "..."}
 
 event: TEXT_MESSAGE_START
-data: {"type": "TEXT_MESSAGE_START", "message_id": "..."}
+data: {"type": "TEXT_MESSAGE_START", "messageId": "..."}
 
 event: TEXT_MESSAGE_CONTENT
-data: {"type": "TEXT_MESSAGE_CONTENT", "message_id": "...", "delta": "萧炎"}
+data: {"type": "TEXT_MESSAGE_CONTENT", "messageId": "...", "delta": "萧炎"}
 
 event: TEXT_MESSAGE_CONTENT
-data: {"type": "TEXT_MESSAGE_CONTENT", "message_id": "...", "delta": "伫立于"}
+data: {"type": "TEXT_MESSAGE_CONTENT", "messageId": "...", "delta": "伫立于"}
 
 event: TEXT_MESSAGE_CONTENT
-data: {"type": "TEXT_MESSAGE_CONTENT", "message_id": "...", "delta": "云岚宗"}
+data: {"type": "TEXT_MESSAGE_CONTENT", "messageId": "...", "delta": "云岚宗"}
 
 event: TEXT_MESSAGE_END
-data: {"type": "TEXT_MESSAGE_END", "message_id": "..."}
+data: {"type": "TEXT_MESSAGE_END", "messageId": "..."}
 
 event: RUN_FINISHED
-data: {"type": "RUN_FINISHED", "thread_id": "...", "run_id": "..."}
+data: {"type": "RUN_FINISHED", "threadId": "...", "runId": "..."}
 ```
 
 ---
 
 ## 前端集成示例
 
-### 方案 1：原生 EventSource
+### 方案 1：原生 Fetch + ReadableStream
 
 ```typescript
+import { v4 as uuidv4 } from 'uuid';
+
 async function sendMessage(
   projectId: string,
   sessionId: string,
@@ -357,6 +373,9 @@ async function sendMessage(
     entityIds?: string[];
   }
 ) {
+  const runId = uuidv4();
+  const messageId = uuidv4();
+
   const response = await fetch(
     `/api/v1/projects/${projectId}/chat/sessions/${sessionId}/message`,
     {
@@ -367,12 +386,19 @@ async function sendMessage(
         'Accept': 'text/event-stream',
       },
       body: JSON.stringify({
-        messages: [{ role: 'user', content }],
+        thread_id: sessionId,
+        run_id: runId,
+        messages: [
+          { id: messageId, role: 'user', content }
+        ],
         state: {
-          selected_text: options?.selectedText,
-          skill_id: options?.skillId,
-          context_entity_ids: options?.entityIds,
+          selected_text: options?.selectedText || null,
+          skill_id: options?.skillId || null,
+          context_entity_ids: options?.entityIds || [],
         },
+        tools: [],
+        context: [],
+        forwarded_props: {},
       }),
     }
   );
@@ -403,7 +429,7 @@ async function sendMessage(
             onMessageComplete(fullText);
             break;
           case 'RUN_ERROR':
-            onError(data.error);
+            onError(data.message);
             break;
         }
       }
@@ -420,6 +446,7 @@ npm install @ag-ui/client
 
 ```typescript
 import { HttpAgent } from '@ag-ui/client';
+import { v4 as uuidv4 } from 'uuid';
 
 const agent = new HttpAgent({
   url: `/api/v1/projects/${projectId}/chat/sessions/${sessionId}/message`,
@@ -430,11 +457,19 @@ const agent = new HttpAgent({
 
 // 发送消息
 const stream = agent.runAgent({
-  messages: [{ role: 'user', content: '帮我润色这段话' }],
+  threadId: sessionId,
+  runId: uuidv4(),
+  messages: [
+    { id: uuidv4(), role: 'user', content: '帮我润色这段话' }
+  ],
   state: {
     selected_text: '萧炎站在云岚宗门前...',
     skill_id: 'skill-uuid',
+    context_entity_ids: [],
   },
+  tools: [],
+  context: [],
+  forwardedProps: {},
 });
 
 // 监听事件
@@ -447,7 +482,7 @@ for await (const event of stream) {
       console.log('完成');
       break;
     case 'RUN_ERROR':
-      console.error('错误:', event.error);
+      console.error('错误:', event.message);
       break;
   }
 }
@@ -497,7 +532,7 @@ await sendMessage(projectId, sessionId, '帮我润色一下', {
   selectedText,
 });
 
-// AI 返回润色后的文本，用户可一键替换
+// AI 会通过 get_selected_text 工具获取选中内容并返回润色后的文本
 ```
 
 ### 场景 2：使用技能处理
@@ -510,6 +545,8 @@ await sendMessage(projectId, sessionId, '用番茄风格改写', {
   selectedText: '萧炎看着云韵...',
   skillId,
 });
+
+// AI 会通过 get_skill_content 工具获取技能内容并按技能指导处理
 ```
 
 ### 场景 3：引用角色设定
@@ -521,6 +558,8 @@ const entityIds = ['char-xiaoyan-uuid', 'char-yunyun-uuid'];
 await sendMessage(projectId, sessionId, '写一段萧炎和云韵的对话', {
   entityIds,
 });
+
+// AI 会通过 get_context_entities 工具获取角色设定并保持一致性
 ```
 
 ### 场景 4：切换模型
@@ -674,7 +713,7 @@ GET /api/v1/user/models
 
 ```
 event: RUN_ERROR
-data: {"type": "RUN_ERROR", "error": {"code": "MODEL_ERROR", "message": "模型调用失败"}}
+data: {"type": "RUN_ERROR", "message": "模型调用失败", "code": "MODEL_ERROR"}
 ```
 
 ---
@@ -684,7 +723,7 @@ data: {"type": "RUN_ERROR", "error": {"code": "MODEL_ERROR", "message": "模型�
 1. **会话归属**：会话与项目绑定，只能在对应项目下访问
 2. **消息持久化**：用户消息和 AI 回复都会保存到数据库
 3. **标题自动生成**：首次发送消息后，会自动用消息内容生成标题
-4. **历史上下文**：默认加载最近 20 条消息作为上下文
+4. **历史上下文**：AG-UI 协议中的 messages 字段包含对话历史
 5. **取消机制**：取消请求发送后，当前生成会被中断
 6. **模型切换**：切换模型后，后续消息使用新模型，历史不受影响
 7. **计费规则**：
@@ -696,6 +735,14 @@ data: {"type": "RUN_ERROR", "error": {"code": "MODEL_ERROR", "message": "模型�
 ## AI 可用工具
 
 Chat Agent 内置以下工具，AI 会根据用户请求自动调用。前端可以通过 SSE 工具调用事件展示调用过程。
+
+### 状态获取工具
+
+| 工具名 | 说明 | 参数 |
+|--------|------|------|
+| `get_selected_text` | 获取用户选中的文本 | 无 |
+| `get_skill_content` | 获取用户选择的技能内容 | 无 |
+| `get_context_entities` | 获取用户引用的实体设定 | 无 |
 
 ### 查询工具
 
@@ -717,13 +764,16 @@ Chat Agent 内置以下工具，AI 会根据用户请求自动调用。前端可
 
 ```
 event: TOOL_CALL_START
-data: {"type": "TOOL_CALL_START", "tool_call_id": "...", "tool_name": "search_entities"}
+data: {"type": "TOOL_CALL_START", "toolCallId": "...", "toolCallName": "search_entities"}
 
 event: TOOL_CALL_ARGS
-data: {"type": "TOOL_CALL_ARGS", "tool_call_id": "...", "delta": "{\"query\": \"萧炎\"}"}
+data: {"type": "TOOL_CALL_ARGS", "toolCallId": "...", "delta": "{\"query\": \"萧炎\"}"}
 
 event: TOOL_CALL_END
-data: {"type": "TOOL_CALL_END", "tool_call_id": "...", "tool_name": "search_entities"}
+data: {"type": "TOOL_CALL_END", "toolCallId": "...", "toolCallName": "search_entities"}
+
+event: TOOL_CALL_RESULT
+data: {"type": "TOOL_CALL_RESULT", "messageId": "...", "toolCallId": "...", "content": "..."}
 ```
 
 前端可以选择展示工具调用状态，例如"正在搜索角色设定..."。
@@ -745,3 +795,12 @@ GET /api/v1/projects/{project_id}/entities?entity_type=character
 ```
 
 使用返回的 `id` 作为 `context_entity_ids` 参数。
+
+---
+
+## 附录：AG-UI 协议参考
+
+- **官方文档**: [docs.ag-ui.com](https://docs.ag-ui.com/)
+- **GitHub**: [github.com/ag-ui-protocol/ag-ui](https://github.com/ag-ui-protocol/ag-ui)
+- **Python SDK**: [ag-ui-protocol on PyPI](https://pypi.org/project/ag-ui-protocol/)
+- **TypeScript SDK**: [@ag-ui/client on npm](https://www.npmjs.com/package/@ag-ui/client)
