@@ -27,7 +27,9 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
+import { SkillDialog } from "@/components/skills/skill-dialog";
 import {
   useProjectSkills,
   useEnableProjectSkill,
@@ -61,6 +63,7 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
   const [selectedSkillToAdd, setSelectedSkillToAdd] =
     useState<SkillBrief | null>(null);
   const [selectedStages, setSelectedStages] = useState<SkillStage[]>([]);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   // 搜索和筛选状态
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,7 +81,7 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
   } = useProjectSkills(projectId);
 
   // 获取可用技能列表 - 使用服务端分页
-  const { data: availableSkills, isLoading: isLoadingAvailable } = useSkills({
+  const { data: availableSkills, isLoading: isLoadingAvailable, refetch: refetchSkills } = useSkills({
     limit: PAGE_SIZE,
     offset: currentPage * PAGE_SIZE,
     category: categoryFilter === "all" ? undefined : categoryFilter,
@@ -162,6 +165,10 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
     },
     []
   );
+
+  const handleSkillCreated = useCallback(() => {
+    refetchSkills();
+  }, [refetchSkills]);
 
   return (
     <div className="flex flex-col h-full">
@@ -247,7 +254,18 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-3xl h-[600px] flex flex-col p-0 overflow-hidden">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/50 shrink-0">
-            <DialogTitle>添加技能</DialogTitle>
+            <div className="flex items-center justify-between pr-8">
+              <DialogTitle>添加技能</DialogTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCreateDialogOpen(true)}
+                className="h-8"
+              >
+                <Sparkles className="h-4 w-4 mr-1.5" />
+                创建技能
+              </Button>
+            </div>
           </DialogHeader>
 
           <div className="flex-1 flex min-h-0 overflow-hidden">
@@ -473,6 +491,14 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 创建技能对话框 */}
+      <SkillDialog
+        skill={null}
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onSave={handleSkillCreated}
+      />
     </div>
   );
 }
