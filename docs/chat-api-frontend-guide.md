@@ -37,13 +37,20 @@ interface ChatSession {
   project_id: string;      // 绑定的项目 ID
   title: string | null;    // 会话标题（自动生成）
   status: 'active' | 'archived' | 'deleted';
-  model_id: string;        // 使用的模型，如 "gemini-2.5-flash"
+  model_id: string;        // 模型 ID（见下方说明）
   temperature: number;     // 温度参数 0-2
   message_count: number;   // 消息数量
   created_at: string;      // ISO 8601
   updated_at: string;
 }
 ```
+
+**model_id 格式：**
+
+| 类型 | 格式 | 示例 | 计费 |
+|------|------|------|------|
+| 系统模型 | 模型名称 | `"gemini-2.5-flash"` | ✅ 扣除用户余额 |
+| 用户模型 | `user:{uuid}` | `"user:550e8400-e29b-41d4-a716-446655440000"` | ❌ 不扣费（使用用户自己的 API Key） |
 
 ### ChatMessage（消息）
 
@@ -519,7 +526,7 @@ await sendMessage(projectId, sessionId, '写一段萧炎和云韵的对话', {
 ### 场景 4：切换模型
 
 ```typescript
-// 切换到 GPT-4o 模型
+// 切换到系统模型 GPT-4o
 await fetch(`/api/v1/projects/${projectId}/chat/sessions/${sessionId}`, {
   method: 'PATCH',
   headers: {
@@ -529,6 +536,18 @@ await fetch(`/api/v1/projects/${projectId}/chat/sessions/${sessionId}`, {
   body: JSON.stringify({
     model_id: 'gpt-4o',
     temperature: 0.5,
+  }),
+});
+
+// 切换到用户自定义模型（使用用户自己的 API Key，不扣费）
+await fetch(`/api/v1/projects/${projectId}/chat/sessions/${sessionId}`, {
+  method: 'PATCH',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  },
+  body: JSON.stringify({
+    model_id: 'user:550e8400-e29b-41d4-a716-446655440000',
   }),
 });
 
@@ -569,7 +588,9 @@ await sendMessage(projectId, sessionId, '萧炎现在什么境界？');
 
 ## 可用模型列表
 
-通过 `/api/v1/models` 获取可用模型：
+### 系统模型
+
+通过 `/api/v1/models` 获取系统预置模型：
 
 ```http
 GET /api/v1/models
@@ -583,6 +604,44 @@ GET /api/v1/models
 | gemini-2.5-flash-lite | Gemini 2.5 Flash Lite | 更快、更便宜 |
 | gpt-4o | GPT-4o | OpenAI 旗舰模型 |
 | claude-sonnet-4 | Claude Sonnet 4 | Anthropic 模型 |
+
+### 用户自定义模型
+
+用户可以添加自己的 API Key 使用自定义模型。通过 `/api/v1/user/models` 获取：
+
+```http
+GET /api/v1/user/models
+```
+
+**响应：**
+
+```json
+{
+  "items": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "我的 GPT-4",
+      "model_id": "gpt-4-turbo",
+      "provider_type": "openai",
+      "is_enabled": true,
+      "is_default": false,
+      "total_calls": 120,
+      "total_input_tokens": 50000,
+      "total_output_tokens": 30000
+    }
+  ]
+}
+```
+
+在会话中使用用户模型时，`model_id` 格式为 `"user:{id}"`：
+
+```json
+{
+  "model_id": "user:550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**注意：** 用户模型使用用户自己的 API Key，**不扣除平台余额**，但会记录使用统计。
 
 ---
 
@@ -628,6 +687,9 @@ data: {"type": "RUN_ERROR", "error": {"code": "MODEL_ERROR", "message": "模型�
 4. **历史上下文**：默认加载最近 20 条消息作为上下文
 5. **取消机制**：取消请求发送后，当前生成会被中断
 6. **模型切换**：切换模型后，后续消息使用新模型，历史不受影响
+7. **计费规则**：
+   - 系统模型：按 token 数扣除用户余额
+   - 用户模型（`user:*`）：不扣费，使用用户自己的 API Key，但会记录使用统计
 
 ---
 
