@@ -16,6 +16,7 @@ import {
 import { useActiveTasks } from "@/hooks/use-task-polling";
 import { cancelTask } from "@/lib/api/tasks";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { formatTimeAgo } from "@/lib/utils/time";
 
 export function AnalyzingList() {
   const { data: tasks = [], isLoading, error } = useActiveTasks();
@@ -70,48 +71,52 @@ export function AnalyzingList() {
     <div className="space-y-4">
       {tasks.map((task) => (
         <Card key={task.id} className="bg-card/50">
-          <CardContent className="p-4 space-y-4">
+          <CardContent className="p-4 space-y-3">
             {/* 标题行 */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <BookOpen className="h-5 w-5 text-primary" />
+              <div className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-primary animate-pulse" />
                 <span className="font-medium">
                   {(task.meta as { project_name?: string })?.project_name || "未命名项目"}
                 </span>
+                <TaskStatusBadge status={task.status} />
               </div>
-              <TaskStatusBadge status={task.status} />
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  开始于 {formatTimeAgo(task.created_at)}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                  onClick={() => cancelMutation.mutate(task.id)}
+                  disabled={cancelMutation.isPending}
+                  title="取消任务"
+                >
+                  {cancelMutation.isPending ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <X className="h-3 w-3" />
+                  )}
+                </Button>
+              </div>
             </div>
 
             {/* 进度 */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">{task.message}</span>
-                <span className="font-mono text-primary">
-                  {Math.round(task.progress)}%
-                </span>
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>进度</span>
+                <span>{Math.round(task.progress)}%</span>
               </div>
-              <Progress value={task.progress} className="h-1.5" />
+              <Progress value={task.progress} className="h-2" />
             </div>
 
-            {/* 操作按钮 */}
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => cancelMutation.mutate(task.id)}
-                disabled={cancelMutation.isPending}
-              >
-                {cancelMutation.isPending ? (
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                ) : (
-                  <X className="mr-1 h-3 w-3" />
-                )}
-                取消
-              </Button>
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/projects/${task.project_id}`}>查看详情</Link>
-              </Button>
-            </div>
+            {/* 消息 */}
+            {task.message && (
+              <p className="text-sm text-muted-foreground bg-muted/50 p-2 rounded">
+                {task.message}
+              </p>
+            )}
           </CardContent>
         </Card>
       ))}
@@ -123,15 +128,13 @@ function TaskStatusBadge({ status }: { status: string }) {
   switch (status) {
     case "running":
       return (
-        <Badge variant="secondary" className="bg-neon-cyan/20 text-neon-cyan border-neon-cyan/30">
-          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+        <Badge variant="secondary" className="bg-primary/20 text-primary">
           分析中
         </Badge>
       );
     case "queued":
       return (
-        <Badge variant="secondary" className="bg-muted text-muted-foreground">
-          <Clock className="mr-1 h-3 w-3" />
+        <Badge variant="secondary" className="bg-primary/20 text-primary">
           排队中
         </Badge>
       );
