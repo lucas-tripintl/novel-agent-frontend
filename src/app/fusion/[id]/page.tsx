@@ -31,16 +31,16 @@ import {
   TrendingUp,
   Lightbulb,
   AlertTriangle,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { FusionStatusBadge } from "@/components/common/status-badge";
 import { cn } from "@/lib/utils";
 import {
   useFusionTask,
   useFusionModes,
-  useSelectFusionCandidate,
   useBuildFusionProject,
 } from "@/hooks/use-fusion";
 import { formatTimeAgo } from "@/lib/utils/time";
@@ -67,9 +67,10 @@ function MarkdownContent({ content }: { content: string }) {
 
 export default function FusionDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const taskId = params.id as string;
-  const [selectedCandidate, setSelectedCandidate] = useState<number | null>(null);
-  const [showBuildDialog, setShowBuildDialog] = useState(false);
+  // 创建项目对话框状态：存储要创建的候选方案
+  const [buildingCandidate, setBuildingCandidate] = useState<FusionCandidateRead | null>(null);
   const [projectName, setProjectName] = useState("");
   // 候选详情对话框状态
   const [detailCandidate, setDetailCandidate] = useState<FusionCandidateRead | null>(null);
@@ -88,7 +89,6 @@ export default function FusionDetailPage() {
   const isInProgress = task && (
     task.status === "extracting" ||
     task.status === "fusing" ||
-    task.status === "building" ||
     task.status === "pending"
   );
 
@@ -105,14 +105,8 @@ export default function FusionDetailPage() {
   // 获取融合模式信息
   const { data: modesData } = useFusionModes();
 
-  // 选择候选方案
-  const selectCandidate = useSelectFusionCandidate();
-
   // 创建项目
   const buildProject = useBuildFusionProject();
-
-  // 计算实际的选中索引：优先使用本地状态，如果没有则使用后端返回的值
-  const effectiveSelectedCandidate = selectedCandidate ?? task?.selected_candidate_index ?? null;
 
   // 获取融合模式名称
   const getModeName = (mode: string) => {
@@ -120,30 +114,34 @@ export default function FusionDetailPage() {
     return modeInfo?.name ?? mode;
   };
 
-  // 确认选择候选方案
-  const handleSelectCandidate = async () => {
-    if (effectiveSelectedCandidate === null) return;
-
-    try {
-      await selectCandidate.mutateAsync({
-        taskId,
-        request: { candidate_index: effectiveSelectedCandidate },
-      });
-    } catch (error) {
-      console.error("选择候选方案失败:", error);
-    }
+  // 打开创建项目对话框
+  const handleOpenBuildDialog = (candidate: FusionCandidateRead) => {
+    setBuildingCandidate(candidate);
+    // 默认使用候选方案的名称作为项目名
+    setProjectName(candidate.name);
   };
 
-  // 创建项目
+  // 关闭创建项目对话框
+  const handleCloseBuildDialog = () => {
+    setBuildingCandidate(null);
+    setProjectName("");
+  };
+
+  // 创建项目并跳转到写作面板
   const handleBuildProject = async () => {
-    if (!projectName.trim()) return;
+    if (!projectName.trim() || !buildingCandidate) return;
 
     try {
-      await buildProject.mutateAsync({
+      const result = await buildProject.mutateAsync({
         taskId,
-        request: { project_name: projectName.trim() },
+        request: {
+          project_name: projectName.trim(),
+          candidate_id: buildingCandidate.id,
+        },
       });
-      setShowBuildDialog(false);
+      handleCloseBuildDialog();
+      // 跳转到写作面板
+      router.push(`/write/${result.project_id}`);
     } catch (error) {
       console.error("创建项目失败:", error);
     }
@@ -314,8 +312,8 @@ export default function FusionDetailPage() {
           </Card>
         )}
 
-        {/* 方案对比 - 完成状态 */}
-        {task.status === "completed" && candidates.length > 0 && (
+        {/* 方案对比 - 完成状态或已选择状态（兼容旧数据） */}
+        {(task.status === "completed" || task.status === "selected") && candidates.length > 0 && (
           <div className="space-y-6">
             <h2 className="text-lg font-semibold">选择你喜欢的方案</h2>
 
@@ -333,12 +331,7 @@ export default function FusionDetailPage() {
               {candidates.map((candidate, index) => (
                 <Card
                   key={candidate.id}
-                  className={cn(
-                    "bg-card/50 transition-all",
-                    effectiveSelectedCandidate === index
-                      ? "border-primary ring-2 ring-primary/20"
-                      : "border-border/50 hover:border-primary/30"
-                  )}
+                  className="bg-card/50 transition-all border-border/50 hover:border-primary/30 flex flex-col"
                 >
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -351,52 +344,54 @@ export default function FusionDetailPage() {
                       {candidate.name}
                     </p>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm text-muted-foreground line-clamp-3">
-                      {candidate.summary}
-                    </p>
+                  <CardContent className="flex-1 flex flex-col">
+                    <div className="space-y-4 flex-1">
+                      <p className="text-sm text-muted-foreground line-clamp-3">
+                        {candidate.summary}
+                      </p>
 
-                    {/* 独特亮点 */}
-                    {candidate.unique_hooks && candidate.unique_hooks.length > 0 && (
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Lightbulb className="h-3 w-3" />
-                          独特亮点
-                        </Label>
-                        <ul className="text-xs text-muted-foreground space-y-1">
-                          {candidate.unique_hooks.slice(0, 2).map((h, i) => (
-                            <li key={i} className="line-clamp-1">• {h}</li>
-                          ))}
-                          {candidate.unique_hooks.length > 2 && (
-                            <li className="text-primary">+{candidate.unique_hooks.length - 2} 更多...</li>
-                          )}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* 风险提示 */}
-                    {candidate.risks && candidate.risks.length > 0 && (
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                          <AlertTriangle className="h-3 w-3" />
-                          风险提示
-                        </Label>
-                        <div className="flex flex-wrap gap-1">
-                          {candidate.risks.slice(0, 2).map((r, i) => (
-                            <Badge
-                              key={i}
-                              variant="outline"
-                              className="text-xs text-amber-500 border-amber-500/30 line-clamp-1 max-w-full"
-                            >
-                              {r.length > 20 ? r.slice(0, 20) + "..." : r}
-                            </Badge>
-                          ))}
+                      {/* 独特亮点 */}
+                      {candidate.unique_hooks && candidate.unique_hooks.length > 0 && (
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Lightbulb className="h-3 w-3" />
+                            独特亮点
+                          </Label>
+                          <ul className="text-xs text-muted-foreground space-y-1">
+                            {candidate.unique_hooks.slice(0, 2).map((h, i) => (
+                              <li key={i} className="line-clamp-1">• {h}</li>
+                            ))}
+                            {candidate.unique_hooks.length > 2 && (
+                              <li className="text-primary">+{candidate.unique_hooks.length - 2} 更多...</li>
+                            )}
+                          </ul>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* 操作按钮 */}
-                    <div className="flex gap-2 pt-2">
+                      {/* 风险提示 */}
+                      {candidate.risks && candidate.risks.length > 0 && (
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            风险提示
+                          </Label>
+                          <div className="flex flex-wrap gap-1">
+                            {candidate.risks.slice(0, 2).map((r, i) => (
+                              <Badge
+                                key={i}
+                                variant="outline"
+                                className="text-xs text-amber-500 border-amber-500/30 line-clamp-1 max-w-full"
+                              >
+                                {r.length > 20 ? r.slice(0, 20) + "..." : r}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 操作按钮 - 固定在底部 */}
+                    <div className="flex gap-2 pt-4 mt-auto">
                       <Button
                         variant="outline"
                         size="sm"
@@ -410,99 +405,21 @@ export default function FusionDetailPage() {
                         查看详情
                       </Button>
                       <Button
-                        className={cn(
-                          "flex-1",
-                          effectiveSelectedCandidate === index && "glow-green"
-                        )}
+                        className="flex-1 glow-green"
                         size="sm"
-                        variant={effectiveSelectedCandidate === index ? "default" : "outline"}
-                        onClick={() => setSelectedCandidate(index)}
+                        onClick={() => handleOpenBuildDialog(candidate)}
                       >
-                        {effectiveSelectedCandidate === index ? (
-                          <>
-                            <Check className="mr-1 h-4 w-4" />
-                            已选
-                          </>
-                        ) : (
-                          "选择"
-                        )}
+                        <Plus className="mr-1 h-4 w-4" />
+                        创建项目
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
-
-            {/* 确认按钮 */}
-            {effectiveSelectedCandidate !== null && (
-              <div className="flex justify-end gap-4">
-                <Button
-                  className="glow-green"
-                  onClick={handleSelectCandidate}
-                  disabled={selectCandidate.isPending}
-                >
-                  {selectCandidate.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      确认中...
-                    </>
-                  ) : (
-                    "确认选择"
-                  )}
-                </Button>
-              </div>
-            )}
-
-            {/* 错误提示 */}
-            {selectCandidate.error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  {selectCandidate.error instanceof Error
-                    ? selectCandidate.error.message
-                    : "选择失败，请重试"}
-                </AlertDescription>
-              </Alert>
-            )}
           </div>
         )}
 
-        {/* 已选择状态 - 可以创建项目 */}
-        {task.status === "selected" && task.selected_candidate_index !== null && (
-          <div className="space-y-6">
-            <Card className="bg-card/50 border-primary/30">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
-                  <Check className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">已选择方案</h3>
-                <p className="text-muted-foreground text-center max-w-sm mb-2">
-                  {candidates[task.selected_candidate_index]?.name ?? `方案 ${task.selected_candidate_index + 1}`}
-                </p>
-                <p className="text-sm text-muted-foreground text-center max-w-md mb-6">
-                  {candidates[task.selected_candidate_index]?.summary}
-                </p>
-                <Button className="glow-green" onClick={() => setShowBuildDialog(true)}>
-                  创建项目
-                  <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* 创建中状态 */}
-        {task.status === "building" && (
-          <Card className="bg-card/50">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-              <h3 className="text-lg font-semibold mb-2">正在创建项目</h3>
-              <p className="text-muted-foreground text-center max-w-sm">
-                基于选中的候选方案创建新项目...
-              </p>
-            </CardContent>
-          </Card>
-        )}
 
         {/* 已完成状态 */}
         {task.status === "done" && (
@@ -529,12 +446,14 @@ export default function FusionDetailPage() {
       </div>
 
       {/* 创建项目对话框 */}
-      <Dialog open={showBuildDialog} onOpenChange={setShowBuildDialog}>
+      <Dialog open={buildingCandidate !== null} onOpenChange={(open) => !open && handleCloseBuildDialog()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>创建项目</DialogTitle>
             <DialogDescription>
-              基于选中的融合方案创建新项目
+              {buildingCandidate && (
+                <>基于「{buildingCandidate.name}」创建新项目</>
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -545,10 +464,11 @@ export default function FusionDetailPage() {
               onChange={(e) => setProjectName(e.target.value)}
               placeholder="输入项目名称..."
               className="mt-2"
+              autoFocus
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowBuildDialog(false)}>
+            <Button variant="outline" onClick={handleCloseBuildDialog}>
               取消
             </Button>
             <Button

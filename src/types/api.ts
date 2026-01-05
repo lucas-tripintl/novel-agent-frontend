@@ -37,6 +37,10 @@ export interface TaskCreateResponse {
   task_id: string;
 }
 
+export interface FusionBuildResponse {
+  project_id: string;
+}
+
 // ============ 项目相关 ============
 
 // API 返回的项目状态

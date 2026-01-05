@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from "./client";
-import type { PaginatedResponse, SuccessResponse, TaskCreateResponse } from "@/types/api";
+import type { PaginatedResponse, SuccessResponse, TaskCreateResponse, FusionBuildResponse } from "@/types/api";
 import type {
   FusionTaskRead,
   FusionTaskList,
@@ -109,10 +109,10 @@ export async function selectFusionCandidate(taskId: string, request: FusionSelec
 }
 
 /**
- * 基于选中方案创建项目
+ * 基于候选方案创建项目（直接返回 project_id）
  */
 export async function buildFusionProject(taskId: string, request: FusionBuildRequest) {
-  const response = await apiClient.post<SuccessResponse<TaskCreateResponse>>(
+  const response = await apiClient.post<SuccessResponse<FusionBuildResponse>>(
     `/fusion/tasks/${taskId}/build`,
     request
   );

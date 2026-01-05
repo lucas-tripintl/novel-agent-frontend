@@ -44,6 +44,8 @@ export interface FusionSelectRequest {
 /** 创建项目请求 */
 export interface FusionBuildRequest {
   project_name: string;
+  /** 候选方案 ID，如 'candidate_1' */
+  candidate_id: string;
 }
 
 // ============ API 响应类型 ============
