@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
-  useWritingStore,
   useWritingMode,
   useContextEntities,
   useChatSessionState,
@@ -13,6 +12,7 @@ import {
 } from "@/stores/writing-store";
 import {
   useChatSessions,
+  useChatMessages,
   useCreateChatSession,
   useSendChatMessage,
 } from "@/hooks/use-chat";
@@ -74,20 +74,42 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
 
   // 获取会话列表（用于自动创建会话）
   const { data: sessionsData } = useChatSessions(projectId, { status: "active" });
-  const sessions = sessionsData?.items ?? [];
+  const sessions = useMemo(
+    () => sessionsData?.items ?? [],
+    [sessionsData?.items]
+  );
 
   // 创建会话
   const createSession = useCreateChatSession(projectId);
+
+  // 获取消息历史
+  const { data: messagesData } = useChatMessages(
+    projectId,
+    currentSessionId ?? "",
+    { enabled: !!currentSessionId }
+  );
+
+  // 服务器消息（按 sequence 排序）
+  const serverMessages: ChatMessageType[] = (messagesData?.pages ?? [])
+    .flatMap((page) => page.items)
+    .sort((a, b) => a.sequence - b.sequence)
+    .map((msg) => ({
+      id: msg.id,
+      role: msg.role as "user" | "assistant" | "system",
+      type: msg.status === "failed" ? "error" : "text",
+      content: msg.content,
+      timestamp: new Date(msg.created_at),
+      isComplete: msg.status === "completed",
+    }));
 
   // 发送消息
   const {
     sendMessage,
     cancel: cancelMessage,
     isStreaming,
-    currentText,
     toolCalls,
   } = useSendChatMessage(projectId, currentSessionId ?? "", {
-    onTextContent: (delta, fullText) => {
+    onTextContent: (_delta, fullText) => {
       setStreamingChatContent(fullText);
     },
     onToolCallStart: (tc) => {
@@ -107,8 +129,9 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
     onFinish: () => {
       setStreamingChatContent("");
       setActiveToolCalls([]);
-      // 清空本地消息（已同步到服务器）
-      setLocalMessages([]);
+      // 注意：不在这里清空 localMessages
+      // React Query 会通过 invalidateQueries 刷新 serverMessages
+      // 刷新完成后 serverMessages 会包含最新消息
     },
     onError: (error) => {
       console.error("消息发送失败:", error);
@@ -129,20 +152,40 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
     },
   });
 
-  // 合并消息（本地消息 + 流式消息）
-  const displayMessages = streamingContent
-    ? [
-        ...localMessages,
-        {
-          id: "streaming",
-          role: "assistant" as const,
-          type: "text" as const,
-          content: streamingContent,
-          timestamp: new Date(),
-          isComplete: false,
-        },
-      ]
-    : localMessages;
+  // 合并消息逻辑：
+  // - 基础：显示服务器历史消息
+  // - 流式期间：追加本地用户消息 + 流式 AI 回复
+  // - 流式结束：React Query 刷新后，服务器消息会包含最新内容
+  const displayMessages = useMemo(() => {
+    // 基础消息：服务器历史
+    const messages = [...serverMessages];
+
+    // 追加本地消息（过滤掉已存在于服务器的消息）
+    // 使用消息内容+角色来匹配，因为本地 id 和服务器 id 不同
+    if (localMessages.length > 0) {
+      const serverMsgContents = new Set(
+        serverMessages.map((m) => `${m.role}:${m.content}`)
+      );
+      const newLocalMsgs = localMessages.filter(
+        (m) => !serverMsgContents.has(`${m.role}:${m.content}`)
+      );
+      messages.push(...newLocalMsgs);
+    }
+
+    // 流式 AI 回复
+    if (streamingContent) {
+      messages.push({
+        id: "streaming",
+        role: "assistant" as const,
+        type: "text" as const,
+        content: streamingContent,
+        timestamp: new Date(),
+        isComplete: false,
+      });
+    }
+
+    return messages;
+  }, [serverMessages, localMessages, streamingContent]);
 
   // 自动滚动到底部
   useEffect(() => {
@@ -175,7 +218,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
       }
     }
 
-    // 添加用户消息到本地
+    // 添加用户消息到本地（清空之前的本地消息，只保留当前新消息）
     const userMessage: ChatMessageType = {
       id: generateId(),
       role: "user",
@@ -184,7 +227,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
       timestamp: new Date(),
       isComplete: true,
     };
-    setLocalMessages((prev) => [...prev, userMessage]);
+    setLocalMessages([userMessage]);
     setInputValue("");
 
     // 组装请求
