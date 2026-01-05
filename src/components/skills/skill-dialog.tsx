@@ -197,8 +197,8 @@ function SkillDialogContent({
     ? skillDetail.applicable_stages
     : editedStages;
   const displayTags = useMemo(
-    () => (shouldUpdateFromDetail ? skillDetail.tags || [] : editedTags),
-    [shouldUpdateFromDetail, skillDetail.tags, editedTags]
+    () => (shouldUpdateFromDetail ? skillDetail?.tags || [] : editedTags),
+    [shouldUpdateFromDetail, skillDetail?.tags, editedTags]
   );
 
   // Mutations
