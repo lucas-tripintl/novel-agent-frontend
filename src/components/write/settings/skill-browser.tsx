@@ -227,15 +227,6 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <Wand2 className="h-8 w-8 text-muted-foreground/50 mb-2" />
                   <p className="text-sm text-muted-foreground">暂未启用技能</p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="mt-2"
-                    onClick={handleOpenAddDialog}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    添加技能
-                  </Button>
                 </div>
               ) : (
                 projectSkills.map((ps) => (
