@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEntityEditing, useEditorSettings } from "@/stores/writing-store";
 import { useEnumStore } from "@/stores/enum-store";
@@ -123,15 +123,24 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [shouldCloseAfterSave, setShouldCloseAfterSave] = useState(false);
 
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
-  // 当切换到不同设定时，同步更新本地状态
+  // 当切换到不同设定时，同步更新本地状态并重置滚动位置
   useEffect(() => {
     setName(entity.name);
     setIsEditingName(false);
     setTags(entity.tags || []);
     setAttributes(entity.attributes || {});
     setSaveStatus("idle");
+
+    // 重置滚动位置到顶部
+    if (scrollAreaRef.current) {
+      const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTop = 0;
+      }
+    }
   }, [entity.id, entity.name, entity.tags, entity.attributes]);
 
   // 解析 JSON 内容
@@ -310,7 +319,7 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
         </div>
 
         <div className="flex-1 min-h-0">
-          <ScrollArea className="h-full">
+          <ScrollArea ref={scrollAreaRef} className="h-full">
             {/* 标签编辑区 */}
             <div className="px-6 py-3 border-b border-border/30 bg-muted/30">
               <div className="flex items-center gap-2 flex-wrap">

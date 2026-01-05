@@ -22,6 +22,8 @@ interface WritingState {
   projectId: string | null;
   /** 当前章节 ID */
   chapterId: string | null;
+  /** 当前章节序号（用于 API 调用） */
+  chapterNumber: number | null;
 
   // ============ 写作模式 ============
   /** 写作模式 */
@@ -73,7 +75,7 @@ interface WritingState {
 
   // ============ Actions ============
   /** 设置当前项目和章节 */
-  setContext: (projectId: string | null, chapterId: string | null) => void;
+  setContext: (projectId: string | null, chapterId: string | null, chapterNumber?: number | null) => void;
 
   /** 设置写作模式 */
   setMode: (mode: WritingMode) => void;
@@ -143,6 +145,7 @@ const defaultEditorSettings: EditorSettings = {
 const initialState = {
   projectId: null,
   chapterId: null,
+  chapterNumber: null,
   mode: "auto" as WritingMode,
   selectedEntities: [],
   autoSelectedEntities: [],
@@ -167,10 +170,11 @@ export const useWritingStore = create<WritingState>()(
     (set, get) => ({
       ...initialState,
 
-      setContext: (projectId, chapterId) =>
+      setContext: (projectId, chapterId, chapterNumber) =>
         set({
           projectId,
           chapterId,
+          chapterNumber: chapterNumber ?? null,
           // 切换章节时重置编辑器状态
           title: "",
           outline: "",

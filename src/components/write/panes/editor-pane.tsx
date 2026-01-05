@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef } from "react";
 import { useWritingStore, useStreamingState, useEntityEditing } from "@/stores/writing-store";
-import { useProjectChapters, useChapter } from "@/hooks/use-projects";
+import { useChapter } from "@/hooks/use-projects";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TiptapEditor } from "../editor/tiptap-editor";
 import { ChapterHeader } from "../editor/chapter-header";
@@ -14,25 +14,14 @@ interface EditorPaneProps {
 }
 
 export function EditorPane({ projectId }: EditorPaneProps) {
-  const { chapterId, content, setContent, loadDraft } = useWritingStore();
+  const { chapterId, chapterNumber, content, setContent, loadDraft } = useWritingStore();
   const { isStreaming } = useStreamingState();
   const { editingEntity } = useEntityEditing();
-  const { data: chaptersData } = useProjectChapters(projectId);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // 从 infinite query 结构提取章节列表
-  const chapters = useMemo(() => {
-    if (!chaptersData?.pages) return [];
-    return chaptersData.pages.flatMap((page) => page.items);
-  }, [chaptersData?.pages]);
-
-  // 从章节列表获取当前章节的 chapter_number
-  const currentChapterFromList = chapters.find((c) => c.id === chapterId);
-  const chapterNumber = currentChapterFromList?.chapter_number ?? 0;
-
-  // 使用章节详情 API 获取完整内容
-  const { data: chapterDetail } = useChapter(projectId, chapterNumber, {
-    enabled: !!chapterId && chapterNumber > 0,
+  // 使用章节详情 API 获取完整内容（直接使用 store 中的 chapterNumber）
+  const { data: chapterDetail } = useChapter(projectId, chapterNumber ?? 0, {
+    enabled: !!chapterId && !!chapterNumber && chapterNumber > 0,
   });
 
   // 加载章节内容

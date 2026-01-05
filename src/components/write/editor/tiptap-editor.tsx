@@ -75,6 +75,16 @@ export function TiptapEditor({
     },
   });
 
+  // 将纯文本转换为 HTML（保留换行符）
+  const textToHtml = (text: string): string => {
+    if (!text) return "";
+    // 将换行符转换为 <p> 段落
+    return text
+      .split(/\n/)
+      .map((line) => `<p>${line || "<br>"}</p>`)
+      .join("");
+  };
+
   // 同步外部内容变化
   useEffect(() => {
     if (editor && content !== editor.getText()) {
@@ -83,7 +93,8 @@ export function TiptapEditor({
       if (content !== currentContent) {
         // 标记为程序设置内容，避免触发 onChange
         isSettingContentRef.current = true;
-        editor.commands.setContent(content || "");
+        // 将纯文本转换为 HTML 格式，保留换行
+        editor.commands.setContent(textToHtml(content));
         // 使用 setTimeout 确保 onUpdate 回调执行完毕后再重置标记
         setTimeout(() => {
           isSettingContentRef.current = false;

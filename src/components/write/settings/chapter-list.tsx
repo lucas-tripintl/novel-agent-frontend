@@ -86,16 +86,18 @@ export function ChapterList({ projectId }: ChapterListProps) {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // 执行章节切换
-  const doSwitchChapter = useCallback((targetChapterId: string) => {
+  const doSwitchChapter = useCallback((targetChapterId: string, targetChapterNumber: number) => {
     // 先关闭设定编辑器
     if (editingEntity) {
       closeEntityEditor();
     }
-    // 然后切换章节
-    setContext(projectId, targetChapterId);
+    // 然后切换章节，同时传递 chapterNumber
+    setContext(projectId, targetChapterId, targetChapterNumber);
   }, [editingEntity, closeEntityEditor, setContext, projectId]);
 
-  const handleSelectChapter = (selectedChapterId: string) => {
+  const [pendingChapterNumber, setPendingChapterNumber] = useState<number | null>(null);
+
+  const handleSelectChapter = (selectedChapterId: string, selectedChapterNumber: number) => {
     // 如果点击的是当前章节，不做任何操作
     if (selectedChapterId === chapterId && !editingEntity) return;
 
@@ -104,16 +106,18 @@ export function ChapterList({ projectId }: ChapterListProps) {
 
     if (hasUnsavedChanges) {
       setPendingChapterId(selectedChapterId);
+      setPendingChapterNumber(selectedChapterNumber);
       setShowConfirmDialog(true);
     } else {
-      doSwitchChapter(selectedChapterId);
+      doSwitchChapter(selectedChapterId, selectedChapterNumber);
     }
   };
 
   const handleConfirmDiscard = () => {
-    if (pendingChapterId) {
-      doSwitchChapter(pendingChapterId);
+    if (pendingChapterId && pendingChapterNumber !== null) {
+      doSwitchChapter(pendingChapterId, pendingChapterNumber);
       setPendingChapterId(null);
+      setPendingChapterNumber(null);
     }
   };
 
@@ -198,7 +202,7 @@ export function ChapterList({ projectId }: ChapterListProps) {
                   return (
                     <button
                       key={chapter.id}
-                      onClick={() => handleSelectChapter(chapter.id)}
+                      onClick={() => handleSelectChapter(chapter.id, chapter.chapter_number)}
                       className={cn(
                         "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all",
                         "hover:bg-muted/50",
