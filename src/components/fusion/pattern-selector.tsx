@@ -21,11 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
+import { PatternDetailDialog } from "@/components/elements/pattern-detail-dialog";
 import { cn } from "@/lib/utils";
 import {
   Search,
@@ -47,6 +43,7 @@ import {
   TrendingUp,
   Dna,
   FileText,
+  Eye,
 } from "lucide-react";
 import type { PatternRead } from "@/types/pattern";
 import type { EntityType } from "@/types/api";
@@ -93,6 +90,10 @@ export function PatternSelector({
   const [selectedPatterns, setSelectedPatterns] = useState<Set<string>>(() => {
     return new Set(initialSelection.map((p) => p.patternId));
   });
+
+  // 详情对话框状态
+  const [detailPattern, setDetailPattern] = useState<PatternRead | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
   // 缓存已选择的 Pattern 详情
   const [patternDetails, setPatternDetails] = useState<Map<string, PatternRead>>(
@@ -238,6 +239,12 @@ export function PatternSelector({
     return patterns.every((p) => selectedPatterns.has(p.id));
   }, [patterns, selectedPatterns]);
 
+  // 打开详情对话框
+  const handleOpenDetail = useCallback((pattern: PatternRead) => {
+    setDetailPattern(pattern);
+    setDetailDialogOpen(true);
+  }, []);
+
   return (
     <div className="flex-1 flex flex-col space-y-4 min-h-0">
       {/* 筛选栏 */}
@@ -343,9 +350,17 @@ export function PatternSelector({
             patterns={patterns}
             selectedPatterns={selectedPatterns}
             onToggle={togglePattern}
+            onOpenDetail={handleOpenDetail}
           />
         )}
       </div>
+
+      {/* 详情对话框 */}
+      <PatternDetailDialog
+        pattern={detailPattern}
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+      />
     </div>
   );
 }
@@ -356,9 +371,10 @@ interface PatternGridProps {
   patterns: PatternRead[];
   selectedPatterns: Set<string>;
   onToggle: (pattern: PatternRead) => void;
+  onOpenDetail: (pattern: PatternRead) => void;
 }
 
-function PatternGrid({ patterns, selectedPatterns, onToggle }: PatternGridProps) {
+function PatternGrid({ patterns, selectedPatterns, onToggle, onOpenDetail }: PatternGridProps) {
   return (
     <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
       {patterns.map((pattern) => (
@@ -367,6 +383,7 @@ function PatternGrid({ patterns, selectedPatterns, onToggle }: PatternGridProps)
           pattern={pattern}
           isSelected={selectedPatterns.has(pattern.id)}
           onToggle={() => onToggle(pattern)}
+          onOpenDetail={() => onOpenDetail(pattern)}
         />
       ))}
     </div>
@@ -379,116 +396,62 @@ interface PatternCardProps {
   pattern: PatternRead;
   isSelected: boolean;
   onToggle: () => void;
+  onOpenDetail: () => void;
 }
 
-function PatternCard({ pattern, isSelected, onToggle }: PatternCardProps) {
+function PatternCard({ pattern, isSelected, onToggle, onOpenDetail }: PatternCardProps) {
   const Icon = typeIconMap[pattern.entity_type] || Circle;
 
   return (
-    <HoverCard openDelay={300} closeDelay={100}>
-      <HoverCardTrigger asChild>
-        <Card
-          className={cn(
-            "cursor-pointer transition-all",
-            isSelected
-              ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-              : "bg-card/50 border-border/50 hover:border-primary/30"
-          )}
-          onClick={onToggle}
-        >
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <Checkbox
-                checked={isSelected}
-                className="mt-0.5 shrink-0"
-                onClick={(e) => e.stopPropagation()}
-                onCheckedChange={onToggle}
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-                    <Icon className="h-3.5 w-3.5 text-primary" />
-                  </div>
-                  <Badge variant="outline" className="text-[10px] shrink-0">
-                    {getPatternTypeLabel(pattern.entity_type)}
-                  </Badge>
-                </div>
-                <h4 className="font-medium text-sm truncate">{pattern.name}</h4>
-                {pattern.content && (
-                  <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                    {pattern.content}
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </HoverCardTrigger>
-      <HoverCardContent
-        side="right"
-        align="start"
-        className="w-80 p-4"
-        sideOffset={8}
+    <Card
+      className={cn(
+        "cursor-pointer transition-all relative",
+        isSelected
+          ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+          : "bg-card/50 border-border/50 hover:border-primary/30"
+      )}
+      onClick={onToggle}
+    >
+      {/* 右上角查看详情按钮 */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-2 right-2 h-7 w-7 opacity-60 hover:opacity-100"
+        onClick={(e) => {
+          e.stopPropagation();
+          onOpenDetail();
+        }}
       >
-        <PatternPreview pattern={pattern} />
-      </HoverCardContent>
-    </HoverCard>
+        <Eye className="h-4 w-4" />
+      </Button>
+
+      <CardContent className="p-4 pr-10">
+        <div className="flex items-start gap-3">
+          <Checkbox
+            checked={isSelected}
+            className="mt-0.5 shrink-0"
+            onClick={(e) => e.stopPropagation()}
+            onCheckedChange={onToggle}
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                <Icon className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <Badge variant="outline" className="text-[10px] shrink-0">
+                {getPatternTypeLabel(pattern.entity_type)}
+              </Badge>
+            </div>
+            <h4 className="font-medium text-sm truncate">{pattern.name}</h4>
+            {pattern.content && (
+              <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                {pattern.content}
+              </p>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
-// ============ Pattern 预览 ============
-
-interface PatternPreviewProps {
-  pattern: PatternRead;
-}
-
-function PatternPreview({ pattern }: PatternPreviewProps) {
-  const Icon = typeIconMap[pattern.entity_type] || Circle;
-
-  return (
-    <div className="space-y-3">
-      {/* 头部 */}
-      <div className="flex items-start gap-3">
-        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-          <Icon className="h-5 w-5 text-primary" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-semibold truncate">{pattern.name}</h4>
-          <p className="text-xs text-muted-foreground">
-            {getPatternTypeLabel(pattern.entity_type)}
-          </p>
-        </div>
-      </div>
-
-      {/* 内容 */}
-      {pattern.content && (
-        <p className="text-sm text-muted-foreground line-clamp-4">
-          {pattern.content}
-        </p>
-      )}
-
-      {/* 标签 */}
-      {pattern.tags && pattern.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {pattern.tags.slice(0, 5).map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-[10px]">
-              {tag}
-            </Badge>
-          ))}
-          {pattern.tags.length > 5 && (
-            <Badge variant="outline" className="text-[10px]">
-              +{pattern.tags.length - 5}
-            </Badge>
-          )}
-        </div>
-      )}
-
-      {/* 来源信息 */}
-      {pattern.source_entity_ids && pattern.source_entity_ids.length > 0 && (
-        <div className="text-xs text-muted-foreground">
-          来源: {pattern.source_entity_ids.length} 个实体抽象
-        </div>
-      )}
-    </div>
-  );
-}
