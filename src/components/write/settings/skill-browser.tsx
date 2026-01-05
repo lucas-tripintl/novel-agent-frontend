@@ -254,14 +254,14 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
 
       {/* 添加技能对话框 */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-3xl max-h-[85vh] flex flex-col p-0">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/50">
+        <DialogContent className="sm:max-w-3xl h-[600px] flex flex-col p-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/50 shrink-0">
             <DialogTitle>添加技能</DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 flex min-h-0">
+          <div className="flex-1 flex min-h-0 overflow-hidden">
             {/* 左侧分类 Tab */}
-            <div className="w-28 shrink-0 border-r border-border/50 py-2">
+            <div className="w-28 shrink-0 border-r border-border/50 py-2 overflow-y-auto">
               <nav className="flex flex-col gap-1 px-2">
                 {SKILL_CATEGORY_OPTIONS.map((option) => (
                   <button
@@ -281,9 +281,9 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
             </div>
 
             {/* 右侧内容 */}
-            <div className="flex-1 flex flex-col min-h-0 p-4">
+            <div className="flex-1 flex flex-col min-h-0 min-w-0 p-4 overflow-hidden">
               {/* 搜索框 */}
-              <div className="relative mb-4">
+              <div className="relative mb-4 shrink-0">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="搜索技能名称或描述..."
@@ -293,8 +293,8 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
                 />
               </div>
 
-              {/* 技能列表 */}
-              <div className="flex-1 min-h-0">
+              {/* 技能列表 - 固定高度区域 */}
+              <div className="flex-1 min-h-[280px] overflow-hidden">
                 {isLoadingAvailable ? (
                   <div className="space-y-2">
                     {[...Array(5)].map((_, i) => (
@@ -302,7 +302,7 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
                     ))}
                   </div>
                 ) : filteredSkills.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="flex flex-col items-center justify-center h-full text-center">
                     <Wand2 className="h-10 w-10 text-muted-foreground/50 mb-3" />
                     <p className="text-sm text-muted-foreground">
                       {searchQuery || categoryFilter !== "all"
@@ -324,7 +324,7 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
                     )}
                   </div>
                 ) : (
-                  <ScrollArea className="h-[320px]">
+                  <ScrollArea className="h-full">
                     <div className="space-y-2 pr-2">
                       {filteredSkills.map((skill) => (
                         <div
@@ -384,7 +384,7 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
 
               {/* 分页 */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-3 mt-3 border-t border-border/50">
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-border/50 shrink-0">
                   <span className="text-xs text-muted-foreground">
                     共 {totalItems} 个技能
                   </span>
@@ -413,53 +413,55 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
 
-              {/* 阶段选择（多选） */}
-              {selectedSkillToAdd && (
-                <div className="space-y-3 pt-3 mt-3 border-t border-border/50">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium">
-                      限定适用阶段（可选）
-                    </Label>
-                    <span className="text-xs text-muted-foreground">
-                      不选择则在所有阶段生效
-                    </span>
+          {/* 阶段选择（多选）- 移到 footer 上方，始终显示 */}
+          <div className="px-6 py-3 border-t border-border/50 bg-muted/30 shrink-0">
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-sm font-medium">
+                限定适用阶段（可选）
+              </Label>
+              <span className="text-xs text-muted-foreground">
+                不选择则在所有阶段生效
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {SKILL_STAGE_OPTIONS.filter((o) => o.value !== "all").map(
+                (option) => (
+                  <div
+                    key={option.value}
+                    className="flex items-center space-x-2"
+                  >
+                    <Checkbox
+                      id={`add-stage-${option.value}`}
+                      checked={selectedStages.includes(
+                        option.value as SkillStage
+                      )}
+                      onCheckedChange={(checked) =>
+                        handleStageToggle(
+                          option.value as SkillStage,
+                          checked === true
+                        )
+                      }
+                      disabled={!selectedSkillToAdd}
+                    />
+                    <label
+                      htmlFor={`add-stage-${option.value}`}
+                      className={cn(
+                        "text-sm cursor-pointer",
+                        !selectedSkillToAdd && "text-muted-foreground"
+                      )}
+                    >
+                      {option.label}
+                    </label>
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    {SKILL_STAGE_OPTIONS.filter((o) => o.value !== "all").map(
-                      (option) => (
-                        <div
-                          key={option.value}
-                          className="flex items-center space-x-2"
-                        >
-                          <Checkbox
-                            id={`add-stage-${option.value}`}
-                            checked={selectedStages.includes(
-                              option.value as SkillStage
-                            )}
-                            onCheckedChange={(checked) =>
-                              handleStageToggle(
-                                option.value as SkillStage,
-                                checked === true
-                              )
-                            }
-                          />
-                          <label
-                            htmlFor={`add-stage-${option.value}`}
-                            className="text-sm cursor-pointer"
-                          >
-                            {option.label}
-                          </label>
-                        </div>
-                      )
-                    )}
-                  </div>
-                </div>
+                )
               )}
             </div>
           </div>
 
-          <DialogFooter className="px-6 py-4 border-t border-border/50">
+          <DialogFooter className="px-6 py-4 border-t border-border/50 shrink-0">
             <Button
               variant="outline"
               onClick={() => setIsAddDialogOpen(false)}
