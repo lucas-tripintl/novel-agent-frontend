@@ -86,14 +86,23 @@ export function useQueuedTasks(projectId?: string) {
 }
 
 /**
- * 获取活跃任务列表（running + queued）
+ * 获取活跃任务列表（running + queued，已去重）
  */
 export function useActiveTasks(projectId?: string) {
   const { data: runningTasks = [], ...runningQuery } = useRunningTasks(projectId);
   const { data: queuedTasks = [], ...queuedQuery } = useQueuedTasks(projectId);
 
+  // 合并并去重（running 优先，避免状态切换时出现重复 key）
+  const allTasks = [...runningTasks, ...queuedTasks];
+  const seenIds = new Set<string>();
+  const uniqueTasks = allTasks.filter((task) => {
+    if (seenIds.has(task.id)) return false;
+    seenIds.add(task.id);
+    return true;
+  });
+
   return {
-    data: [...runningTasks, ...queuedTasks],
+    data: uniqueTasks,
     isLoading: runningQuery.isLoading || queuedQuery.isLoading,
     error: runningQuery.error || queuedQuery.error,
     refetch: () => {

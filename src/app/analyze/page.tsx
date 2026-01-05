@@ -10,25 +10,21 @@ import { Steps } from "@/components/common/steps";
 import {
   UploadStep,
   ConfigStep,
-  LoadingStep,
-  ResultSummary,
   AnalyzingList,
   HistoryList,
 } from "@/components/analyze";
 import type { AnalyzeConfig } from "@/components/analyze/config-step";
 import type { ProjectImportResponse } from "@/types/api";
 import { analyzeProject } from "@/lib/api/projects";
-import { cancelTask } from "@/lib/api/tasks";
-import { useTaskPolling, useActiveTasks } from "@/hooks/use-task-polling";
+import { useActiveTasks } from "@/hooks/use-task-polling";
 
 // 导入向导步骤
 const importSteps = [
   { id: 1, title: "上传文件" },
   { id: 2, title: "分析配置" },
-  { id: 3, title: "执行分析" },
 ];
 
-type AnalyzeStep = "upload" | "config" | "loading" | "result";
+type AnalyzeStep = "upload" | "config";
 
 export default function AnalyzePage() {
   const queryClient = useQueryClient();
@@ -36,24 +32,12 @@ export default function AnalyzePage() {
   // 流程状态
   const [currentStep, setCurrentStep] = useState<AnalyzeStep>("upload");
   const [importData, setImportData] = useState<ProjectImportResponse | null>(null);
-  const [analyzeConfig, setAnalyzeConfig] = useState<AnalyzeConfig | null>(null);
-  const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
+
+  // 当前激活的 Tab
+  const [activeTab, setActiveTab] = useState("upload");
 
   // 活跃任务数量（用于 Tab 徽章）
   const { data: activeTasks = [] } = useActiveTasks();
-
-  // 任务轮询
-  const { error: taskError } = useTaskPolling(currentTaskId, {
-    enabled: currentStep === "loading" && !!currentTaskId,
-    onComplete: () => {
-      setCurrentStep("result");
-      setCurrentTaskId(null);
-    },
-    onFailed: () => {
-      // 任务失败，保持在 loading 状态但显示错误
-      setCurrentTaskId(null);
-    },
-  });
 
   // 分析 mutation
   const analyzeMutation = useMutation({
@@ -66,21 +50,15 @@ export default function AnalyzePage() {
         auto_extract_patterns: config.autoExtractPatterns,
       });
     },
-    onSuccess: (result) => {
-      if (result) {
-        setCurrentTaskId(result.data.task_id);
-      }
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-    },
-  });
-
-  // 取消任务
-  const cancelMutation = useMutation({
-    mutationFn: cancelTask,
     onSuccess: () => {
-      setCurrentStep("config");
-      setCurrentTaskId(null);
+      // 任务提交成功后：
+      // 1. 刷新任务列表
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      // 2. 重置表单状态，允许继续添加新任务
+      setCurrentStep("upload");
+      setImportData(null);
+      // 3. 切换到"分析中"Tab，让用户看到任务进度
+      setActiveTab("analyzing");
     },
   });
 
@@ -92,40 +70,17 @@ export default function AnalyzePage() {
 
   // 开始分析
   const handleStartAnalyze = useCallback((config: AnalyzeConfig) => {
-    setAnalyzeConfig(config);
-    setCurrentStep("loading");
     analyzeMutation.mutate(config);
   }, [analyzeMutation]);
 
-  // 返回配置
+  // 返回上传步骤
   const handleBackToUpload = useCallback(() => {
     setCurrentStep("upload");
     setImportData(null);
   }, []);
 
-  // 继续导入
-  const handleContinue = useCallback(() => {
-    setCurrentStep("upload");
-    setImportData(null);
-    setAnalyzeConfig(null);
-    setCurrentTaskId(null);
-  }, []);
-
-  // 取消分析
-  const handleCancel = useCallback(() => {
-    if (currentTaskId) {
-      cancelMutation.mutate(currentTaskId);
-    } else {
-      setCurrentStep("config");
-    }
-  }, [currentTaskId, cancelMutation]);
-
   // 当前步骤索引
-  const stepIndex =
-    currentStep === "upload" ? 0 :
-      currentStep === "config" ? 1 :
-        currentStep === "loading" ? 2 :
-          2;
+  const stepIndex = currentStep === "upload" ? 0 : 1;
 
   return (
     <MainLayout>
@@ -142,7 +97,7 @@ export default function AnalyzePage() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="upload" className="flex-1 flex flex-col min-h-0">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <TabsList className="bg-card/50 border border-border/50 shrink-0 mb-6">
             <TabsTrigger value="upload">上传</TabsTrigger>
             <TabsTrigger value="analyzing">
@@ -180,25 +135,6 @@ export default function AnalyzePage() {
                 onStart={handleStartAnalyze}
                 isPending={analyzeMutation.isPending}
                 error={analyzeMutation.error}
-              />
-            )}
-
-            {currentStep === "loading" && analyzeConfig && (
-              <LoadingStep
-                projectName={analyzeConfig.projectName}
-                startChapter={analyzeConfig.startChapter}
-                endChapter={analyzeConfig.endChapter}
-                onCancel={handleCancel}
-                error={taskError || analyzeMutation.error}
-                isCancelling={cancelMutation.isPending}
-              />
-            )}
-
-            {currentStep === "result" && analyzeConfig && (
-              <ResultSummary
-                projectId={analyzeConfig.projectId}
-                projectName={analyzeConfig.projectName}
-                onContinue={handleContinue}
               />
             )}
           </TabsContent>
