@@ -359,12 +359,17 @@ function SkillDialogContent({
                   </>
                 )}
                 {isEditing ? (
-                  <Input
-                    value={editedName}
-                    onChange={(e) => setEditedName(e.target.value)}
-                    className="font-semibold flex-1"
-                    placeholder="技能名称"
-                  />
+                  <>
+                    <DialogTitle className="sr-only">
+                      {isCreateMode ? "创建技能" : "编辑技能"}
+                    </DialogTitle>
+                    <Input
+                      value={editedName}
+                      onChange={(e) => setEditedName(e.target.value)}
+                      className="font-semibold flex-1"
+                      placeholder="技能名称"
+                    />
+                  </>
                 ) : (
                   <DialogTitle className="truncate">
                     {isCreateMode ? "创建技能" : renderName}
