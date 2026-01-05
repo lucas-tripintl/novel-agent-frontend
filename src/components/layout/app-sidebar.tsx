@@ -33,7 +33,8 @@ import {
   Sparkles,
   Users,
   Zap,
-  Earth
+  Earth,
+  Wand2,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -51,11 +52,11 @@ const mainNavItems = [
     icon: Zap,
     href: "/analyze",
   },
-  // {
-  //   title: "创意工具",
-  //   icon: Sparkles,
-  //   href: "/ideas",
-  // },
+  {
+    title: "技能库",
+    icon: Wand2,
+    href: "/skills",
+  },
 ];
 
 const analysisNavItems = [
