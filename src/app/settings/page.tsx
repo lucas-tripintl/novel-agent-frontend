@@ -2,182 +2,430 @@
 
 import { MainLayout } from "@/components/layout/main-layout";
 import { NovelFilter } from "@/components/common/novel-filter";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
 import {
   Users,
   MapPin,
-  Earth,
+  Globe,
   Shield,
   Sparkles,
   Package,
   Zap,
   FileText,
   Eye,
-  ArrowRight,
   BookOpen,
-  TrendingUp,
   AlertCircle,
-  Network,
   Wand2,
   Layers,
+  Search,
+  ChevronsUpDown,
+  ChevronsDownUp,
 } from "lucide-react";
-import Link from "next/link";
+import { useState, useMemo, useCallback } from "react";
+import { cn } from "@/lib/utils";
+import { useCrossProjectEntities } from "@/hooks/use-analysis-results";
 import { useSelectedProjectId } from "@/stores/project-selection-store";
-import { useEntitiesOverview } from "@/hooks/use-analysis-results";
-import { useProjects, getProjectColor } from "@/hooks/use-projects";
+import { useEnumStore } from "@/stores/enum-store";
 import type { EntityType, EntityRead } from "@/types/api";
-import { useMemo } from "react";
 
-// 设定分类配置
-const categoryConfig: {
-  type: EntityType;
-  label: string;
-  icon: typeof Users;
-  color: string;
-  href: string;
-  description: string;
-}[] = [
-  {
-    type: "character",
-    label: "人物角色",
-    icon: Users,
-    color: "text-blue-500",
-    href: "/characters",
-    description: "主角、配角、反派等角色设定",
-  },
-  {
-    type: "location",
-    label: "地理区域",
-    icon: MapPin,
-    color: "text-green-500",
-    href: "/worldview",
-    description: "城市、地区、场所等地理设定",
-  },
-  {
-    type: "worldview",
-    label: "世界观",
-    icon: Earth,
-    color: "text-cyan-500",
-    href: "/worldview",
-    description: "背景设定、历史、规则等",
-  },
-  {
-    type: "faction",
-    label: "势力组织",
-    icon: Shield,
-    color: "text-orange-500",
-    href: "/worldview",
-    description: "门派、帮会、国家等组织",
-  },
-  {
-    type: "power_system",
-    label: "力量体系",
-    icon: Sparkles,
-    color: "text-purple-500",
-    href: "/worldview",
-    description: "修炼体系、等级划分等",
-  },
-  {
-    type: "item",
-    label: "物品道具",
-    icon: Package,
-    color: "text-amber-500",
-    href: "/worldview",
-    description: "装备、丹药、法宝等",
-  },
-  {
-    type: "skill",
-    label: "技能功法",
-    icon: Zap,
-    color: "text-red-500",
-    href: "/worldview",
-    description: "功法、技能、秘术等",
-  },
-  {
-    type: "plotline",
-    label: "剧情线",
-    icon: FileText,
-    color: "text-indigo-500",
-    href: "/storylines",
-    description: "主线、支线、伏笔等",
-  },
-  {
-    type: "foreshadowing",
-    label: "伏笔悬念",
-    icon: Eye,
-    color: "text-pink-500",
-    href: "/storylines",
-    description: "伏笔、悬念、铺垫等",
-  },
-  {
-    type: "golden_finger",
-    label: "金手指",
-    icon: Wand2,
-    color: "text-yellow-500",
-    href: "/worldview",
-    description: "主角外挂、系统等",
-  },
+// 设定类型配置
+const entityTypeConfig: Record<
+  EntityType,
+  { label: string; icon: typeof Users; color: string }
+> = {
+  character: { label: "人物角色", icon: Users, color: "text-blue-500" },
+  location: { label: "地理区域", icon: MapPin, color: "text-green-500" },
+  worldview: { label: "世界观", icon: Globe, color: "text-cyan-500" },
+  faction: { label: "势力组织", icon: Shield, color: "text-orange-500" },
+  power_system: { label: "力量体系", icon: Sparkles, color: "text-purple-500" },
+  item: { label: "物品道具", icon: Package, color: "text-amber-500" },
+  skill: { label: "技能功法", icon: Zap, color: "text-red-500" },
+  plotline: { label: "剧情线", icon: FileText, color: "text-indigo-500" },
+  foreshadowing: { label: "伏笔悬念", icon: Eye, color: "text-pink-500" },
+  golden_finger: { label: "金手指", icon: Wand2, color: "text-yellow-500" },
+  // 其他类型使用默认配置
+  plot_pattern: { label: "剧情模式", icon: FileText, color: "text-slate-500" },
+  character_archetype: { label: "角色原型", icon: Users, color: "text-slate-500" },
+  conflict_pattern: { label: "冲突模式", icon: Zap, color: "text-slate-500" },
+  narrative_rhythm: { label: "叙事节奏", icon: FileText, color: "text-slate-500" },
+  chapter_structure: { label: "章节结构", icon: BookOpen, color: "text-slate-500" },
+  relationship_dynamic: { label: "关系动态", icon: Users, color: "text-slate-500" },
+  conflict_escalation: { label: "冲突升级", icon: Zap, color: "text-slate-500" },
+  cheat_evolution: { label: "外挂进化", icon: Sparkles, color: "text-slate-500" },
+  cool_point_pattern: { label: "爽点模式", icon: Sparkles, color: "text-slate-500" },
+  writing_technique: { label: "写作技巧", icon: FileText, color: "text-slate-500" },
+  golden_opening_report: { label: "黄金开头", icon: BookOpen, color: "text-slate-500" },
+};
+
+// 常用设定类型（用于过滤器选项）
+const commonEntityTypes: EntityType[] = [
+  "character",
+  "location",
+  "worldview",
+  "faction",
+  "power_system",
+  "item",
+  "skill",
+  "plotline",
+  "foreshadowing",
+  "golden_finger",
 ];
 
-// 解析实体内容
-function parseEntityContent(entity: EntityRead): {
-  name: string;
-  description: string;
-} {
-  try {
-    const content = JSON.parse(entity.content || "{}");
-    return {
-      name: entity.name || content.name || "未命名",
-      description: content.description || content.content || "",
-    };
-  } catch {
-    return {
-      name: entity.name || "未命名",
-      description: entity.content || "",
-    };
+// 每页显示数量
+const PAGE_SIZE = 20;
+
+/**
+ * 简单的 Markdown 渲染组件
+ */
+function MarkdownContent({ content }: { content: string }) {
+  const lines = content.split("\n");
+  const elements: React.ReactNode[] = [];
+  let listItems: string[] = [];
+  let listType: "ul" | "ol" | null = null;
+
+  const flushList = () => {
+    if (listItems.length > 0 && listType) {
+      const ListTag = listType;
+      elements.push(
+        <ListTag key={elements.length} className="my-2 pl-4">
+          {listItems.map((item, idx) => (
+            <li key={idx}>{renderInline(item)}</li>
+          ))}
+        </ListTag>
+      );
+      listItems = [];
+      listType = null;
+    }
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // 标题
+    if (line.startsWith("### ")) {
+      flushList();
+      elements.push(
+        <h3 key={i} className="text-base font-semibold mt-4 mb-2">
+          {renderInline(line.slice(4))}
+        </h3>
+      );
+    } else if (line.startsWith("## ")) {
+      flushList();
+      elements.push(
+        <h2 key={i} className="text-lg font-semibold mt-4 mb-2">
+          {renderInline(line.slice(3))}
+        </h2>
+      );
+    } else if (line.startsWith("# ")) {
+      flushList();
+      elements.push(
+        <h1 key={i} className="text-xl font-bold mt-4 mb-2">
+          {renderInline(line.slice(2))}
+        </h1>
+      );
+    }
+    // 无序列表
+    else if (line.match(/^[-*]\s/)) {
+      if (listType !== "ul") {
+        flushList();
+        listType = "ul";
+      }
+      listItems.push(line.replace(/^[-*]\s/, ""));
+    }
+    // 有序列表
+    else if (line.match(/^\d+\.\s/)) {
+      if (listType !== "ol") {
+        flushList();
+        listType = "ol";
+      }
+      listItems.push(line.replace(/^\d+\.\s/, ""));
+    }
+    // 空行
+    else if (line.trim() === "") {
+      flushList();
+    }
+    // 普通段落
+    else {
+      flushList();
+      elements.push(
+        <p key={i} className="my-2">
+          {renderInline(line)}
+        </p>
+      );
+    }
   }
+
+  flushList();
+  return <>{elements}</>;
+}
+
+/**
+ * 渲染行内 Markdown 元素
+ */
+function renderInline(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={idx} className="font-semibold">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    const italicParts = part.split(/(\*[^*]+\*)/g);
+    if (italicParts.length > 1) {
+      return italicParts.map((iPart, iIdx) => {
+        if (iPart.startsWith("*") && iPart.endsWith("*") && iPart.length > 2) {
+          return (
+            <em key={`${idx}-${iIdx}`} className="italic">
+              {iPart.slice(1, -1)}
+            </em>
+          );
+        }
+        return iPart;
+      });
+    }
+    return part;
+  });
+}
+
+/**
+ * 解析实体内容为可读文本
+ */
+function parseEntityContent(entity: EntityRead): string {
+  // 如果内容是纯文本，直接返回
+  if (!entity.content.startsWith("{")) {
+    return entity.content;
+  }
+
+  // 尝试解析 JSON
+  try {
+    const parsed = JSON.parse(entity.content);
+    // 优先使用 description 或 content 字段
+    if (parsed.description) return parsed.description;
+    if (parsed.content) return parsed.content;
+    if (parsed.summary) return parsed.summary;
+
+    // 如果是对象，格式化输出
+    const lines: string[] = [];
+    for (const [key, value] of Object.entries(parsed)) {
+      if (typeof value === "string" && value.trim()) {
+        lines.push(`**${key}**: ${value}`);
+      } else if (Array.isArray(value) && value.length > 0) {
+        lines.push(`**${key}**:`);
+        value.forEach((item) => {
+          if (typeof item === "string") {
+            lines.push(`- ${item}`);
+          }
+        });
+      }
+    }
+    return lines.join("\n");
+  } catch {
+    return entity.content;
+  }
+}
+
+/**
+ * 获取设定类型配置
+ */
+function getEntityConfig(type: EntityType) {
+  return (
+    entityTypeConfig[type] || {
+      label: type,
+      icon: FileText,
+      color: "text-muted-foreground",
+    }
+  );
 }
 
 export default function SettingsOverviewPage() {
   const selectedProjectId = useSelectedProjectId();
+  const getLabel = useEnumStore((state) => state.getLabel);
 
-  // 获取项目列表（用于显示项目名称）
-  const { data: projectsData } = useProjects();
-  const projectsMap = useMemo(() => {
-    const map = new Map<string, { name: string; color: string }>();
-    projectsData?.items?.forEach((p) => {
-      map.set(p.id, { name: p.name, color: getProjectColor(p.id) });
-    });
-    return map;
-  }, [projectsData?.items]);
+  // 状态
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedType, setSelectedType] = useState<EntityType | "all">("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
-  // 获取设定统计和所有实体（一次请求获取全部）
-  const { stats, total, isLoading, error, entities } = useEntitiesOverview(
+  // 获取所有设定数据（不分页，前端处理）
+  const { data, isLoading, error } = useCrossProjectEntities(
     selectedProjectId ? [selectedProjectId] : [],
-    { enabled: !!selectedProjectId }
+    {
+      entity_type: selectedType === "all" ? undefined : selectedType,
+      keyword: searchQuery || undefined,
+      limit: 1000, // 获取足够多的数据
+      enabled: !!selectedProjectId,
+    }
   );
 
-  // 从已获取的实体中取最近的 6 个用于预览（按更新时间排序）
-  const recentEntities = useMemo(() => {
-    if (!entities || entities.length === 0) return [];
-    return [...entities]
-      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-      .slice(0, 6);
+  const entities = useMemo(() => data?.items ?? [], [data?.items]);
+
+  // 按类型统计
+  const typeStats = useMemo(() => {
+    const stats: Record<string, number> = {};
+    entities.forEach((entity) => {
+      stats[entity.entity_type] = (stats[entity.entity_type] || 0) + 1;
+    });
+    return stats;
   }, [entities]);
 
-  // 计算各分类的统计
-  const categoryStats = categoryConfig.map((cat) => ({
-    ...cat,
-    count: stats[cat.type] || 0,
-  }));
+  // 过滤和分页
+  const filteredEntities = useMemo(() => {
+    let result = entities;
 
-  // 找出最多的分类（用于进度条）
-  const maxCount = Math.max(...categoryStats.map((c) => c.count), 1);
+    // 搜索过滤（如果 API 没有处理的话，前端再过滤一次）
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (e) =>
+          e.name.toLowerCase().includes(query) ||
+          e.content.toLowerCase().includes(query)
+      );
+    }
+
+    return result;
+  }, [entities, searchQuery]);
+
+  // 分页数据
+  const paginatedEntities = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredEntities.slice(start, start + PAGE_SIZE);
+  }, [filteredEntities, currentPage]);
+
+  const totalPages = Math.ceil(filteredEntities.length / PAGE_SIZE);
+
+  // 全部展开/收起
+  const handleExpandAll = useCallback(() => {
+    setExpandedItems(paginatedEntities.map((e) => e.id));
+  }, [paginatedEntities]);
+
+  const handleCollapseAll = useCallback(() => {
+    setExpandedItems([]);
+  }, []);
+
+  // 重置页码当过滤条件改变时
+  const handleTypeChange = (value: string) => {
+    setSelectedType(value as EntityType | "all");
+    setCurrentPage(1);
+    setExpandedItems([]);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+    setExpandedItems([]);
+  };
+
+  // 生成分页链接
+  const renderPaginationItems = () => {
+    const items: React.ReactNode[] = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      // 显示所有页码
+      for (let i = 1; i <= totalPages; i++) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink
+              onClick={() => setCurrentPage(i)}
+              isActive={currentPage === i}
+              className="cursor-pointer"
+            >
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+    } else {
+      // 显示部分页码
+      items.push(
+        <PaginationItem key={1}>
+          <PaginationLink
+            onClick={() => setCurrentPage(1)}
+            isActive={currentPage === 1}
+            className="cursor-pointer"
+          >
+            1
+          </PaginationLink>
+        </PaginationItem>
+      );
+
+      if (currentPage > 3) {
+        items.push(
+          <PaginationItem key="ellipsis-start">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+
+      for (let i = start; i <= end; i++) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink
+              onClick={() => setCurrentPage(i)}
+              isActive={currentPage === i}
+              className="cursor-pointer"
+            >
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+
+      if (currentPage < totalPages - 2) {
+        items.push(
+          <PaginationItem key="ellipsis-end">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+
+      items.push(
+        <PaginationItem key={totalPages}>
+          <PaginationLink
+            onClick={() => setCurrentPage(totalPages)}
+            isActive={currentPage === totalPages}
+            className="cursor-pointer"
+          >
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    return items;
+  };
 
   return (
     <MainLayout>
@@ -193,6 +441,11 @@ export default function SettingsOverviewPage() {
               查看所选项目的所有设定数据
             </p>
           </div>
+          {selectedProjectId && !isLoading && filteredEntities.length > 0 && (
+            <Badge variant="outline" className="font-mono">
+              共 {filteredEntities.length} 条设定
+            </Badge>
+          )}
         </div>
 
         {/* 项目选择器 */}
@@ -210,245 +463,234 @@ export default function SettingsOverviewPage() {
               <p className="text-muted-foreground text-center">
                 请选择一个项目查看设定
               </p>
-              <p className="text-sm text-muted-foreground/70 mt-2">
-                选择后将展示所有设定的统计和预览
-              </p>
             </CardContent>
           </Card>
         )}
 
-        {/* 加载中 */}
-        {selectedProjectId && isLoading && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-24" />
-            ))}
-          </div>
-        )}
-
-        {/* 错误提示 */}
-        {error && (
-          <Card className="bg-destructive/10 border-destructive/30">
-            <CardContent className="flex items-center gap-2 py-4">
-              <AlertCircle className="h-5 w-5 text-destructive" />
-              <p className="text-destructive">加载设定失败，请刷新重试</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 设定统计卡片 */}
-        {selectedProjectId && !isLoading && (
+        {/* 主内容区 */}
+        {selectedProjectId && (
           <>
-            {/* 总计统计 */}
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-primary/10">
-                      <Layers className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">总设定数</p>
-                      <p className="text-3xl font-bold">{total}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* 筛选栏 */}
+            <div className="flex items-center gap-4 flex-wrap">
+              {/* 搜索框 */}
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="搜索设定..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
 
-              <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-blue-500/10">
-                      <BookOpen className="h-6 w-6 text-blue-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">当前项目</p>
-                      <p className="text-xl font-bold truncate max-w-[150px]">
-                        {projectsMap.get(selectedProjectId)?.name || "已选择"}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* 类型过滤 */}
+              <Select value={selectedType} onValueChange={handleTypeChange}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="全部类型" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    全部类型 ({entities.length})
+                  </SelectItem>
+                  {commonEntityTypes.map((type) => {
+                    const config = getEntityConfig(type);
+                    const count = typeStats[type] || 0;
+                    if (count === 0 && selectedType !== type) return null;
+                    return (
+                      <SelectItem key={type} value={type}>
+                        <span className="flex items-center gap-2">
+                          <config.icon className={cn("h-4 w-4", config.color)} />
+                          {config.label} ({count})
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
 
-              <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-green-500/10">
-                      <TrendingUp className="h-6 w-6 text-green-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">设定类型</p>
-                      <p className="text-3xl font-bold">
-                        {categoryStats.filter((c) => c.count > 0).length}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* 展开/收起按钮 */}
+              <div className="flex gap-2 ml-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExpandAll}
+                  disabled={
+                    paginatedEntities.length === 0 ||
+                    expandedItems.length === paginatedEntities.length
+                  }
+                >
+                  <ChevronsUpDown className="h-4 w-4 mr-1" />
+                  全部展开
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCollapseAll}
+                  disabled={expandedItems.length === 0}
+                >
+                  <ChevronsDownUp className="h-4 w-4 mr-1" />
+                  全部收起
+                </Button>
+              </div>
             </div>
 
-            {/* 分类统计网格 */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              {categoryStats.map((cat) => {
-                const Icon = cat.icon;
-                const percentage = (cat.count / maxCount) * 100;
+            {/* 加载中 */}
+            {isLoading && (
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
+            )}
 
-                return (
-                  <Link key={cat.type} href={cat.href}>
-                    <Card className="bg-card/50 border-border/50 hover:border-primary/50 hover:bg-accent/30 transition-all cursor-pointer group h-full">
-                      <CardContent className="pt-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className={`p-2 rounded-lg bg-muted/50 ${cat.color}`}>
-                            <Icon className="h-4 w-4" />
-                          </div>
-                          <Badge variant="secondary" className="text-xs">
-                            {cat.count}
-                          </Badge>
-                        </div>
-                        <h3 className="font-medium text-sm mb-1 group-hover:text-primary transition-colors">
-                          {cat.label}
-                        </h3>
-                        <Progress
-                          value={percentage}
-                          className="h-1 mt-2"
-                        />
-                      </CardContent>
-                    </Card>
-                  </Link>
-                );
-              })}
-            </div>
-
-            {/* 最近添加的设定 */}
-            {recentEntities.length > 0 && (
-              <Card className="bg-card/50 border-border/50">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg">最近设定</CardTitle>
-                      <CardDescription>各项目最新添加的设定</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[300px] pr-4">
-                    <div className="space-y-3">
-                      {recentEntities.map((entity) => {
-                        const parsed = parseEntityContent(entity);
-                        const catConfig = categoryConfig.find(
-                          (c) => c.type === entity.entity_type
-                        );
-                        const project = projectsMap.get(entity.project_id);
-                        const Icon = catConfig?.icon || FileText;
-
-                        return (
-                          <div
-                            key={entity.id}
-                            className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-                          >
-                            <div
-                              className={`p-2 rounded-lg bg-background ${catConfig?.color || "text-muted-foreground"}`}
-                            >
-                              <Icon className="h-4 w-4" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium truncate">
-                                  {parsed.name}
-                                </span>
-                                {project && (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[10px] px-1.5 shrink-0"
-                                    style={{
-                                      borderColor: project.color,
-                                      color: project.color,
-                                    }}
-                                  >
-                                    {project.name}
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-xs text-muted-foreground line-clamp-2">
-                                {parsed.description || "暂无描述"}
-                              </p>
-                            </div>
-                            <Badge variant="secondary" className="text-[10px] shrink-0">
-                              {catConfig?.label || entity.entity_type}
-                            </Badge>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </ScrollArea>
+            {/* 错误提示 */}
+            {error && (
+              <Card className="bg-destructive/10 border-destructive/30">
+                <CardContent className="flex items-center gap-2 py-4">
+                  <AlertCircle className="h-5 w-5 text-destructive" />
+                  <p className="text-destructive">加载设定失败，请刷新重试</p>
                 </CardContent>
               </Card>
             )}
 
-            {/* 快速导航 */}
-            <Card className="bg-card/50 border-border/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">快速导航</CardTitle>
-                <CardDescription>跳转到各设定集页面查看详情</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                  <Link href="/characters">
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between h-auto py-3"
+            {/* 空状态 */}
+            {!isLoading && !error && filteredEntities.length === 0 && (
+              <Card className="bg-muted/30 border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <p className="text-muted-foreground text-center">
+                    {searchQuery || selectedType !== "all"
+                      ? "未找到匹配的设定"
+                      : "该项目暂无设定数据"}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 设定列表 */}
+            {!isLoading && !error && paginatedEntities.length > 0 && (
+              <Accordion
+                type="multiple"
+                value={expandedItems}
+                onValueChange={setExpandedItems}
+                className="space-y-3"
+              >
+                {paginatedEntities.map((entity) => {
+                  const config = getEntityConfig(entity.entity_type);
+                  const Icon = config.icon;
+                  const content = parseEntityContent(entity);
+                  const typeLabel =
+                    getLabel("EntityType", entity.entity_type) || config.label;
+
+                  return (
+                    <AccordionItem
+                      key={entity.id}
+                      value={entity.id}
+                      className="border border-border/50 rounded-lg bg-card/30 px-4 data-[state=open]:bg-card/50"
                     >
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-blue-500" />
-                        <span>人物图谱</span>
-                      </div>
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Link href="/worldview">
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between h-auto py-3"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Earth className="h-4 w-4 text-cyan-500" />
-                        <span>世界观</span>
-                      </div>
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Link href="/storylines">
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between h-auto py-3"
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-indigo-500" />
-                        <span>剧情大纲</span>
-                      </div>
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Link href="/relations">
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between h-auto py-3"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Network className="h-4 w-4 text-pink-500" />
-                        <span>关系网络</span>
-                      </div>
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
+                      <AccordionTrigger className="hover:no-underline py-4">
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                          {/* 类型图标 */}
+                          <div
+                            className={cn(
+                              "h-8 w-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0",
+                              config.color
+                            )}
+                          >
+                            <Icon className="h-4 w-4" />
+                          </div>
+
+                          {/* 名称和标签 */}
+                          <div className="flex-1 text-left min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold truncate">
+                                {entity.name}
+                              </span>
+                              <Badge
+                                variant="secondary"
+                                className={cn("text-xs shrink-0", config.color)}
+                              >
+                                {typeLabel}
+                              </Badge>
+                              {entity.tags.slice(0, 2).map((tag, idx) => (
+                                <Badge
+                                  key={idx}
+                                  variant="outline"
+                                  className="text-xs"
+                                >
+                                  {getLabel("CharacterRole", tag) ||
+                                    getLabel("CharacterImportance", tag) ||
+                                    tag}
+                                </Badge>
+                              ))}
+                            </div>
+                            {/* 章节范围 */}
+                            {(entity.first_chapter || entity.last_chapter) && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {entity.first_chapter && entity.last_chapter
+                                  ? `第 ${entity.first_chapter}-${entity.last_chapter} 章`
+                                  : entity.first_chapter
+                                    ? `第 ${entity.first_chapter} 章`
+                                    : ""}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-4 pl-12">
+                        <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
+                          {content ? (
+                            <MarkdownContent content={content} />
+                          ) : (
+                            <p className="italic">暂无内容</p>
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
+            )}
+
+            {/* 分页 */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  第 {currentPage} 页，共 {totalPages} 页
+                </p>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() =>
+                          setCurrentPage((p) => Math.max(1, p - 1))
+                        }
+                        className={cn(
+                          "cursor-pointer",
+                          currentPage === 1 && "pointer-events-none opacity-50"
+                        )}
+                      />
+                    </PaginationItem>
+                    {renderPaginationItems()}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() =>
+                          setCurrentPage((p) => Math.min(totalPages, p + 1))
+                        }
+                        className={cn(
+                          "cursor-pointer",
+                          currentPage === totalPages &&
+                            "pointer-events-none opacity-50"
+                        )}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </>
         )}
       </div>
     </MainLayout>
   );
 }
-
