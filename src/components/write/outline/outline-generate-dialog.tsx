@@ -184,7 +184,7 @@ export function OutlineGenerateDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[540px] max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
             生成总纲
@@ -194,8 +194,8 @@ export function OutlineGenerateDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4 -mr-4">
-          <div className="space-y-4 py-4 pr-4">
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="space-y-4 py-4 px-1">
             {/* 创意描述 */}
             <div className="space-y-2">
               <Label htmlFor="prompt">
@@ -389,7 +389,7 @@ export function OutlineGenerateDialog({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="pt-4 border-t">
+        <DialogFooter className="pt-4 border-t shrink-0">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
