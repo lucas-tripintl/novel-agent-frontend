@@ -29,7 +29,7 @@ export default function WritePage() {
     if (projectId && chapters.length > 0) {
       // 如果没有选中章节，自动选择第一个（因为已按 desc 排序，第一个就是最新的）
       if (!chapterId) {
-        setContext(projectId, chapters[0].id);
+        setContext(projectId, chapters[0].id, chapters[0].chapter_number);
       }
     } else if (projectId && !chapterId) {
       // 没有章节时，只设置项目上下文
