@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useProjectChapters } from "@/hooks/use-projects";
-import { useWritingStore, useEntityEditing, useEditorContent } from "@/stores/writing-store";
+import { useWritingStore, useEntityEditing, useEditorContent, useOutlineEditing } from "@/stores/writing-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +45,7 @@ export function ChapterList({ projectId }: ChapterListProps) {
 
   const { chapterId, setContext } = useWritingStore();
   const { editingEntity, isEntityDirty, closeEntityEditor } = useEntityEditing();
+  const { editingOutline, closeOutlineEditor } = useOutlineEditing();
   const { isDirty: isChapterDirty } = useEditorContent();
 
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -91,15 +92,19 @@ export function ChapterList({ projectId }: ChapterListProps) {
     if (editingEntity) {
       closeEntityEditor();
     }
+    // 关闭大纲编辑器
+    if (editingOutline) {
+      closeOutlineEditor();
+    }
     // 然后切换章节，同时传递 chapterNumber
     setContext(projectId, targetChapterId, targetChapterNumber);
-  }, [editingEntity, closeEntityEditor, setContext, projectId]);
+  }, [editingEntity, closeEntityEditor, editingOutline, closeOutlineEditor, setContext, projectId]);
 
   const [pendingChapterNumber, setPendingChapterNumber] = useState<number | null>(null);
 
   const handleSelectChapter = (selectedChapterId: string, selectedChapterNumber: number) => {
-    // 如果点击的是当前章节，不做任何操作
-    if (selectedChapterId === chapterId && !editingEntity) return;
+    // 如果点击的是当前章节，且不在设定/大纲编辑模式，不做任何操作
+    if (selectedChapterId === chapterId && !editingEntity && !editingOutline) return;
 
     // 检查是否有未保存的更改（设定编辑或章节编辑）
     const hasUnsavedChanges = isEntityDirty || (isChapterDirty && !editingEntity);
