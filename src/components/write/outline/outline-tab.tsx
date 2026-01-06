@@ -3,25 +3,17 @@
 import { useState } from "react";
 import {
   BookText,
-  ChevronRight,
-  ChevronDown,
-  Sparkles,
   FileText,
-  Target,
-  BookMarked,
+  Sparkles,
   ExternalLink,
   MoreHorizontal,
   Trash2,
+  Plus,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +30,8 @@ import {
 } from "@/hooks/use-outlines";
 import { useOutlineEditing } from "@/stores/writing-store";
 import { OutlineGenerateDialog } from "./outline-generate-dialog";
+import { VolumeGenerateDialog } from "./volume-generate-dialog";
+import { cn } from "@/lib/utils";
 import type { NovelOutlineSummary, VolumeOutlineSummary } from "@/types/outline";
 
 interface OutlineTabProps {
@@ -47,6 +41,7 @@ interface OutlineTabProps {
 export function OutlineTab({ projectId }: OutlineTabProps) {
   const { data, isLoading, error } = useOutlinesSummary(projectId);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+  const [volumeDialogOpen, setVolumeDialogOpen] = useState(false);
 
   if (isLoading) {
     return <OutlineTabSkeleton />;
@@ -79,40 +74,89 @@ export function OutlineTab({ projectId }: OutlineTabProps) {
     );
   }
 
-  return (
-    <ScrollArea className="h-full">
-      <div className="p-2 space-y-2">
-        {/* 总纲 */}
-        {data.novel_outline && (
-          <NovelOutlineCard outline={data.novel_outline} projectId={projectId} />
-        )}
+  const nextVolumeNumber = (data.volumes.length > 0
+    ? Math.max(...data.volumes.map(v => v.volume_number)) + 1
+    : 1);
 
-        {/* 卷纲列表 */}
-        {data.volumes.length > 0 && (
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 px-0.5">
-              <BookMarked className="h-3 w-3 text-muted-foreground shrink-0" />
-              <span className="text-[11px] font-medium text-muted-foreground truncate">
-                分卷大纲
-              </span>
-              <Badge variant="secondary" className="text-[10px] px-1 shrink-0">
-                {data.volume_count}卷
-              </Badge>
-            </div>
-            {data.volumes.map((volume) => (
-              <VolumeOutlineItem key={volume.id} volume={volume} projectId={projectId} />
+  return (
+    <>
+      <ScrollArea className="h-full">
+        <div className="py-2">
+          {/* Novel Outline Row */}
+          {data.novel_outline && (
+            <NovelOutlineRow
+              outline={data.novel_outline}
+              projectId={projectId}
+            />
+          )}
+
+          {/* Volume Outlines Tree */}
+          <div className="relative">
+            {/* Tree connector line */}
+            {(data.volumes.length > 0 || data.has_novel_outline) && (
+              <div
+                className="absolute left-[19px] top-0 w-px bg-border/60"
+                style={{
+                  height: data.volumes.length > 0
+                    ? `calc(100% - 20px)`
+                    : '100%'
+                }}
+              />
+            )}
+
+            {/* Volume rows */}
+            {data.volumes.map((volume, index) => (
+              <VolumeOutlineRow
+                key={volume.id}
+                volume={volume}
+                projectId={projectId}
+                isLast={index === data.volumes.length - 1 && !data.has_novel_outline}
+              />
             ))}
+
+            {/* Add Volume Button */}
+            {data.has_novel_outline && (
+              <div className="relative flex items-center pl-3 pr-2">
+                {/* Branch connector */}
+                <div className="absolute left-[19px] top-0 h-[50%] w-px bg-border/60" />
+                <div className="absolute left-[19px] top-[50%] w-3 h-px bg-border/60" />
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-5 h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => setVolumeDialogOpen(true)}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {data.volumes.length === 0 ? "生成卷纲" : "继续生成卷纲"}
+                </Button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-    </ScrollArea>
+        </div>
+      </ScrollArea>
+
+      {/* Volume Generate Dialog */}
+      <VolumeGenerateDialog
+        projectId={projectId}
+        open={volumeDialogOpen}
+        onOpenChange={setVolumeDialogOpen}
+        defaultVolumeNumber={nextVolumeNumber}
+        maxVolumeNumber={data.novel_outline?.target_volumes ?? 10}
+      />
+    </>
   );
 }
 
-// ============ 子组件 ============
+// ============ Row Components ============
 
-function NovelOutlineCard({ outline, projectId }: { outline: NovelOutlineSummary; projectId: string }) {
-  const [isOpen, setIsOpen] = useState(true);
+function NovelOutlineRow({
+  outline,
+  projectId
+}: {
+  outline: NovelOutlineSummary;
+  projectId: string;
+}) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { setEditingOutline } = useOutlineEditing();
   const { data: fullOutline } = useNovelOutline(projectId);
@@ -134,103 +178,77 @@ function NovelOutlineCard({ outline, projectId }: { outline: NovelOutlineSummary
 
   return (
     <>
-    <div className="rounded-lg border border-border/50 bg-card/50 overflow-hidden group w-full min-w-0">
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <div className="flex items-center min-w-0">
-          <CollapsibleTrigger asChild>
-            <button className="flex-1 flex items-center gap-1.5 px-2 py-2 hover:bg-primary/5 transition-colors text-left min-w-0">
-              {isOpen ? (
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              ) : (
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              )}
-              <BookText className="h-3.5 w-3.5 text-primary shrink-0" />
-              <span className="font-medium text-xs truncate flex-1 min-w-0">
-                {outline.title}
-              </span>
-              {outline.genre && (
-                <Badge variant="outline" className="text-[10px] shrink-0 hidden sm:inline-flex">
-                  {outline.genre}
-                </Badge>
-              )}
-            </button>
-          </CollapsibleTrigger>
-          <div className="flex items-center shrink-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={handleOpenOutline}
-              title="在编辑区查看"
-            >
-              <ExternalLink className="h-3 w-3" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 mr-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <MoreHorizontal className="h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={() => setShowDeleteDialog(true)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  删除总纲
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+      <div className="group flex items-center gap-1 px-2 py-1.5 hover:bg-muted/50 rounded-md mx-1 transition-colors">
+        {/* Icon */}
+        <div className="shrink-0 w-5 h-5 flex items-center justify-center">
+          <BookText className="h-4 w-4 text-primary" />
         </div>
-        <CollapsibleContent>
-          <div className="px-2 pb-2 space-y-1.5 border-t border-border/30 pt-2">
-            {/* 目标 */}
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
-              <Target className="h-3 w-3 shrink-0" />
-              <span className="truncate">
-                {(outline.target_words / 10000).toFixed(0)}万字 / {outline.target_volumes}卷
-              </span>
-            </div>
 
-            {/* 核心主题 */}
-            <div className="text-[11px] leading-relaxed">
-              <span className="text-muted-foreground">主题：</span>
-              <span className="text-foreground line-clamp-2">{outline.core_theme}</span>
-            </div>
+        {/* Title */}
+        <button
+          onClick={handleOpenOutline}
+          className="flex-1 flex items-center gap-2 min-w-0 text-left"
+        >
+          <span className="text-sm font-medium truncate">
+            {outline.title}
+          </span>
+          {outline.genre && (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 shrink-0">
+              {outline.genre}
+            </Badge>
+          )}
+        </button>
 
-            {/* 查看详情按钮 */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full mt-1.5 gap-1 text-[11px] h-7"
-              onClick={handleOpenOutline}
-            >
-              <ExternalLink className="h-3 w-3" />
-              查看完整大纲
-            </Button>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
-    </div>
+        {/* Actions */}
+        <div className="flex items-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={handleOpenOutline}
+            title="查看详情"
+          >
+            <ExternalLink className="h-3 w-3" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6">
+                <MoreHorizontal className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                删除总纲
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
 
-    <ConfirmDeleteDialog
-      open={showDeleteDialog}
-      onOpenChange={setShowDeleteDialog}
-      targetName={`总纲「${outline.title}」`}
-      onConfirm={handleDelete}
-      isPending={deleteNovelOutlineMutation.isPending}
-    />
+      <ConfirmDeleteDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        targetName={`总纲「${outline.title}」`}
+        onConfirm={handleDelete}
+        isPending={deleteNovelOutlineMutation.isPending}
+      />
     </>
   );
 }
 
-function VolumeOutlineItem({ volume, projectId }: { volume: VolumeOutlineSummary; projectId: string }) {
-  const [isOpen, setIsOpen] = useState(false);
+function VolumeOutlineRow({
+  volume,
+  projectId,
+  isLast = false,
+}: {
+  volume: VolumeOutlineSummary;
+  projectId: string;
+  isLast?: boolean;
+}) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { setEditingOutline } = useOutlineEditing();
   const { data: fullOutline } = useVolumeOutline(projectId, volume.volume_number);
@@ -252,82 +270,76 @@ function VolumeOutlineItem({ volume, projectId }: { volume: VolumeOutlineSummary
 
   return (
     <>
-    <div className="rounded-lg border border-border/30 bg-card/30 overflow-hidden group w-full min-w-0">
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <div className="flex items-center min-w-0">
-          <CollapsibleTrigger asChild>
-            <button className="flex-1 flex items-center gap-1.5 px-2 py-1.5 hover:bg-primary/5 transition-colors text-left min-w-0">
-              {isOpen ? (
-                <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
-              ) : (
-                <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
-              )}
-              <FileText className="h-3 w-3 text-muted-foreground shrink-0" />
-              <span className="text-xs truncate flex-1 min-w-0">{volume.title}</span>
-              <span className="text-[10px] text-muted-foreground shrink-0 hidden sm:inline">
-                {volume.chapter_start}-{volume.chapter_end}章
-              </span>
-            </button>
-          </CollapsibleTrigger>
-          <div className="flex items-center shrink-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={handleOpenOutline}
-              title="在编辑区查看"
-            >
-              <ExternalLink className="h-2.5 w-2.5" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 mr-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <MoreHorizontal className="h-2.5 w-2.5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={() => setShowDeleteDialog(true)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  删除卷纲
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-        <CollapsibleContent>
-          <div className="px-2 pb-2 pt-1 border-t border-border/20 space-y-1.5">
-            <p className="text-[11px] text-muted-foreground line-clamp-2">{volume.volume_goal}</p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full gap-1 text-[11px] h-6"
-              onClick={handleOpenOutline}
-            >
-              <ExternalLink className="h-2.5 w-2.5" />
-              查看详情
-            </Button>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
-    </div>
+      <div className="relative group flex items-center gap-1 pl-3 pr-2 py-1.5 hover:bg-muted/50 rounded-md mx-1 transition-colors">
+        {/* Tree branch connector */}
+        <div className={cn(
+          "absolute left-[19px] w-3 h-px bg-border/60",
+          isLast ? "top-[50%]" : "top-[50%]"
+        )} />
 
-    <ConfirmDeleteDialog
-      open={showDeleteDialog}
-      onOpenChange={setShowDeleteDialog}
-      targetName={`卷纲「${volume.title}」`}
-      onConfirm={handleDelete}
-      isPending={deleteVolumeOutlineMutation.isPending}
-    />
+        {/* Icon with indent */}
+        <div className="shrink-0 w-5 h-5 flex items-center justify-center ml-3">
+          <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+        </div>
+
+        {/* Title */}
+        <button
+          onClick={handleOpenOutline}
+          className="flex-1 flex items-center gap-2 min-w-0 text-left"
+        >
+          <span className="text-xs text-muted-foreground font-mono shrink-0">
+            第{volume.volume_number}卷
+          </span>
+          <span className="text-sm truncate">
+            {volume.title}
+          </span>
+          <span className="text-[10px] text-muted-foreground/70 shrink-0 hidden sm:inline">
+            {volume.chapter_start}-{volume.chapter_end}章
+          </span>
+        </button>
+
+        {/* Actions */}
+        <div className="flex items-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={handleOpenOutline}
+            title="查看详情"
+          >
+            <ExternalLink className="h-3 w-3" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6">
+                <MoreHorizontal className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                删除卷纲
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      <ConfirmDeleteDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        targetName={`卷纲「${volume.title}」`}
+        onConfirm={handleDelete}
+        isPending={deleteVolumeOutlineMutation.isPending}
+      />
     </>
   );
 }
+
+// ============ Empty & Skeleton ============
 
 function EmptyOutline({ onGenerate }: { onGenerate: () => void }) {
   return (
@@ -354,12 +366,12 @@ function EmptyOutline({ onGenerate }: { onGenerate: () => void }) {
 
 function OutlineTabSkeleton() {
   return (
-    <div className="p-3 space-y-3">
-      <Skeleton className="h-24 w-full rounded-lg" />
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-12 w-full rounded-lg" />
-        <Skeleton className="h-12 w-full rounded-lg" />
+    <div className="p-3 space-y-2">
+      <Skeleton className="h-8 w-full rounded-md" />
+      <div className="pl-6 space-y-1.5">
+        <Skeleton className="h-7 w-full rounded-md" />
+        <Skeleton className="h-7 w-full rounded-md" />
+        <Skeleton className="h-7 w-3/4 rounded-md" />
       </div>
     </div>
   );
