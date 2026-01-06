@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useProject, useProjectChapters } from "@/hooks/use-projects";
 import { useWritingStore } from "@/stores/writing-store";
 import { WritingPanel } from "@/components/write/writing-panel";
+import { TaskPanel } from "@/components/task";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
 
@@ -58,7 +59,12 @@ export default function WritePage() {
     );
   }
 
-  return <WritingPanel project={project} />;
+  return (
+    <>
+      <WritingPanel project={project} />
+      <TaskPanel projectId={projectId} />
+    </>
+  );
 }
 
 function WritingPageSkeleton() {

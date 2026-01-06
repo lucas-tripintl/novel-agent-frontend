@@ -9,10 +9,12 @@ import {
   Layers,
   FileText,
   Wand2,
+  Map,
 } from "lucide-react";
 import { ChapterList } from "../settings/chapter-list";
 import { EntityBrowser } from "../settings/entity-browser";
 import { SkillBrowser } from "../settings/skill-browser";
+import { OutlineTab } from "../outline";
 import { useProjectSkills } from "@/hooks/use-skills";
 
 interface SettingsPaneProps {
@@ -38,7 +40,7 @@ export function SettingsPane({ projectId }: SettingsPaneProps) {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-        <TabsList className="mx-3 mt-3 grid grid-cols-3 shrink-0">
+        <TabsList className="mx-3 mt-3 grid grid-cols-4 shrink-0">
           <TabsTrigger value="chapters" className="gap-1 text-xs px-2">
             <FileText className="h-3.5 w-3.5" />
             章节
@@ -61,6 +63,10 @@ export function SettingsPane({ projectId }: SettingsPaneProps) {
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="outline" className="gap-1 text-xs px-2">
+            <Map className="h-3.5 w-3.5" />
+            大纲
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="chapters" className="flex-1 m-0 mt-2 min-h-0 overflow-hidden">
@@ -73,6 +79,10 @@ export function SettingsPane({ projectId }: SettingsPaneProps) {
 
         <TabsContent value="skills" className="flex-1 m-0 mt-2 min-h-0 overflow-hidden">
           <SkillBrowser projectId={projectId} />
+        </TabsContent>
+
+        <TabsContent value="outline" className="flex-1 m-0 mt-2 min-h-0 overflow-hidden">
+          <OutlineTab projectId={projectId} />
         </TabsContent>
       </Tabs>
     </div>

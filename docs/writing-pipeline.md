@@ -7,8 +7,10 @@
 - [概述](#概述)
 - [认证](#认证)
 - [大纲生成接口](#大纲生成接口)
+- [大纲查询接口](#大纲查询接口)
 - [写作流水线接口](#写作流水线接口)
 - [任务管理接口](#任务管理接口)
+- [项目任务接口](#项目任务接口)
 - [Chat Agent 集成](#chat-agent-集成)
 - [典型使用流程](#典型使用流程)
 - [错误处理](#错误处理)
@@ -188,6 +190,203 @@ Authorization: Bearer <access_token>
 
 ---
 
+## 大纲查询接口
+
+生成的大纲可以通过以下接口查询。
+
+### 1. 大纲状态汇总
+
+**GET** `/api/v1/projects/{project_id}/outlines`
+
+获取项目大纲的整体状态，包括总纲和卷纲概览。
+
+#### 响应示例
+
+```json
+{
+  "has_novel_outline": true,
+  "novel_outline": {
+    "id": "660e8400-e29b-41d4-a716-446655440000",
+    "title": "代码修仙录",
+    "genre": "玄幻",
+    "target_words": 2000000,
+    "target_volumes": 5,
+    "core_theme": "以编程思维理解天道，打破规则束缚",
+    "created_at": "2024-01-15T10:00:00Z"
+  },
+  "volume_count": 2,
+  "volumes": [
+    {
+      "id": "770e8400-e29b-41d4-a716-446655440000",
+      "volume_number": 1,
+      "title": "第一卷 代码觉醒",
+      "chapter_start": 1,
+      "chapter_end": 100,
+      "target_words": 400000,
+      "volume_goal": "主角觉醒金手指，在宗门站稳脚跟",
+      "created_at": "2024-01-15T11:00:00Z"
+    },
+    {
+      "id": "770e8400-e29b-41d4-a716-446655440001",
+      "volume_number": 2,
+      "title": "第二卷 编译天道",
+      "chapter_start": 101,
+      "chapter_end": 200,
+      "target_words": 400000,
+      "volume_goal": "主角离开宗门，开始接触更大的世界",
+      "created_at": "2024-01-16T10:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### 2. 获取总纲
+
+**GET** `/api/v1/projects/{project_id}/outlines/novel`
+
+获取完整的总纲内容。
+
+#### 响应示例
+
+```json
+{
+  "id": "660e8400-e29b-41d4-a716-446655440000",
+  "project_id": "550e8400-e29b-41d4-a716-446655440000",
+  "title": "代码修仙录",
+  "genre": "玄幻",
+  "target_words": 2000000,
+  "target_volumes": 5,
+  "core_theme": "以编程思维理解天道，打破规则束缚",
+  "core_conflict": "主角的编程思维与传统修仙体系的冲突",
+  "ending_direction": "主角打破世界壁垒，证道大乘",
+  "protagonist_arc": "从菜鸟程序员到天道编译者的成长历程",
+  "content": "## 总体框架\n\n...(详细大纲内容)",
+  "key_plotlines": ["主线：代码悟道", "成长线：境界突破", "感情线：红颜知己"],
+  "metadata_": {},
+  "created_at": "2024-01-15T10:00:00Z",
+  "updated_at": "2024-01-15T10:00:00Z"
+}
+```
+
+#### 错误响应（未生成总纲）
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "not_found",
+    "message": "总纲不存在",
+    "details": {"resource": "总纲", "id": "550e8400-..."}
+  }
+}
+```
+
+---
+
+### 3. 获取卷纲列表
+
+**GET** `/api/v1/projects/{project_id}/outlines/volumes`
+
+获取项目所有卷纲，按卷号排序。
+
+#### 查询参数
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `skip` | integer | 分页偏移，默认 0 |
+| `limit` | integer | 每页数量，默认 20，最大 100 |
+
+#### 响应示例
+
+```json
+{
+  "items": [
+    {
+      "id": "770e8400-e29b-41d4-a716-446655440000",
+      "volume_number": 1,
+      "title": "第一卷 代码觉醒",
+      "chapter_start": 1,
+      "chapter_end": 100,
+      "target_words": 400000,
+      "volume_goal": "主角觉醒金手指，在宗门站稳脚跟",
+      "created_at": "2024-01-15T11:00:00Z"
+    }
+  ],
+  "total": 2,
+  "skip": 0,
+  "limit": 20
+}
+```
+
+---
+
+### 4. 获取指定卷纲
+
+**GET** `/api/v1/projects/{project_id}/outlines/volumes/{volume_number}`
+
+获取指定卷的详细卷纲。
+
+#### 响应示例
+
+```json
+{
+  "id": "770e8400-e29b-41d4-a716-446655440000",
+  "project_id": "550e8400-e29b-41d4-a716-446655440000",
+  "volume_number": 1,
+  "title": "第一卷 代码觉醒",
+  "chapter_start": 1,
+  "chapter_end": 100,
+  "target_words": 400000,
+  "volume_goal": "主角觉醒金手指，在宗门站稳脚跟",
+  "main_conflict": "主角被视为废柴，需要证明自己",
+  "key_events": [
+    "第5章：发现功法源代码能力",
+    "第20章：首次在比武中获胜",
+    "第50章：揭穿宗门叛徒",
+    "第80章：突破筑基期",
+    "第100章：离开宗门历练"
+  ],
+  "ending_hook": "主角收到神秘信件，得知父母失踪真相",
+  "content": "## 第一卷详细大纲\n\n...(详细内容)",
+  "plotline_goals": {
+    "主线": "觉醒代码视角，理解修炼本质",
+    "成长线": "从炼气期到筑基期",
+    "感情线": "与女主初遇，结下缘分"
+  },
+  "metadata_": {},
+  "created_at": "2024-01-15T11:00:00Z",
+  "updated_at": "2024-01-15T11:00:00Z"
+}
+```
+
+---
+
+### 5. 获取当前卷纲
+
+**GET** `/api/v1/projects/{project_id}/outlines/volumes/current`
+
+根据章节号查找对应的卷纲，用于写作时自动定位当前卷。
+
+#### 查询参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `chapter_number` | integer | ✅ | 章节号（≥1） |
+
+#### 请求示例
+
+```
+GET /api/v1/projects/{project_id}/outlines/volumes/current?chapter_number=75
+```
+
+#### 响应
+
+返回包含该章节的卷纲详情（格式同"获取指定卷纲"）。
+
+---
+
 ## 写作流水线接口
 
 ### 1. 触发章节写作
@@ -287,9 +486,26 @@ Authorization: Bearer <access_token>
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | `project_id` | UUID | 按项目过滤 |
-| `status` | string | 状态过滤：`queued`/`running`/`completed`/`failed`/`cancelled` |
+| `status` | string | 状态过滤（单个）：`queued`/`running`/`completed`/`failed`/`cancelled` |
+| `statuses` | string[] | 状态过滤（多个），如 `?statuses=queued&statuses=running` |
+| `job_type` | string | 任务类型过滤（单个），如 `write_chapter` |
+| `job_types` | string[] | 任务类型过滤（多个），如 `?job_types=write_chapter&job_types=generate_outline` |
+| `active_only` | boolean | 仅返回进行中的任务（queued + running），默认 false |
 | `skip` | integer | 分页偏移，默认 0 |
 | `limit` | integer | 每页数量，默认 50，最大 200 |
+
+#### 请求示例
+
+```
+# 获取项目所有进行中的任务
+GET /api/v1/tasks?project_id=xxx&active_only=true
+
+# 获取所有大纲相关任务
+GET /api/v1/tasks?job_types=generate_novel_outline&job_types=generate_volume_outline&job_types=generate_outline
+
+# 获取所有失败和取消的任务
+GET /api/v1/tasks?statuses=failed&statuses=cancelled
+```
 
 #### 响应示例
 
@@ -455,6 +671,136 @@ eventSource.addEventListener('heartbeat', () => {
 
 ---
 
+## 项目任务接口
+
+项目级别的任务管理接口，方便前端展示项目任务进度概览。
+
+### 1. 项目任务汇总
+
+**GET** `/api/v1/projects/{project_id}/tasks`
+
+获取项目的任务汇总信息，包括状态统计和最近的任务列表。
+
+#### 查询参数
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `job_type` | string | 按任务类型过滤 |
+| `recent_limit` | integer | 最近任务数量，默认 5，最大 20 |
+
+#### 响应示例
+
+```json
+{
+  "project_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status_counts": {
+    "queued": 1,
+    "running": 2,
+    "completed": 15,
+    "failed": 1,
+    "cancelled": 0
+  },
+  "active_count": 3,
+  "recent_tasks": [
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440000",
+      "project_id": "550e8400-e29b-41d4-a716-446655440000",
+      "job_type": "write_chapter",
+      "status": "running",
+      "progress": 0.5,
+      "message": "正在写作...",
+      "meta": {"prompt": "完成第8章", "chapter_number": 8},
+      "result": null,
+      "created_at": "2024-01-15T14:00:00Z",
+      "updated_at": "2024-01-15T14:02:00Z"
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440001",
+      "project_id": "550e8400-e29b-41d4-a716-446655440000",
+      "job_type": "generate_outline",
+      "status": "queued",
+      "progress": 0.0,
+      "message": "细纲生成任务已排队",
+      "meta": {"prompt": "为第9章生成细纲"},
+      "result": null,
+      "created_at": "2024-01-15T14:01:00Z",
+      "updated_at": "2024-01-15T14:01:00Z"
+    }
+  ]
+}
+```
+
+#### 用途
+
+前端可使用此接口实现：
+- 项目卡片上显示任务进度徽章（如"2个任务进行中"）
+- 项目详情页显示任务状态统计图表
+- 快速查看最近的任务列表
+
+---
+
+### 2. 项目进行中的任务
+
+**GET** `/api/v1/projects/{project_id}/tasks/active`
+
+获取项目所有进行中的任务（queued + running），用于实时监控。
+
+#### 查询参数
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `job_types` | string[] | 按任务类型过滤（多个） |
+
+#### 请求示例
+
+```
+# 获取项目所有进行中的任务
+GET /api/v1/projects/{project_id}/tasks/active
+
+# 只获取写作相关的进行中任务
+GET /api/v1/projects/{project_id}/tasks/active?job_types=write_chapter&job_types=generate_outline
+```
+
+#### 响应示例
+
+```json
+[
+  {
+    "id": "660e8400-e29b-41d4-a716-446655440000",
+    "project_id": "550e8400-e29b-41d4-a716-446655440000",
+    "job_type": "write_chapter",
+    "status": "running",
+    "progress": 0.5,
+    "message": "正在写作...",
+    "meta": {"prompt": "完成第8章", "chapter_number": 8},
+    "result": null,
+    "created_at": "2024-01-15T14:00:00Z",
+    "updated_at": "2024-01-15T14:02:00Z"
+  },
+  {
+    "id": "660e8400-e29b-41d4-a716-446655440001",
+    "project_id": "550e8400-e29b-41d4-a716-446655440000",
+    "job_type": "generate_outline",
+    "status": "queued",
+    "progress": 0.0,
+    "message": "细纲生成任务已排队",
+    "meta": {"prompt": "为第9章生成细纲"},
+    "result": null,
+    "created_at": "2024-01-15T14:01:00Z",
+    "updated_at": "2024-01-15T14:01:00Z"
+  }
+]
+```
+
+#### 用途
+
+前端可使用此接口实现：
+- 任务监控面板，显示所有进行中的任务
+- 进度条实时更新（配合 SSE 或轮询）
+- 批量取消任务
+
+---
+
 ## Chat Agent 集成
 
 Chat Agent 可以通过对话提交写作任务，无需调用 API。
@@ -578,8 +924,30 @@ SSE 流，遵循 AG-UI 协议：
    → 为每卷生成卷纲
 
 4. 完成后可查看：
-   → GET /projects/{id}/novel-outline (待实现)
-   → GET /projects/{id}/volume-outlines (待实现)
+   → GET /projects/{id}/outlines           (大纲状态汇总)
+   → GET /projects/{id}/outlines/novel     (总纲详情)
+   → GET /projects/{id}/outlines/volumes   (卷纲列表)
+```
+
+### 流程 5：任务监控面板
+
+```
+1. 进入项目详情页
+   → GET /projects/{id}/tasks
+   → 显示任务状态统计（queued: 1, running: 2, completed: 15...）
+   → 显示最近 5 条任务
+
+2. 查看进行中的任务
+   → GET /projects/{id}/tasks/active
+   → 为每个任务显示进度条
+
+3. 实时更新（二选一）
+   → 方案A：为每个任务订阅 SSE（GET /tasks/{task_id}/events）
+   → 方案B：轮询 GET /projects/{id}/tasks/active（每 5 秒）
+
+4. 任务完成后
+   → 刷新任务列表
+   → 更新统计数据
 ```
 
 ---

@@ -20,10 +20,21 @@ export interface PaginatedResponse<T> {
 
 export type TaskStatus = "queued" | "running" | "completed" | "failed" | "cancelled";
 
+/** 任务类型 */
+export type TaskJobType =
+  | "write_chapter"
+  | "generate_outline"
+  | "generate_novel_outline"
+  | "generate_volume_outline"
+  | "analysis"
+  | "fusion_pipeline"
+  | "extract_patterns"
+  | "explore_idea";
+
 export interface TaskRead {
   id: string;
   project_id: string;
-  job_type: string;
+  job_type: TaskJobType | string;
   status: TaskStatus;
   progress: number;
   message: string;
@@ -35,6 +46,72 @@ export interface TaskRead {
 
 export interface TaskCreateResponse {
   task_id: string;
+}
+
+// ============ 写作流水线相关 ============
+
+/** 生成总纲请求参数 */
+export interface GenerateNovelOutlineParams {
+  /** 创作需求/创意描述（10-5000字） */
+  prompt: string;
+  /** 小说类型（如玄幻/都市/科幻） */
+  genre?: string;
+  /** 目标字数（10万-1000万），默认 1000000 */
+  target_words?: number;
+  /** 计划卷数（1-10），默认 3 */
+  target_volumes?: number;
+}
+
+/** 生成卷纲请求参数 */
+export interface GenerateVolumeOutlineParams {
+  /** 本卷的具体需求/方向 */
+  prompt: string;
+  /** 卷号（1-100） */
+  volume_number: number;
+  /** 起始章节号（可选，自动计算） */
+  chapter_start?: number;
+  /** 结束章节号（可选，自动计算） */
+  chapter_end?: number;
+}
+
+/** 生成章节细纲请求参数 */
+export interface GenerateChapterOutlineParams {
+  /** 生成提示（如"为第7章生成细纲"） */
+  prompt: string;
+  /** 卷号（可选） */
+  volume_number?: number;
+}
+
+/** 写作章节请求参数 */
+export interface WriteChapterParams {
+  /** 写作提示，如"完成第7章"、"续写上一章" */
+  prompt: string;
+  /** 是否跳过审核流程，默认 false */
+  skip_review?: boolean;
+  /** 指定章节号（通常从 prompt 自动解析） */
+  chapter_number?: number;
+  /** 审核不通过时最大改写次数 (0-5)，默认 3 */
+  max_retries?: number;
+  /** 一致性评分通过阈值 (0-100)，默认 70 */
+  score_threshold?: number;
+}
+
+/** 流水线任务响应 */
+export interface PipelineTaskResponse {
+  success: boolean;
+  data: {
+    task_id: string;
+    status: TaskStatus;
+    message: string;
+  };
+}
+
+/** 取消任务响应 */
+export interface CancelTaskResponse {
+  task_id: string;
+  status: TaskStatus;
+  message: string;
+  previous_progress?: number;
 }
 
 export interface FusionBuildResponse {

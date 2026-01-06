@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { ProjectRead } from "@/types/api";
 import { useWritingStore, useEditorContent, useStreamingState } from "@/stores/writing-store";
 import { writingModes, type WritingMode } from "@/types/writing";
+import { useWriteChapter } from "@/hooks/use-tasks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -28,6 +29,7 @@ import {
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
+  Loader2,
 } from "lucide-react";
 import { EditorSettings } from "./editor/editor-settings";
 
@@ -39,6 +41,8 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
   const {
     mode,
     setMode,
+    chapterNumber,
+    outline,
     isLeftPaneCollapsed,
     isRightPaneCollapsed,
     toggleLeftPane,
@@ -47,6 +51,9 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
 
   const { content, isDirty } = useEditorContent();
   const { isStreaming } = useStreamingState();
+
+  // 写作流水线
+  const writeChapterMutation = useWriteChapter();
 
   // 计算字数
   const wordCount = useMemo(() => {
@@ -58,8 +65,19 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
   }, [content]);
 
   const handleStartWrite = () => {
-    // TODO: 触发流式写作
-    console.log("开始书写");
+    // 构建写作提示
+    const prompt = chapterNumber
+      ? `完成第${chapterNumber}章`
+      : "续写当前章节";
+
+    writeChapterMutation.mutate({
+      projectId: project.id,
+      params: {
+        prompt,
+        chapter_number: chapterNumber ?? undefined,
+        skip_review: false,
+      },
+    });
   };
 
   const handleStopWrite = () => {
@@ -76,6 +94,8 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
     // TODO: 保存章节
     console.log("保存");
   };
+
+  const isSubmitting = writeChapterMutation.isPending;
 
   return (
     <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b border-border/50 bg-background/80 backdrop-blur-sm px-4">
@@ -150,9 +170,14 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
             size="sm"
             className="gap-1.5 glow-primary"
             onClick={handleStartWrite}
+            disabled={isSubmitting}
           >
-            <Play className="h-3.5 w-3.5" />
-            <span>开始书写</span>
+            {isSubmitting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Play className="h-3.5 w-3.5" />
+            )}
+            <span>{isSubmitting ? "提交中..." : "开始书写"}</span>
           </Button>
         )}
 
