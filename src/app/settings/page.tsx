@@ -108,12 +108,14 @@ function MarkdownContent({ content }: { content: string }) {
   const elements: React.ReactNode[] = [];
   let listItems: string[] = [];
   let listType: "ul" | "ol" | null = null;
+  let listKeyCounter = 0;
 
   const flushList = () => {
     if (listItems.length > 0 && listType) {
       const ListTag = listType;
+      const listKey = `list-${listKeyCounter++}`;
       elements.push(
-        <ListTag key={elements.length} className="my-2 pl-4">
+        <ListTag key={listKey} className="my-2 pl-4">
           {listItems.map((item, idx) => (
             <li key={idx}>{renderInline(item)}</li>
           ))}
