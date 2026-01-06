@@ -275,7 +275,7 @@ export const useWritingStore = create<WritingState>()(
       ...initialState,
 
       setContext: (projectId, chapterId, chapterNumber) =>
-        set({
+        set((state) => ({
           projectId,
           chapterId,
           chapterNumber: chapterNumber ?? null,
@@ -289,7 +289,14 @@ export const useWritingStore = create<WritingState>()(
           // 切换项目/章节时清空选中的设定
           selectedEntities: [],
           autoSelectedEntities: [],
-        }),
+          // 切换项目时清空会话 ID，确保不会复用旧项目的会话
+          currentChatSessionId:
+            state.projectId !== projectId ? null : state.currentChatSessionId,
+          streamingChatContent:
+            state.projectId !== projectId ? "" : state.streamingChatContent,
+          activeToolCalls:
+            state.projectId !== projectId ? [] : state.activeToolCalls,
+        })),
 
       setMode: (mode) => {
         set({ mode });
