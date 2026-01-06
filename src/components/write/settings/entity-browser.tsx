@@ -23,11 +23,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
 import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
 import { cn } from "@/lib/utils";
 import {
@@ -336,146 +331,68 @@ function EntityRow({
   getFieldValueLabel,
 }: EntityRowProps) {
   return (
-    <HoverCard openDelay={300} closeDelay={100}>
-      <HoverCardTrigger asChild>
+    <div
+      className={cn(
+        "flex items-center gap-1.5 px-1.5 py-1 rounded transition-colors group min-w-0",
+        isSelectable && "cursor-pointer",
+        isSelected
+          ? "bg-primary/10 border border-primary/30"
+          : isSelectable
+          ? "hover:bg-muted/50 border border-transparent"
+          : "hover:bg-muted/50 border border-transparent"
+      )}
+      onClick={isSelectable ? onToggle : onEdit}
+    >
+      {/* 选择指示器 */}
+      {isSelectable && (
         <div
           className={cn(
-            "flex items-center gap-1.5 px-1.5 py-1 rounded transition-colors group min-w-0",
-            isSelectable && "cursor-pointer",
+            "h-3.5 w-3.5 rounded-full border flex items-center justify-center shrink-0",
             isSelected
-              ? "bg-primary/10 border border-primary/30"
-              : isSelectable
-              ? "hover:bg-muted/50 border border-transparent"
-              : "hover:bg-muted/50 border border-transparent"
+              ? "bg-primary border-primary"
+              : "border-muted-foreground/30"
           )}
-          onClick={isSelectable ? onToggle : onEdit}
         >
-          {/* 选择指示器 */}
-          {isSelectable && (
-            <div
-              className={cn(
-                "h-3.5 w-3.5 rounded-full border flex items-center justify-center shrink-0",
-                isSelected
-                  ? "bg-primary border-primary"
-                  : "border-muted-foreground/30"
-              )}
-            >
-              {isSelected && <Check className="h-2 w-2 text-primary-foreground" />}
-            </div>
-          )}
-
-          {/* 名称 */}
-          <span className="text-xs flex-1 truncate min-w-0">{entity.name}</span>
-
-          {/* 标签 - 在窄屏隐藏 */}
-          {entity.tags && entity.tags.length > 0 && (
-            <Badge variant="outline" className="text-[10px] shrink-0 hidden sm:inline-flex">
-              {getTagLabel(entity.tags[0], getLabel, getFieldValueLabel)}
-            </Badge>
-          )}
-
-          {/* 操作按钮组 */}
-          <div className="flex items-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit();
-              }}
-            >
-              <Edit3 className="h-2.5 w-2.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5 text-muted-foreground hover:text-destructive"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-            >
-              <Trash2 className="h-2.5 w-2.5" />
-            </Button>
-          </div>
+          {isSelected && <Check className="h-2 w-2 text-primary-foreground" />}
         </div>
-      </HoverCardTrigger>
-
-      <HoverCardContent side="right" align="start" className="w-64 p-2">
-        <EntityPreview entity={entity} onEdit={onEdit} />
-      </HoverCardContent>
-    </HoverCard>
-  );
-}
-
-// ============ 实体预览 ============
-
-interface EntityPreviewProps {
-  entity: EntityRead;
-  onEdit: () => void;
-}
-
-function EntityPreview({ entity, onEdit }: EntityPreviewProps) {
-  const catConfig = getCategoryConfig(entity.entity_type);
-  const Icon = iconMap[catConfig.icon] || Circle;
-  // 订阅 loaded 状态确保枚举加载后重渲染
-  const enumsLoaded = useEnumStore((state) => state.loaded);
-  const getLabel = useEnumStore((state) => state.getLabel);
-  const getFieldValueLabel = useEnumStore((state) => state.getFieldValueLabel);
-
-  // 获取实体类型的本地化标签
-  const typeLabel = (() => {
-    const enumLabel = getLabel("EntityType", entity.entity_type);
-    return enumLabel === entity.entity_type ? catConfig.label : enumLabel;
-  })();
-
-  return (
-    <div className="space-y-1.5">
-      {/* 头部 */}
-      <div className="flex items-start gap-1.5">
-        <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center shrink-0">
-          <Icon className="h-3 w-3 text-primary" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-semibold text-xs truncate">{entity.name}</h4>
-          <p className="text-[10px] text-muted-foreground">{typeLabel}</p>
-        </div>
-      </div>
-
-      {/* 内容摘要 */}
-      {entity.content && (
-        <p className="text-[11px] text-muted-foreground line-clamp-3">
-          {entity.content}
-        </p>
       )}
 
-      {/* 标签 */}
+      {/* 名称 */}
+      <span className="text-xs flex-1 truncate min-w-0">{entity.name}</span>
+
+      {/* 标签 - 在窄屏隐藏 */}
       {entity.tags && entity.tags.length > 0 && (
-        <div className="flex flex-wrap gap-0.5">
-          {entity.tags.slice(0, 3).map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-[10px]">
-              {getTagLabel(tag, getLabel, getFieldValueLabel)}
-            </Badge>
-          ))}
-          {entity.tags.length > 3 && (
-            <Badge variant="outline" className="text-[10px]">
-              +{entity.tags.length - 3}
-            </Badge>
-          )}
-        </div>
+        <Badge variant="outline" className="text-[10px] shrink-0 hidden sm:inline-flex">
+          {getTagLabel(entity.tags[0], getLabel, getFieldValueLabel)}
+        </Badge>
       )}
 
-      {/* 编辑按钮 */}
-      <Button
-        variant="outline"
-        size="sm"
-        className="w-full mt-1 gap-1 text-[11px] h-6"
-        onClick={onEdit}
-      >
-        <Edit3 className="h-2.5 w-2.5" />
-        查看/编辑
-      </Button>
+      {/* 操作按钮组 */}
+      <div className="flex items-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-5 w-5"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+        >
+          <Edit3 className="h-2.5 w-2.5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-5 w-5 text-muted-foreground hover:text-destructive"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+        >
+          <Trash2 className="h-2.5 w-2.5" />
+        </Button>
+      </div>
     </div>
   );
 }
+

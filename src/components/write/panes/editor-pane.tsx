@@ -49,7 +49,7 @@ export function EditorPane({ projectId }: EditorPaneProps) {
 
   // 大纲编辑模式
   if (editingOutline) {
-    return <OutlineEditor outline={editingOutline} />;
+    return <OutlineEditor outline={editingOutline} projectId={projectId} />;
   }
 
   // 设定编辑模式

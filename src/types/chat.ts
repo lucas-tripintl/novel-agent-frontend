@@ -77,6 +77,12 @@ export interface ChatMessageState {
   skill_id?: string;
   /** 引用的实体（角色/设定）ID 列表 */
   context_entity_ids?: string[];
+  /** 是否为内联编辑请求 */
+  inline_edit?: boolean;
+  /** 章节标题（用于上下文） */
+  chapter_title?: string;
+  /** 章节概要（用于上下文） */
+  chapter_outline?: string;
 }
 
 /** 发送消息请求体 */

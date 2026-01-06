@@ -8,12 +8,15 @@ import { updateEntity, deleteEntity } from "@/lib/api/projects";
 import { getCategoryConfig, elementCategories } from "@/hooks/use-project-elements";
 import type { EntityRead } from "@/types/api";
 import { fontFamilies, type EditorFontFamily } from "@/types/writing";
+import type { QuickAction } from "@/types/inline-edit";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { SimpleTiptapEditor } from "./simple-tiptap-editor";
+import { useInlineEdit } from "@/hooks/use-inline-edit";
 import {
   Collapsible,
   CollapsibleContent,
@@ -114,6 +117,23 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
   const { settings } = useEditorSettings();
   const getLabel = useEnumStore((state) => state.getLabel);
   const getFieldValueLabel = useEnumStore((state) => state.getFieldValueLabel);
+
+  // 内联编辑 hook
+  const {
+    inlineEdit,
+    executeQuickAction,
+    startCustomEdit,
+    acceptEdit,
+    rejectEdit,
+  } = useInlineEdit({
+    projectId: projectId || "",
+    onEditComplete: (suggestion) => {
+      console.log("设定编辑完成:", suggestion);
+    },
+    onError: (error) => {
+      console.error("内联编辑错误:", error);
+    },
+  });
 
   const [name, setName] = useState(entity.name);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -238,6 +258,40 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
   // 删除标签
   const handleRemoveTag = (tagToRemove: string) => {
     setTags(tags.filter((t) => t !== tagToRemove));
+  };
+
+  // 处理设定内容快捷操作
+  const handleContentQuickAction = (
+    action: QuickAction,
+    selectedText: string,
+    range: { from: number; to: number }
+  ) => {
+    executeQuickAction(action, selectedText, range, "entity");
+  };
+
+  // 处理设定内容自定义编辑
+  const handleContentCustomEdit = (
+    selectedText: string,
+    range: { from: number; to: number }
+  ) => {
+    startCustomEdit(selectedText, range, "entity");
+    // TODO: 打开 AI 助手面板输入自定义指令
+  };
+
+  // 处理接受编辑
+  const handleAcceptEdit = (newText: string) => {
+    // 获取当前内容，执行替换
+    if (inlineEdit.range) {
+      const before = editingEntityContent.slice(0, inlineEdit.range.from);
+      const after = editingEntityContent.slice(inlineEdit.range.to);
+      setEditingEntityContent(before + newText + after);
+    }
+    acceptEdit();
+  };
+
+  // 处理拒绝编辑
+  const handleRejectEdit = () => {
+    rejectEdit();
   };
 
   // 更新 JSON 字段
@@ -423,15 +477,20 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
               ) : (
                 <div className="space-y-3">
                   <Label className="text-sm font-medium">内容</Label>
-                  <Textarea
+                  <SimpleTiptapEditor
                     value={editingEntityContent}
-                    onChange={(e) => setEditingEntityContent(e.target.value)}
+                    onChange={setEditingEntityContent}
+                    targetType="entity"
+                    mode="multi-line"
+                    markdown
+                    placeholder="输入设定内容（支持 Markdown 格式）..."
                     className={cn("min-h-[400px]", getFontClass(settings.fontFamily))}
-                    style={{
-                      fontSize: `${settings.fontSize}px`,
-                      lineHeight: settings.lineHeight,
-                    }}
-                    placeholder="输入设定内容..."
+                    editorClassName="min-h-[400px]"
+                    enableInlineEdit={!!projectId}
+                    onQuickAction={handleContentQuickAction}
+                    onOpenCustomEdit={handleContentCustomEdit}
+                    onAcceptEdit={handleAcceptEdit}
+                    onRejectEdit={handleRejectEdit}
                   />
                 </div>
               )}

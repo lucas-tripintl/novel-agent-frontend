@@ -17,6 +17,17 @@ import type {
 import type { EntityRead } from "@/types/api";
 import type { SelectedTextContext, ToolCallState } from "@/types/chat";
 import type { NovelOutline, VolumeOutline } from "@/types/outline";
+import type {
+  InlineEditContext,
+  EditTargetType,
+  EditSuggestion,
+  QuickActionsConfig,
+  QuickAction,
+} from "@/types/inline-edit";
+import {
+  initialInlineEditContext,
+  defaultQuickActionsConfig,
+} from "@/types/inline-edit";
 
 /** 大纲编辑类型 */
 export type EditingOutlineType = "novel" | "volume";
@@ -121,6 +132,12 @@ interface WritingState {
   /** 编辑器样式设置 */
   editorSettings: EditorSettings;
 
+  // ============ 内联编辑 ============
+  /** 内联编辑上下文 */
+  inlineEdit: InlineEditContext;
+  /** 快捷操作配置 */
+  quickActionsConfig: QuickActionsConfig;
+
   // ============ Actions ============
   /** 设置当前项目和章节 */
   setContext: (projectId: string | null, chapterId: string | null, chapterNumber?: number | null) => void;
@@ -215,6 +232,38 @@ interface WritingState {
   /** 更新编辑器设置 */
   updateEditorSettings: (settings: Partial<EditorSettings>) => void;
 
+  // ============ 内联编辑 Actions ============
+  /** 开始内联编辑 */
+  startInlineEdit: (
+    targetType: EditTargetType,
+    text: string,
+    range?: { from: number; to: number }
+  ) => void;
+  /** 设置内联编辑状态 */
+  setInlineEditStatus: (status: InlineEditContext["status"]) => void;
+  /** 更新编辑建议 */
+  updateEditSuggestion: (update: Partial<EditSuggestion>) => void;
+  /** 设置编辑建议（完整） */
+  setEditSuggestion: (suggestion: EditSuggestion | null) => void;
+  /** 接受编辑 */
+  acceptEdit: () => void;
+  /** 拒绝编辑 */
+  rejectEdit: () => void;
+  /** 取消内联编辑 */
+  cancelInlineEdit: () => void;
+  /** 设置内联编辑错误 */
+  setInlineEditError: (error: string | null) => void;
+
+  // ============ 快捷操作 Actions ============
+  /** 更新快捷操作列表 */
+  updateQuickActions: (actions: QuickAction[]) => void;
+  /** 设置启用的快捷操作 ID */
+  setEnabledQuickActions: (ids: string[]) => void;
+  /** 添加快捷操作 */
+  addQuickAction: (action: QuickAction) => void;
+  /** 移除快捷操作 */
+  removeQuickAction: (id: string) => void;
+
   /** 重置状态 */
   reset: () => void;
 }
@@ -267,6 +316,9 @@ const initialState = {
   // 大纲编辑
   editingOutline: null,
   editorSettings: defaultEditorSettings,
+  // 内联编辑
+  inlineEdit: initialInlineEditContext,
+  quickActionsConfig: defaultQuickActionsConfig,
 };
 
 export const useWritingStore = create<WritingState>()(
@@ -451,6 +503,8 @@ export const useWritingStore = create<WritingState>()(
           editingEntity: entity,
           editingEntityContent: entity?.content || "",
           isEntityDirty: false,
+          // 打开设定编辑时，关闭大纲编辑
+          editingOutline: null,
         }),
 
       setEditingEntityContent: (content) =>
@@ -493,6 +547,84 @@ export const useWritingStore = create<WritingState>()(
           editorSettings: { ...state.editorSettings, ...settings },
         })),
 
+      // ============ 内联编辑 Actions 实现 ============
+      startInlineEdit: (targetType, text, range) =>
+        set({
+          inlineEdit: {
+            status: "prompting",
+            targetType,
+            originalText: text,
+            range: range ?? null,
+            suggestion: null,
+            error: null,
+          },
+        }),
+
+      setInlineEditStatus: (status) =>
+        set((state) => ({
+          inlineEdit: { ...state.inlineEdit, status },
+        })),
+
+      updateEditSuggestion: (update) =>
+        set((state) => ({
+          inlineEdit: {
+            ...state.inlineEdit,
+            suggestion: state.inlineEdit.suggestion
+              ? { ...state.inlineEdit.suggestion, ...update }
+              : null,
+          },
+        })),
+
+      setEditSuggestion: (suggestion) =>
+        set((state) => ({
+          inlineEdit: { ...state.inlineEdit, suggestion },
+        })),
+
+      acceptEdit: () => {
+        const { inlineEdit } = get();
+        if (inlineEdit.suggestion?.isComplete) {
+          // 重置内联编辑状态，实际替换由调用方执行
+          set({ inlineEdit: initialInlineEditContext });
+        }
+      },
+
+      rejectEdit: () => set({ inlineEdit: initialInlineEditContext }),
+
+      cancelInlineEdit: () => set({ inlineEdit: initialInlineEditContext }),
+
+      setInlineEditError: (error) =>
+        set((state) => ({
+          inlineEdit: { ...state.inlineEdit, error, status: "idle" },
+        })),
+
+      // ============ 快捷操作 Actions 实现 ============
+      updateQuickActions: (actions) =>
+        set((state) => ({
+          quickActionsConfig: { ...state.quickActionsConfig, actions },
+        })),
+
+      setEnabledQuickActions: (ids) =>
+        set((state) => ({
+          quickActionsConfig: { ...state.quickActionsConfig, enabledIds: ids },
+        })),
+
+      addQuickAction: (action) =>
+        set((state) => ({
+          quickActionsConfig: {
+            ...state.quickActionsConfig,
+            actions: [...state.quickActionsConfig.actions, action],
+          },
+        })),
+
+      removeQuickAction: (id) =>
+        set((state) => ({
+          quickActionsConfig: {
+            ...state.quickActionsConfig,
+            actions: state.quickActionsConfig.actions.filter((a) => a.id !== id),
+            enabledIds: state.quickActionsConfig.enabledIds.filter((eid) => eid !== id),
+          },
+        })),
+
       reset: () => set(initialState),
     }),
     {
@@ -503,6 +635,7 @@ export const useWritingStore = create<WritingState>()(
         isLeftPaneCollapsed: state.isLeftPaneCollapsed,
         isRightPaneCollapsed: state.isRightPaneCollapsed,
         editorSettings: state.editorSettings,
+        quickActionsConfig: state.quickActionsConfig,
       }),
     }
   )
@@ -657,6 +790,36 @@ export function useSelectedModel() {
     useShallow((state) => ({
       selectedModelId: state.selectedModelId,
       setSelectedModel: state.setSelectedModel,
+    }))
+  );
+}
+
+/** 获取内联编辑状态 */
+export function useInlineEditState() {
+  return useWritingStore(
+    useShallow((state) => ({
+      inlineEdit: state.inlineEdit,
+      startInlineEdit: state.startInlineEdit,
+      setInlineEditStatus: state.setInlineEditStatus,
+      updateEditSuggestion: state.updateEditSuggestion,
+      setEditSuggestion: state.setEditSuggestion,
+      acceptEdit: state.acceptEdit,
+      rejectEdit: state.rejectEdit,
+      cancelInlineEdit: state.cancelInlineEdit,
+      setInlineEditError: state.setInlineEditError,
+    }))
+  );
+}
+
+/** 获取快捷操作配置 */
+export function useQuickActionsConfig() {
+  return useWritingStore(
+    useShallow((state) => ({
+      quickActionsConfig: state.quickActionsConfig,
+      updateQuickActions: state.updateQuickActions,
+      setEnabledQuickActions: state.setEnabledQuickActions,
+      addQuickAction: state.addQuickAction,
+      removeQuickAction: state.removeQuickAction,
     }))
   );
 }

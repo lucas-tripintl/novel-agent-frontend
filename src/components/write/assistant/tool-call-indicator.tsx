@@ -10,6 +10,7 @@ const TOOL_NAME_MAP: Record<string, string> = {
   query_context: "查询上下文",
   submit_chapter_task: "提交章节任务",
   submit_outline_task: "提交大纲任务",
+  suggest_edit: "建议编辑",
 };
 
 function getToolDisplayName(toolName: string): string {

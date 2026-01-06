@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect, useCallback, useMemo, useRef } from "react";
+import { useEffect, useCallback, useMemo, useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { cn } from "@/lib/utils";
-import { useEditorSettings, useSelectedTextContext } from "@/stores/writing-store";
+import {
+  useEditorSettings,
+  useSelectedTextContext,
+  useInlineEditState,
+} from "@/stores/writing-store";
 import { fontFamilies, type EditorFontFamily } from "@/types/writing";
+import type { QuickAction, EditTargetType } from "@/types/inline-edit";
+import { InlineEditDecoration } from "./extensions/inline-edit-decoration";
+import { SelectionToolbar } from "./selection-toolbar";
+import { InlineEditActions } from "./inline-edit-actions";
 
 interface TiptapEditorProps {
   content: string;
@@ -14,6 +22,27 @@ interface TiptapEditorProps {
   isReadOnly?: boolean;
   placeholder?: string;
   className?: string;
+  /** 编辑目标类型 */
+  targetType?: EditTargetType;
+  /** 是否启用内联编辑工具栏 */
+  enableInlineEdit?: boolean;
+  /** 快捷操作回调 */
+  onQuickAction?: (
+    action: QuickAction,
+    selectedText: string,
+    range: { from: number; to: number }
+  ) => void;
+  /** 打开自定义编辑回调 */
+  onOpenCustomEdit?: (
+    selectedText: string,
+    range: { from: number; to: number }
+  ) => void;
+  /** 接受编辑回调 */
+  onAcceptEdit?: (newText: string) => void;
+  /** 拒绝编辑回调 */
+  onRejectEdit?: () => void;
+  /** 重新生成回调 */
+  onRegenerateEdit?: () => void;
 }
 
 function getFontClass(fontFamily: EditorFontFamily): string {
@@ -27,11 +56,22 @@ export function TiptapEditor({
   isReadOnly = false,
   placeholder = "开始书写...",
   className,
+  targetType = "content",
+  enableInlineEdit = true,
+  onQuickAction,
+  onOpenCustomEdit,
+  onAcceptEdit,
+  onRejectEdit,
+  onRegenerateEdit,
 }: TiptapEditorProps) {
   const { settings } = useEditorSettings();
   const { selectedTextContext, setSelectedTextContext } = useSelectedTextContext();
+  const { inlineEdit, acceptEdit, rejectEdit } = useInlineEditState();
+
   // 用于区分程序设置内容和用户输入
   const isSettingContentRef = useRef(false);
+  // 操作栏位置
+  const [actionsPosition, setActionsPosition] = useState({ x: 0, y: 0 });
 
   // 计算位置对应的行号（基于段落）
   const getLineNumber = useCallback((doc: { nodesBetween: (from: number, to: number, callback: (node: { isBlock: boolean }, pos: number) => void) => void }, pos: number): number => {
@@ -62,6 +102,11 @@ export function TiptapEditor({
       Placeholder.configure({
         placeholder,
         emptyEditorClass: "is-editor-empty",
+      }),
+      // 内联编辑 diff 预览扩展
+      InlineEditDecoration.configure({
+        deletionClass: "inline-edit-deletion",
+        additionClass: "inline-edit-addition",
       }),
     ],
     content,
@@ -181,6 +226,88 @@ export function TiptapEditor({
     }
   }, [editor, appendContent]);
 
+  // 监听内联编辑状态变化，更新 diff 预览
+  useEffect(() => {
+    if (!editor) return;
+
+    const suggestion = inlineEdit.suggestion;
+    const range = inlineEdit.range;
+
+    if (
+      inlineEdit.status === "streaming" ||
+      inlineEdit.status === "previewing"
+    ) {
+      if (suggestion && range) {
+        // 显示 diff 预览
+        editor.commands.showEditPreview({
+          from: range.from,
+          to: range.to,
+          originalText: suggestion.originalText,
+          newText: suggestion.replacementText,
+        });
+
+        // 更新操作栏位置
+        const { view } = editor;
+        const endCoords = view.coordsAtPos(range.to);
+        const editorRect = view.dom.getBoundingClientRect();
+        setActionsPosition({
+          x: endCoords.left - editorRect.left,
+          y: endCoords.bottom - editorRect.top + 8,
+        });
+      }
+    } else {
+      // 清除预览
+      editor.commands.clearEditPreview();
+    }
+  }, [editor, inlineEdit.status, inlineEdit.suggestion, inlineEdit.range]);
+
+  // 处理接受编辑
+  const handleAcceptEdit = useCallback(() => {
+    if (!editor || !inlineEdit.suggestion || !inlineEdit.range) return;
+
+    const { replacementText } = inlineEdit.suggestion;
+    const { from, to } = inlineEdit.range;
+
+    // 应用编辑
+    editor.commands.applyEditPreview();
+
+    // 调用回调
+    onAcceptEdit?.(replacementText);
+    acceptEdit();
+  }, [editor, inlineEdit.suggestion, inlineEdit.range, onAcceptEdit, acceptEdit]);
+
+  // 处理拒绝编辑
+  const handleRejectEdit = useCallback(() => {
+    if (!editor) return;
+
+    // 清除预览
+    editor.commands.clearEditPreview();
+
+    // 调用回调
+    onRejectEdit?.();
+    rejectEdit();
+  }, [editor, onRejectEdit, rejectEdit]);
+
+  // 处理快捷操作
+  const handleQuickAction = useCallback(
+    (
+      action: QuickAction,
+      selectedText: string,
+      range: { from: number; to: number }
+    ) => {
+      onQuickAction?.(action, selectedText, range);
+    },
+    [onQuickAction]
+  );
+
+  // 处理打开自定义编辑
+  const handleOpenCustomEdit = useCallback(
+    (selectedText: string, range: { from: number; to: number }) => {
+      onOpenCustomEdit?.(selectedText, range);
+    },
+    [onOpenCustomEdit]
+  );
+
   // 段落样式直接用 style 对象控制
   const paragraphStyle = useMemo(
     () => ({
@@ -190,6 +317,10 @@ export function TiptapEditor({
     }),
     [settings.fontSize, settings.lineHeight, settings.paragraphSpacing]
   );
+
+  // 是否显示内联编辑操作栏
+  const showInlineEditActions =
+    inlineEdit.status === "streaming" || inlineEdit.status === "previewing";
 
   return (
     <div
@@ -218,6 +349,39 @@ export function TiptapEditor({
       {isReadOnly && (
         <span className="inline-block w-0.5 h-5 bg-primary animate-pulse ml-0.5 align-middle" />
       )}
+
+      {/* 选中文本悬浮工具栏 */}
+      {enableInlineEdit && !isReadOnly && !showInlineEditActions && (
+        <SelectionToolbar
+          editor={editor}
+          targetType={targetType}
+          onQuickAction={handleQuickAction}
+          onOpenCustomEdit={handleOpenCustomEdit}
+        />
+      )}
+
+      {/* 内联编辑操作栏 */}
+      {showInlineEditActions && (
+        <div
+          className="absolute z-50"
+          style={{
+            left: actionsPosition.x,
+            top: actionsPosition.y,
+          }}
+        >
+          <InlineEditActions
+            isComplete={inlineEdit.suggestion?.isComplete ?? false}
+            isStreaming={inlineEdit.status === "streaming"}
+            explanation={inlineEdit.suggestion?.explanation}
+            onAccept={handleAcceptEdit}
+            onReject={handleRejectEdit}
+            onRegenerate={onRegenerateEdit}
+          />
+        </div>
+      )}
     </div>
   );
 }
+
+/** 导出 editor 类型供外部使用 */
+export type { Editor } from "@tiptap/react";

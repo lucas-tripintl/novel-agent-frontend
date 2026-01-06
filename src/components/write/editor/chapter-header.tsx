@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { useWritingStore } from "@/stores/writing-store";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,8 +15,10 @@ import {
   ChevronRight,
   FileText,
   Sparkles,
-  Layers,
 } from "lucide-react";
+import { SimpleTiptapEditor } from "./simple-tiptap-editor";
+import { useInlineEdit } from "@/hooks/use-inline-edit";
+import type { QuickAction } from "@/types/inline-edit";
 
 interface ChapterHeaderProps {
   chapterNumber: number;
@@ -26,11 +26,80 @@ interface ChapterHeaderProps {
 
 export function ChapterHeader({ chapterNumber }: ChapterHeaderProps) {
   const [isOutlineOpen, setIsOutlineOpen] = useState(false);
-  const { title, outline, setTitle, setOutline } = useWritingStore();
+  const { projectId, title, outline, setTitle, setOutline } = useWritingStore();
+
+  // 内联编辑 hook
+  const {
+    inlineEdit,
+    executeQuickAction,
+    startCustomEdit,
+    acceptEdit,
+    rejectEdit,
+  } = useInlineEdit({
+    projectId: projectId || "",
+    onEditComplete: (suggestion) => {
+      console.log("编辑完成:", suggestion);
+    },
+    onError: (error) => {
+      console.error("内联编辑错误:", error);
+    },
+  });
 
   const handleGenerateOutline = () => {
     // TODO: 调用 AI 生成章节概要
     console.log("生成章节概要");
+  };
+
+  // 处理标题快捷操作
+  const handleTitleQuickAction = (
+    action: QuickAction,
+    selectedText: string,
+    range: { from: number; to: number }
+  ) => {
+    executeQuickAction(action, selectedText, range, "title");
+  };
+
+  // 处理标题自定义编辑
+  const handleTitleCustomEdit = (
+    selectedText: string,
+    range: { from: number; to: number }
+  ) => {
+    startCustomEdit(selectedText, range, "title");
+    // TODO: 打开 AI 助手面板输入自定义指令
+  };
+
+  // 处理概要快捷操作
+  const handleOutlineQuickAction = (
+    action: QuickAction,
+    selectedText: string,
+    range: { from: number; to: number }
+  ) => {
+    executeQuickAction(action, selectedText, range, "outline");
+  };
+
+  // 处理概要自定义编辑
+  const handleOutlineCustomEdit = (
+    selectedText: string,
+    range: { from: number; to: number }
+  ) => {
+    startCustomEdit(selectedText, range, "outline");
+    // TODO: 打开 AI 助手面板输入自定义指令
+  };
+
+  // 处理接受编辑
+  const handleAcceptEdit = (newText: string) => {
+    // 根据编辑目标类型更新对应内容
+    if (inlineEdit.targetType === "title") {
+      setTitle(newText);
+    } else if (inlineEdit.targetType === "outline") {
+      setOutline(newText);
+    }
+    acceptEdit();
+  };
+
+  // 处理拒绝编辑
+  const handleRejectEdit = () => {
+    rejectEdit();
   };
 
   return (
@@ -42,16 +111,19 @@ export function ChapterHeader({ chapterNumber }: ChapterHeaderProps) {
         </Badge>
       </div>
 
-      {/* 标题输入 */}
-      <Input
+      {/* 标题输入 - 使用 SimpleTiptapEditor */}
+      <SimpleTiptapEditor
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        onChange={setTitle}
+        targetType="title"
+        mode="single-line"
         placeholder="输入章节标题..."
-        className={cn(
-          "text-2xl font-bold border-none shadow-none px-0 h-auto py-2",
-          "focus-visible:ring-0 focus-visible:ring-offset-0",
-          "placeholder:text-muted-foreground/40"
-        )}
+        className="text-2xl font-bold"
+        enableInlineEdit={!!projectId}
+        onQuickAction={handleTitleQuickAction}
+        onOpenCustomEdit={handleTitleCustomEdit}
+        onAcceptEdit={handleAcceptEdit}
+        onRejectEdit={handleRejectEdit}
       />
 
       {/* 章节概要（可折叠） */}
@@ -108,14 +180,19 @@ export function ChapterHeader({ chapterNumber }: ChapterHeaderProps) {
 
           <CollapsibleContent>
             <div className="px-4 pb-4">
-              <Textarea
+              {/* 概要输入 - 使用 SimpleTiptapEditor */}
+              <SimpleTiptapEditor
                 value={outline}
-                onChange={(e) => setOutline(e.target.value)}
+                onChange={setOutline}
+                targetType="outline"
+                mode="multi-line"
                 placeholder="填写本章概要，可辅助 AI 创作..."
-                className={cn(
-                  "min-h-[80px] resize-none bg-background/50",
-                  "focus-visible:ring-1 focus-visible:ring-primary/30"
-                )}
+                className="min-h-[80px]"
+                enableInlineEdit={!!projectId}
+                onQuickAction={handleOutlineQuickAction}
+                onOpenCustomEdit={handleOutlineCustomEdit}
+                onAcceptEdit={handleAcceptEdit}
+                onRejectEdit={handleRejectEdit}
               />
               <p className="mt-2 text-xs text-muted-foreground">
                 概要将帮助 AI 更准确地理解本章内容方向
