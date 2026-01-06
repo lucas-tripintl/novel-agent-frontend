@@ -6,11 +6,20 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tansta
 import {
   listProjects,
   deleteProject,
+  updateProject,
   getProject,
   listChapters,
   getChapter,
+  updateChapter,
+  deleteChapter,
   listGoldenFingers,
+  updateGoldenFinger,
+  deleteGoldenFinger,
+  deleteEntity,
   type ChapterSortOrder,
+  type ProjectUpdateData,
+  type ChapterUpdateData,
+  type GoldenFingerUpdateData,
 } from "@/lib/api/projects";
 import type { ProjectList, ProjectStatus } from "@/types/api";
 
@@ -138,6 +147,97 @@ export function useDeleteProject() {
     onSuccess: () => {
       // 删除成功后刷新项目列表
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
+    },
+  });
+}
+
+/**
+ * 更新项目
+ */
+export function useUpdateProject() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ projectId, data }: { projectId: string; data: ProjectUpdateData }) =>
+      updateProject(projectId, data),
+    onSuccess: (_, { projectId }) => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+      queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
+    },
+  });
+}
+
+/**
+ * 更新章节
+ */
+export function useUpdateChapter(projectId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ chapterNumber, data }: { chapterNumber: number; data: ChapterUpdateData }) =>
+      updateChapter(projectId, chapterNumber, data),
+    onSuccess: (_, { chapterNumber }) => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.chapters(projectId) });
+      queryClient.invalidateQueries({ queryKey: projectKeys.chapter(projectId, chapterNumber) });
+    },
+  });
+}
+
+/**
+ * 删除章节
+ */
+export function useDeleteChapter(projectId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ chapterNumber, keepOutline }: { chapterNumber: number; keepOutline?: boolean }) =>
+      deleteChapter(projectId, chapterNumber, { keep_outline: keepOutline }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.chapters(projectId) });
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+    },
+  });
+}
+
+/**
+ * 删除实体
+ */
+export function useDeleteEntity(projectId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (entityId: string) => deleteEntity(projectId, entityId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-elements", projectId] });
+    },
+  });
+}
+
+/**
+ * 更新金手指
+ */
+export function useUpdateGoldenFinger(projectId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ name, data }: { name: string; data: GoldenFingerUpdateData }) =>
+      updateGoldenFinger(projectId, name, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.goldenFingers(projectId) });
+    },
+  });
+}
+
+/**
+ * 删除金手指
+ */
+export function useDeleteGoldenFinger(projectId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (name: string) => deleteGoldenFinger(projectId, name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.goldenFingers(projectId) });
     },
   });
 }

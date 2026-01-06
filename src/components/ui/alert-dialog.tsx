@@ -44,10 +44,36 @@ function AlertDialogOverlay({
   )
 }
 
+interface AlertDialogContentProps
+  extends React.ComponentProps<typeof AlertDialogPrimitive.Content> {
+  /** 点击外部时的回调，传入后会允许点击外部关闭 */
+  onCloseOnOutsideClick?: () => void;
+}
+
 function AlertDialogContent({
   className,
+  onCloseOnOutsideClick,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
+}: AlertDialogContentProps) {
+  // Radix 类型未导出 onPointerDownOutside，需要类型断言
+  const contentProps = {
+    ...props,
+    onPointerDownOutside: (e: Event) => {
+      if (onCloseOnOutsideClick) {
+        onCloseOnOutsideClick();
+      } else {
+        e.preventDefault();
+      }
+    },
+    onEscapeKeyDown: (e: Event) => {
+      if (onCloseOnOutsideClick) {
+        onCloseOnOutsideClick();
+      } else {
+        e.preventDefault();
+      }
+    },
+  } as React.ComponentProps<typeof AlertDialogPrimitive.Content>;
+
   return (
     <AlertDialogPortal>
       <AlertDialogOverlay />
@@ -57,7 +83,7 @@ function AlertDialogContent({
           "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
           className
         )}
-        {...props}
+        {...contentProps}
       />
     </AlertDialogPortal>
   )

@@ -6,21 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
+import { ProjectEditSheet } from "@/components/project/project-edit-sheet";
 import {
   BookOpen,
   FileText,
@@ -32,6 +25,7 @@ import {
   RefreshCw,
   Eye,
   PenLine,
+  Settings,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -116,9 +110,11 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 function ProjectCard({
   project,
   onDelete,
+  onEdit,
 }: {
   project: ProjectList;
   onDelete: (id: string) => void;
+  onEdit: (project: ProjectList) => void;
 }) {
   const progress =
     project.total_chapters > 0
@@ -151,6 +147,11 @@ function ProjectCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEdit(project)}>
+                <Settings className="mr-2 h-4 w-4" />
+                编辑
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
                 onClick={() => onDelete(project.id)}
@@ -224,18 +225,28 @@ export function DashboardContent() {
   const { data, isLoading, isError, refetch } = useProjects({ limit: 20 });
   const deleteProjectMutation = useDeleteProject();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<ProjectList | null>(null);
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState<ProjectList | null>(null);
 
   const projects = data?.items ?? [];
 
   const handleDeleteClick = (projectId: string) => {
-    setProjectToDelete(projectId);
-    setDeleteDialogOpen(true);
+    const project = projects.find((p) => p.id === projectId);
+    if (project) {
+      setProjectToDelete(project);
+      setDeleteDialogOpen(true);
+    }
+  };
+
+  const handleEditClick = (project: ProjectList) => {
+    setProjectToEdit(project);
+    setEditSheetOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
     if (projectToDelete) {
-      await deleteProjectMutation.mutateAsync(projectToDelete);
+      await deleteProjectMutation.mutateAsync(projectToDelete.id);
       setDeleteDialogOpen(false);
       setProjectToDelete(null);
     }
@@ -312,6 +323,7 @@ export function DashboardContent() {
                 key={project.id}
                 project={project}
                 onDelete={handleDeleteClick}
+                onEdit={handleEditClick}
               />
             ))}
           </div>
@@ -319,26 +331,20 @@ export function DashboardContent() {
       </div>
 
       {/* 删除确认对话框 */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认删除</AlertDialogTitle>
-            <AlertDialogDescription>
-              此操作将永久删除该项目及其所有数据，无法恢复。确定要继续吗？
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={handleDeleteConfirm}
-              disabled={deleteProjectMutation.isPending}
-            >
-              {deleteProjectMutation.isPending ? "删除中..." : "删除"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        targetName={projectToDelete ? `项目「${projectToDelete.name}」` : ""}
+        onConfirm={handleDeleteConfirm}
+        isPending={deleteProjectMutation.isPending}
+      />
+
+      {/* 项目编辑面板 */}
+      <ProjectEditSheet
+        project={projectToEdit}
+        open={editSheetOpen}
+        onOpenChange={setEditSheetOpen}
+      />
     </div>
   );
 }

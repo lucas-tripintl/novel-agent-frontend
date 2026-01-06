@@ -1,18 +1,28 @@
 "use client";
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { useProjectChapters } from "@/hooks/use-projects";
+import { useProjectChapters, useDeleteChapter } from "@/hooks/use-projects";
 import { useWritingStore, useEntityEditing, useEditorContent, useOutlineEditing } from "@/stores/writing-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ConfirmLeaveDialog } from "../confirm-leave-dialog";
+import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
+import { ChapterEditSheet } from "@/components/chapters/chapter-edit-sheet";
 import { cn } from "@/lib/utils";
 import {
   FileText,
@@ -24,7 +34,11 @@ import {
   ArrowUp,
   ArrowDown,
   Loader2,
+  MoreHorizontal,
+  Settings,
+  Trash2,
 } from "lucide-react";
+import type { ChapterRead } from "@/types/api";
 
 type SortOrder = "asc" | "desc";
 
@@ -34,6 +48,11 @@ interface ChapterListProps {
 
 export function ChapterList({ projectId }: ChapterListProps) {
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc"); // 默认倒序，最新章节在前
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [chapterToEdit, setChapterToEdit] = useState<ChapterRead | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [chapterToDelete, setChapterToDelete] = useState<ChapterRead | null>(null);
+  const [keepOutline, setKeepOutline] = useState(true);
 
   const {
     data,
@@ -42,6 +61,7 @@ export function ChapterList({ projectId }: ChapterListProps) {
     hasNextPage,
     fetchNextPage,
   } = useProjectChapters(projectId, { order: sortOrder });
+  const deleteChapterMutation = useDeleteChapter(projectId);
 
   const { chapterId, setContext } = useWritingStore();
   const { editingEntity, isEntityDirty, closeEntityEditor } = useEntityEditing();
@@ -53,6 +73,29 @@ export function ChapterList({ projectId }: ChapterListProps) {
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // 编辑/删除处理
+  const handleEditClick = (chapter: ChapterRead) => {
+    setChapterToEdit(chapter);
+    setEditSheetOpen(true);
+  };
+
+  const handleDeleteClick = (chapter: ChapterRead) => {
+    setChapterToDelete(chapter);
+    setKeepOutline(true);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (chapterToDelete) {
+      await deleteChapterMutation.mutateAsync({
+        chapterNumber: chapterToDelete.chapter_number,
+        keepOutline,
+      });
+      setDeleteDialogOpen(false);
+      setChapterToDelete(null);
+    }
+  };
 
   // 合并所有页的数据
   const chapters = useMemo(() => {
@@ -205,53 +248,84 @@ export function ChapterList({ projectId }: ChapterListProps) {
                   const isAnalyzed = chapter.analyzed;
 
                   return (
-                    <button
+                    <div
                       key={chapter.id}
-                      onClick={() => handleSelectChapter(chapter.id, chapter.chapter_number)}
                       className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all",
+                        "flex items-center gap-1 rounded-lg transition-all group",
                         "hover:bg-muted/50",
                         isActive && "bg-primary/10 border border-primary/30"
                       )}
                     >
-                      {/* 状态图标 */}
-                      <div className="shrink-0">
-                        {isActive ? (
-                          <PenLine className="h-4 w-4 text-primary" />
-                        ) : isAnalyzed ? (
-                          <CheckCircle2 className="h-4 w-4 text-primary/60" />
-                        ) : (
-                          <Circle className="h-4 w-4 text-muted-foreground/40" />
-                        )}
-                      </div>
-
-                      {/* 章节信息 */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground font-mono">
-                            第 {chapter.chapter_number} 章
-                          </span>
-                          <span className="text-[10px] text-muted-foreground/60 font-mono">
-                            {(chapter.word_count ?? 0).toLocaleString()}字
-                          </span>
-                          {isActive && (
-                            <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
-                              编辑中
-                            </Badge>
+                      <button
+                        onClick={() => handleSelectChapter(chapter.id, chapter.chapter_number)}
+                        className="flex-1 flex items-center gap-3 px-3 py-2.5 text-left"
+                      >
+                        {/* 状态图标 */}
+                        <div className="shrink-0">
+                          {isActive ? (
+                            <PenLine className="h-4 w-4 text-primary" />
+                          ) : isAnalyzed ? (
+                            <CheckCircle2 className="h-4 w-4 text-primary/60" />
+                          ) : (
+                            <Circle className="h-4 w-4 text-muted-foreground/40" />
                           )}
                         </div>
-                        <p className="text-sm font-medium truncate mt-0.5">
-                          {chapter.title || "未命名章节"}
-                        </p>
-                      </div>
 
-                      <ChevronRight
-                        className={cn(
-                          "h-4 w-4 shrink-0 transition-transform",
-                          isActive ? "text-primary" : "text-muted-foreground/40"
-                        )}
-                      />
-                    </button>
+                        {/* 章节信息 */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground font-mono">
+                              第 {chapter.chapter_number} 章
+                            </span>
+                            <span className="text-[10px] text-muted-foreground/60 font-mono">
+                              {(chapter.word_count ?? 0).toLocaleString()}字
+                            </span>
+                            {isActive && (
+                              <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
+                                编辑中
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm font-medium truncate mt-0.5">
+                            {chapter.title || "未命名章节"}
+                          </p>
+                        </div>
+
+                        <ChevronRight
+                          className={cn(
+                            "h-4 w-4 shrink-0 transition-transform",
+                            isActive ? "text-primary" : "text-muted-foreground/40"
+                          )}
+                        />
+                      </button>
+
+                      {/* 操作菜单 */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 mr-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditClick(chapter)}>
+                            <Settings className="mr-2 h-4 w-4" />
+                            编辑
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => handleDeleteClick(chapter)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            删除
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   );
                 })}
 
@@ -287,6 +361,37 @@ export function ChapterList({ projectId }: ChapterListProps) {
           </Button>
         </div>
       </div>
+
+      {/* 章节编辑面板 */}
+      <ChapterEditSheet
+        projectId={projectId}
+        chapter={chapterToEdit}
+        open={editSheetOpen}
+        onOpenChange={setEditSheetOpen}
+      />
+
+      {/* 删除确认对话框 */}
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        targetName={chapterToDelete ? `第 ${chapterToDelete.chapter_number} 章「${chapterToDelete.title || "未命名"}」` : ""}
+        onConfirm={handleDeleteConfirm}
+        isPending={deleteChapterMutation.isPending}
+      >
+        <div className="flex items-center space-x-2 mt-4">
+          <Checkbox
+            id="keep-outline"
+            checked={keepOutline}
+            onCheckedChange={(checked) => setKeepOutline(checked === true)}
+          />
+          <label
+            htmlFor="keep-outline"
+            className="text-sm text-muted-foreground cursor-pointer"
+          >
+            保留章节细纲
+          </label>
+        </div>
+      </ConfirmDeleteDialog>
     </>
   );
 }

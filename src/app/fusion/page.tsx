@@ -1,17 +1,41 @@
 "use client";
 
+import { useState } from "react";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Blend, Plus, ChevronRight, AlertCircle } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
+import { FusionTaskEditSheet } from "@/components/fusion/fusion-task-edit-sheet";
+import {
+  Blend,
+  Plus,
+  ChevronRight,
+  AlertCircle,
+  MoreHorizontal,
+  Settings,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { FusionStatusBadge } from "@/components/common/status-badge";
-import { useFusionTasks, useFusionModes } from "@/hooks/use-fusion";
+import { useFusionTasks, useFusionModes, useDeleteFusionTask } from "@/hooks/use-fusion";
 import { formatTimeAgo } from "@/lib/utils/time";
+import type { FusionTaskList } from "@/types/fusion";
 
 export default function FusionPage() {
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<FusionTaskList | null>(null);
+
   const {
     data: tasksData,
     isLoading,
@@ -22,8 +46,27 @@ export default function FusionPage() {
   } = useFusionTasks({ limit: 20 });
 
   const { data: modesData } = useFusionModes();
+  const deleteTaskMutation = useDeleteFusionTask();
 
   const tasks = tasksData?.items ?? [];
+
+  const handleEditClick = (taskId: string) => {
+    setTaskToEdit(taskId);
+    setEditSheetOpen(true);
+  };
+
+  const handleDeleteClick = (task: FusionTaskList) => {
+    setTaskToDelete(task);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (taskToDelete) {
+      await deleteTaskMutation.mutateAsync(taskToDelete.id);
+      setDeleteDialogOpen(false);
+      setTaskToDelete(null);
+    }
+  };
 
   // 获取融合模式名称
   const getModeName = (mode: string) => {
@@ -103,14 +146,41 @@ export default function FusionPage() {
             {tasks.map((task) => (
               <Card
                 key={task.id}
-                className="bg-card/50 border-border/50 hover:border-primary/30 transition-all cursor-pointer"
+                className="bg-card/50 border-border/50 hover:border-primary/30 transition-all group"
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-xs text-muted-foreground">
                       #{task.id.slice(0, 8)}
                     </span>
-                    <FusionStatusBadge status={task.status} />
+                    <div className="flex items-center gap-2">
+                      <FusionStatusBadge status={task.status} />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditClick(task.id)}>
+                            <Settings className="mr-2 h-4 w-4" />
+                            编辑
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => handleDeleteClick(task)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            删除
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -172,6 +242,22 @@ export default function FusionPage() {
           </Card>
         )}
       </div>
+
+      {/* 编辑面板 */}
+      <FusionTaskEditSheet
+        taskId={taskToEdit}
+        open={editSheetOpen}
+        onOpenChange={setEditSheetOpen}
+      />
+
+      {/* 删除确认对话框 */}
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        targetName={taskToDelete ? `融合任务 #${taskToDelete.id.slice(0, 8)}` : ""}
+        onConfirm={handleDeleteConfirm}
+        isPending={deleteTaskMutation.isPending}
+      />
     </MainLayout>
   );
 }

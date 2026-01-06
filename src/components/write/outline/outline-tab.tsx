@@ -10,6 +10,8 @@ import {
   Target,
   BookMarked,
   ExternalLink,
+  MoreHorizontal,
+  Trash2,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +22,20 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { useOutlinesSummary, useNovelOutline, useVolumeOutline } from "@/hooks/use-outlines";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
+import {
+  useOutlinesSummary,
+  useNovelOutline,
+  useVolumeOutline,
+  useDeleteNovelOutline,
+  useDeleteVolumeOutline,
+} from "@/hooks/use-outlines";
 import { useOutlineEditing } from "@/stores/writing-store";
 import { OutlineGenerateDialog } from "./outline-generate-dialog";
 import type { NovelOutlineSummary, VolumeOutlineSummary } from "@/types/outline";
@@ -98,8 +113,10 @@ export function OutlineTab({ projectId }: OutlineTabProps) {
 
 function NovelOutlineCard({ outline, projectId }: { outline: NovelOutlineSummary; projectId: string }) {
   const [isOpen, setIsOpen] = useState(true);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { setEditingOutline } = useOutlineEditing();
   const { data: fullOutline } = useNovelOutline(projectId);
+  const deleteNovelOutlineMutation = useDeleteNovelOutline(projectId);
 
   const handleOpenOutline = () => {
     if (fullOutline) {
@@ -110,7 +127,13 @@ function NovelOutlineCard({ outline, projectId }: { outline: NovelOutlineSummary
     }
   };
 
+  const handleDelete = async () => {
+    await deleteNovelOutlineMutation.mutateAsync();
+    setShowDeleteDialog(false);
+  };
+
   return (
+    <>
     <div className="rounded-lg border border-border/50 bg-card/50 overflow-hidden group">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <div className="flex items-center">
@@ -135,12 +158,32 @@ function NovelOutlineCard({ outline, projectId }: { outline: NovelOutlineSummary
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 mr-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={handleOpenOutline}
             title="在编辑区查看"
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 mr-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                删除总纲
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <CollapsibleContent>
           <div className="px-3 pb-3 space-y-2 border-t border-border/30 pt-2">
@@ -173,13 +216,24 @@ function NovelOutlineCard({ outline, projectId }: { outline: NovelOutlineSummary
         </CollapsibleContent>
       </Collapsible>
     </div>
+
+    <ConfirmDeleteDialog
+      open={showDeleteDialog}
+      onOpenChange={setShowDeleteDialog}
+      targetName={`总纲「${outline.title}」`}
+      onConfirm={handleDelete}
+      isPending={deleteNovelOutlineMutation.isPending}
+    />
+    </>
   );
 }
 
 function VolumeOutlineItem({ volume, projectId }: { volume: VolumeOutlineSummary; projectId: string }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { setEditingOutline } = useOutlineEditing();
   const { data: fullOutline } = useVolumeOutline(projectId, volume.volume_number);
+  const deleteVolumeOutlineMutation = useDeleteVolumeOutline(projectId);
 
   const handleOpenOutline = () => {
     if (fullOutline) {
@@ -190,7 +244,13 @@ function VolumeOutlineItem({ volume, projectId }: { volume: VolumeOutlineSummary
     }
   };
 
+  const handleDelete = async () => {
+    await deleteVolumeOutlineMutation.mutateAsync(volume.volume_number);
+    setShowDeleteDialog(false);
+  };
+
   return (
+    <>
     <div className="rounded-lg border border-border/30 bg-card/30 overflow-hidden group">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <div className="flex items-center">
@@ -211,12 +271,32 @@ function VolumeOutlineItem({ volume, projectId }: { volume: VolumeOutlineSummary
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 mr-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={handleOpenOutline}
             title="在编辑区查看"
           >
             <ExternalLink className="h-3 w-3" />
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 mr-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <MoreHorizontal className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                删除卷纲
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <CollapsibleContent>
           <div className="px-3 pb-2.5 pt-1 border-t border-border/20 space-y-2">
@@ -234,6 +314,15 @@ function VolumeOutlineItem({ volume, projectId }: { volume: VolumeOutlineSummary
         </CollapsibleContent>
       </Collapsible>
     </div>
+
+    <ConfirmDeleteDialog
+      open={showDeleteDialog}
+      onOpenChange={setShowDeleteDialog}
+      targetName={`卷纲「${volume.title}」`}
+      onConfirm={handleDelete}
+      isPending={deleteVolumeOutlineMutation.isPending}
+    />
+    </>
   );
 }
 

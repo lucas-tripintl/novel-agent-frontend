@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEntityEditing, useEditorSettings } from "@/stores/writing-store";
 import { useEnumStore } from "@/stores/enum-store";
-import { updateEntity } from "@/lib/api/projects";
+import { updateEntity, deleteEntity } from "@/lib/api/projects";
 import { getCategoryConfig, elementCategories } from "@/hooks/use-project-elements";
 import type { EntityRead } from "@/types/api";
 import { fontFamilies, type EditorFontFamily } from "@/types/writing";
@@ -20,6 +20,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ConfirmLeaveDialog } from "../confirm-leave-dialog";
+import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
 import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -121,6 +122,7 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
   const [attributes, setAttributes] = useState<Record<string, unknown>>(entity.attributes || {});
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [shouldCloseAfterSave, setShouldCloseAfterSave] = useState(false);
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -185,6 +187,23 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
       setTimeout(() => setSaveStatus("idle"), 3000);
     },
   });
+
+  // 删除设定的 mutation
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      return deleteEntity(projectId, entity.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-elements", projectId] });
+      closeEntityEditor();
+    },
+  });
+
+  // 处理删除确认
+  const handleDeleteConfirm = async () => {
+    await deleteMutation.mutateAsync();
+    setShowDeleteDialog(false);
+  };
 
 
 
@@ -253,6 +272,13 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
         onDiscard={handleDiscardAndClose}
         isSaving={updateMutation.isPending}
       />
+      <ConfirmDeleteDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        targetName={`设定「${entity.name}」`}
+        onConfirm={handleDeleteConfirm}
+        isPending={deleteMutation.isPending}
+      />
       <div className="flex h-full flex-col bg-background">
         {/* 头部 */}
         <div className="flex items-center gap-3 px-6 py-4 border-b border-border/50">
@@ -315,6 +341,15 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
                 未保存
               </Badge>
             )}
+            {/* 删除按钮 */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 

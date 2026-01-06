@@ -8,12 +8,14 @@ import {
   listFusionTasks,
   getFusionTask,
   createFusionTask,
+  updateFusionTask,
   deleteFusionTask,
   runFusionPipeline,
   listFusionCandidates,
   selectFusionCandidate,
   buildFusionProject,
   type FusionTasksParams,
+  type FusionTaskUpdateData,
 } from "@/lib/api/fusion";
 import type {
   FusionTaskCreateRequest,
@@ -93,6 +95,22 @@ export function useCreateFusionTask() {
   return useMutation({
     mutationFn: (request: FusionTaskCreateRequest) => createFusionTask(request),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: fusionKeys.tasks() });
+    },
+  });
+}
+
+/**
+ * 更新融合任务
+ */
+export function useUpdateFusionTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ taskId, data }: { taskId: string; data: FusionTaskUpdateData }) =>
+      updateFusionTask(taskId, data),
+    onSuccess: (_, { taskId }) => {
+      queryClient.invalidateQueries({ queryKey: fusionKeys.taskDetail(taskId) });
       queryClient.invalidateQueries({ queryKey: fusionKeys.tasks() });
     },
   });

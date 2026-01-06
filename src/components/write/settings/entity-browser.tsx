@@ -7,6 +7,7 @@ import {
   groupEntitiesByCategory,
   getCategoryConfig,
 } from "@/hooks/use-project-elements";
+import { useDeleteEntity } from "@/hooks/use-projects";
 import { useEnumStore } from "@/stores/enum-store";
 import { useWritingStore, useWritingMode, useEntityEditing } from "@/stores/writing-store";
 import type { EntityRead, EntityType } from "@/types/api";
@@ -27,6 +28,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
 import { cn } from "@/lib/utils";
 import {
   Search,
@@ -47,6 +49,7 @@ import {
   Check,
   Loader2,
   Edit3,
+  Trash2,
 } from "lucide-react";
 
 // 标签本地化函数
@@ -103,8 +106,10 @@ interface EntityBrowserProps {
 export function EntityBrowser({ projectId }: EntityBrowserProps) {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+  const [entityToDelete, setEntityToDelete] = useState<EntityRead | null>(null);
 
   const { data, isLoading } = useProjectElements(projectId, true);
+  const deleteEntityMutation = useDeleteEntity(projectId);
   const mode = useWritingMode();
   const { selectedEntities, addEntity, removeEntity } = useWritingStore();
   const { setEditingEntity } = useEntityEditing();
@@ -165,6 +170,18 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
   // 打开设定编辑
   const openEntityEditor = (entity: EntityRead) => {
     setEditingEntity(entity);
+  };
+
+  // 处理删除确认
+  const handleDeleteConfirm = async () => {
+    if (entityToDelete) {
+      await deleteEntityMutation.mutateAsync(entityToDelete.id);
+      // 如果删除的实体已被选中，从选中列表移除
+      if (isEntitySelected(entityToDelete.id)) {
+        removeEntity(entityToDelete.id);
+      }
+      setEntityToDelete(null);
+    }
   };
 
   if (isLoading) {
@@ -268,6 +285,7 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
                             isSelectable={mode === "director"}
                             onToggle={() => toggleEntity(entity)}
                             onEdit={() => openEntityEditor(entity)}
+                            onDelete={() => setEntityToDelete(entity)}
                             getLabel={getLabel}
                             getFieldValueLabel={getFieldValueLabel}
                           />
@@ -281,6 +299,15 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
           )}
         </div>
       </ScrollArea>
+
+      {/* 删除确认对话框 */}
+      <ConfirmDeleteDialog
+        open={!!entityToDelete}
+        onOpenChange={(open) => !open && setEntityToDelete(null)}
+        targetName={entityToDelete ? `「${entityToDelete.name}」` : ""}
+        onConfirm={handleDeleteConfirm}
+        isPending={deleteEntityMutation.isPending}
+      />
     </div>
   );
 }
@@ -293,6 +320,7 @@ interface EntityRowProps {
   isSelectable: boolean;
   onToggle: () => void;
   onEdit: () => void;
+  onDelete: () => void;
   getLabel: (enumName: string, value: string) => string;
   getFieldValueLabel: (fieldName: string, value: string) => string;
 }
@@ -303,6 +331,7 @@ function EntityRow({
   isSelectable,
   onToggle,
   onEdit,
+  onDelete,
   getLabel,
   getFieldValueLabel,
 }: EntityRowProps) {
@@ -345,18 +374,31 @@ function EntityRow({
             </Badge>
           )}
 
-          {/* 编辑按钮 */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit();
-            }}
-          >
-            <Edit3 className="h-3 w-3" />
-          </Button>
+          {/* 操作按钮组 */}
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+            >
+              <Edit3 className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
       </HoverCardTrigger>
 

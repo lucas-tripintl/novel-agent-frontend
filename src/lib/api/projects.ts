@@ -13,6 +13,7 @@ import type {
   EntityRead,
   EntityType,
   GoldenFingerListItem,
+  GoldenFingerRead,
   StyleRead,
   TaskCreateResponse,
   AnalyzeRequest,
@@ -60,6 +61,16 @@ export async function deleteProject(projectId: string) {
   return apiClient.delete(`/projects/${projectId}`);
 }
 
+export interface ProjectUpdateData {
+  name?: string;
+  description?: string;
+  status?: "active" | "archived" | "completed";
+}
+
+export async function updateProject(projectId: string, data: ProjectUpdateData) {
+  return apiClient.patch<ProjectRead>(`/projects/${projectId}`, data);
+}
+
 // ============ 章节 ============
 
 export type ChapterSortOrder = "asc" | "desc";
@@ -77,6 +88,35 @@ export async function listChapters(
 export async function getChapter(projectId: string, chapterNumber: number) {
   return apiClient.get<ChapterRead>(
     `/projects/${projectId}/chapters/${chapterNumber}`
+  );
+}
+
+export interface ChapterUpdateData {
+  title?: string;
+  content?: string;
+  summary?: string;
+  status?: "imported" | "outlined" | "drafted" | "reviewed" | "published";
+}
+
+export async function updateChapter(
+  projectId: string,
+  chapterNumber: number,
+  data: ChapterUpdateData
+) {
+  return apiClient.patch<ChapterRead>(
+    `/projects/${projectId}/chapters/${chapterNumber}`,
+    data
+  );
+}
+
+export async function deleteChapter(
+  projectId: string,
+  chapterNumber: number,
+  params?: { keep_outline?: boolean }
+) {
+  return apiClient.delete(
+    `/projects/${projectId}/chapters/${chapterNumber}`,
+    { params }
   );
 }
 
@@ -172,6 +212,10 @@ export async function updateEntity(
   );
 }
 
+export async function deleteEntity(projectId: string, entityId: string) {
+  return apiClient.delete(`/projects/${projectId}/entities/${entityId}`);
+}
+
 // ============ 金手指 ============
 
 export async function listGoldenFingers(
@@ -181,5 +225,41 @@ export async function listGoldenFingers(
   return apiClient.get<PaginatedResponse<GoldenFingerListItem>>(
     `/projects/${projectId}/golden-fingers`,
     { params }
+  );
+}
+
+export async function getGoldenFinger(projectId: string, name: string) {
+  return apiClient.get<GoldenFingerRead>(
+    `/projects/${projectId}/golden-fingers/${encodeURIComponent(name)}`
+  );
+}
+
+export interface GoldenFingerUpdateData {
+  name?: string;
+  gf_type?: string;
+  status?: "active" | "inactive" | "sealed";
+  level?: number;
+  content?: string;
+  abilities?: string[];
+  resources?: Record<string, string | number>;
+  unlock_conditions?: string[];
+  restrictions?: string[];
+  tags?: string[];
+}
+
+export async function updateGoldenFinger(
+  projectId: string,
+  name: string,
+  data: GoldenFingerUpdateData
+) {
+  return apiClient.patch<GoldenFingerRead>(
+    `/projects/${projectId}/golden-fingers/${encodeURIComponent(name)}`,
+    data
+  );
+}
+
+export async function deleteGoldenFinger(projectId: string, name: string) {
+  return apiClient.delete(
+    `/projects/${projectId}/golden-fingers/${encodeURIComponent(name)}`
   );
 }

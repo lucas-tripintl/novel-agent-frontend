@@ -69,6 +69,24 @@ export async function getFusionTask(taskId: string) {
 }
 
 /**
+ * 更新融合任务
+ */
+export interface FusionTaskUpdateData {
+  fusion_mode?: string;
+  custom_instruction?: string;
+  user_ideas?: string;
+  candidate_count?: number;
+}
+
+export async function updateFusionTask(taskId: string, data: FusionTaskUpdateData) {
+  const response = await apiClient.patch<SuccessResponse<FusionTaskRead>>(
+    `/fusion/tasks/${taskId}`,
+    data
+  );
+  return response.data;
+}
+
+/**
  * 删除融合任务
  */
 export async function deleteFusionTask(taskId: string) {
