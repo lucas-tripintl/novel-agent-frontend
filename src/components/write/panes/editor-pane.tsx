@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useWritingStore, useStreamingState, useEntityEditing } from "@/stores/writing-store";
+import { useWritingStore, useStreamingState, useEntityEditing, useOutlineEditing } from "@/stores/writing-store";
 import { useChapter } from "@/hooks/use-projects";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TiptapEditor } from "../editor/tiptap-editor";
 import { ChapterHeader } from "../editor/chapter-header";
 import { EntityEditor } from "../editor/entity-editor";
+import { OutlineEditor } from "../editor/outline-editor";
 import { FileText, Sparkles } from "lucide-react";
 
 interface EditorPaneProps {
@@ -17,6 +18,7 @@ export function EditorPane({ projectId }: EditorPaneProps) {
   const { chapterId, chapterNumber, content, setContent, loadDraft } = useWritingStore();
   const { isStreaming } = useStreamingState();
   const { editingEntity } = useEntityEditing();
+  const { editingOutline } = useOutlineEditing();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // 使用章节详情 API 获取完整内容（直接使用 store 中的 chapterNumber）
@@ -44,6 +46,11 @@ export function EditorPane({ projectId }: EditorPaneProps) {
       }
     }
   }, [chapterId]);
+
+  // 大纲编辑模式
+  if (editingOutline) {
+    return <OutlineEditor outline={editingOutline} />;
+  }
 
   // 设定编辑模式
   if (editingEntity) {

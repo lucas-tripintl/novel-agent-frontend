@@ -16,6 +16,16 @@ import type {
 } from "@/types/writing";
 import type { EntityRead } from "@/types/api";
 import type { SelectedTextContext, ToolCallState } from "@/types/chat";
+import type { NovelOutline, VolumeOutline } from "@/types/outline";
+
+/** 大纲编辑类型 */
+export type EditingOutlineType = "novel" | "volume";
+
+/** 当前编辑的大纲信息 */
+export interface EditingOutline {
+  type: EditingOutlineType;
+  data: NovelOutline | VolumeOutline;
+}
 
 // 生成唯一 ID（兼容非 HTTPS 环境）
 function generateId(): string {
@@ -102,6 +112,10 @@ interface WritingState {
   editingEntityContent: string;
   /** 设定是否有未保存的更改 */
   isEntityDirty: boolean;
+
+  // ============ 大纲编辑 ============
+  /** 当前编辑的大纲 */
+  editingOutline: EditingOutline | null;
 
   // ============ 编辑器设置 ============
   /** 编辑器样式设置 */
@@ -193,6 +207,11 @@ interface WritingState {
   /** 关闭设定编辑（返回章节编辑） */
   closeEntityEditor: () => void;
 
+  /** 设置当前编辑的大纲 */
+  setEditingOutline: (outline: EditingOutline | null) => void;
+  /** 关闭大纲编辑 */
+  closeOutlineEditor: () => void;
+
   /** 更新编辑器设置 */
   updateEditorSettings: (settings: Partial<EditorSettings>) => void;
 
@@ -245,6 +264,8 @@ const initialState = {
   editingEntity: null,
   editingEntityContent: "",
   isEntityDirty: false,
+  // 大纲编辑
+  editingOutline: null,
   editorSettings: defaultEditorSettings,
 };
 
@@ -446,6 +467,20 @@ export const useWritingStore = create<WritingState>()(
           isEntityDirty: false,
         }),
 
+      setEditingOutline: (outline) =>
+        set({
+          editingOutline: outline,
+          // 打开大纲编辑时，关闭设定编辑
+          editingEntity: null,
+          editingEntityContent: "",
+          isEntityDirty: false,
+        }),
+
+      closeOutlineEditor: () =>
+        set({
+          editingOutline: null,
+        }),
+
       updateEditorSettings: (settings) =>
         set((state) => ({
           editorSettings: { ...state.editorSettings, ...settings },
@@ -554,6 +589,17 @@ export function useEntityEditing() {
       setEditingEntityContent: state.setEditingEntityContent,
       markEntityAsSaved: state.markEntityAsSaved,
       closeEntityEditor: state.closeEntityEditor,
+    }))
+  );
+}
+
+/** 获取大纲编辑状态 */
+export function useOutlineEditing() {
+  return useWritingStore(
+    useShallow((state) => ({
+      editingOutline: state.editingOutline,
+      setEditingOutline: state.setEditingOutline,
+      closeOutlineEditor: state.closeOutlineEditor,
     }))
   );
 }

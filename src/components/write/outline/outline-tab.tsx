@@ -9,6 +9,7 @@ import {
   FileText,
   Target,
   BookMarked,
+  ExternalLink,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +20,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { useOutlinesSummary } from "@/hooks/use-outlines";
+import { useOutlinesSummary, useNovelOutline, useVolumeOutline } from "@/hooks/use-outlines";
+import { useOutlineEditing } from "@/stores/writing-store";
 import { OutlineGenerateDialog } from "./outline-generate-dialog";
 import type { NovelOutlineSummary, VolumeOutlineSummary } from "@/types/outline";
 
@@ -67,7 +69,7 @@ export function OutlineTab({ projectId }: OutlineTabProps) {
       <div className="p-3 space-y-3">
         {/* 总纲 */}
         {data.novel_outline && (
-          <NovelOutlineCard outline={data.novel_outline} />
+          <NovelOutlineCard outline={data.novel_outline} projectId={projectId} />
         )}
 
         {/* 卷纲列表 */}
@@ -83,7 +85,7 @@ export function OutlineTab({ projectId }: OutlineTabProps) {
               </Badge>
             </div>
             {data.volumes.map((volume) => (
-              <VolumeOutlineItem key={volume.id} volume={volume} />
+              <VolumeOutlineItem key={volume.id} volume={volume} projectId={projectId} />
             ))}
           </div>
         )}
@@ -94,30 +96,52 @@ export function OutlineTab({ projectId }: OutlineTabProps) {
 
 // ============ 子组件 ============
 
-function NovelOutlineCard({ outline }: { outline: NovelOutlineSummary }) {
+function NovelOutlineCard({ outline, projectId }: { outline: NovelOutlineSummary; projectId: string }) {
   const [isOpen, setIsOpen] = useState(true);
+  const { setEditingOutline } = useOutlineEditing();
+  const { data: fullOutline } = useNovelOutline(projectId);
+
+  const handleOpenOutline = () => {
+    if (fullOutline) {
+      setEditingOutline({
+        type: "novel",
+        data: fullOutline,
+      });
+    }
+  };
 
   return (
-    <div className="rounded-lg border border-border/50 bg-card/50 overflow-hidden">
+    <div className="rounded-lg border border-border/50 bg-card/50 overflow-hidden group">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger asChild>
-          <button className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-primary/5 transition-colors text-left">
-            {isOpen ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-            )}
-            <BookText className="h-4 w-4 text-primary shrink-0" />
-            <span className="font-medium text-sm truncate flex-1">
-              {outline.title}
-            </span>
-            {outline.genre && (
-              <Badge variant="outline" className="text-[10px] shrink-0">
-                {outline.genre}
-              </Badge>
-            )}
-          </button>
-        </CollapsibleTrigger>
+        <div className="flex items-center">
+          <CollapsibleTrigger asChild>
+            <button className="flex-1 flex items-center gap-2 px-3 py-2.5 hover:bg-primary/5 transition-colors text-left">
+              {isOpen ? (
+                <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              )}
+              <BookText className="h-4 w-4 text-primary shrink-0" />
+              <span className="font-medium text-sm truncate flex-1">
+                {outline.title}
+              </span>
+              {outline.genre && (
+                <Badge variant="outline" className="text-[10px] shrink-0">
+                  {outline.genre}
+                </Badge>
+              )}
+            </button>
+          </CollapsibleTrigger>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 mr-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={handleOpenOutline}
+            title="在编辑区查看"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Button>
+        </div>
         <CollapsibleContent>
           <div className="px-3 pb-3 space-y-2 border-t border-border/30 pt-2">
             {/* 目标 */}
@@ -134,6 +158,17 @@ function NovelOutlineCard({ outline }: { outline: NovelOutlineSummary }) {
               <span className="text-muted-foreground">核心主题：</span>
               <span className="text-foreground">{outline.core_theme}</span>
             </div>
+
+            {/* 查看详情按钮 */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full mt-2 gap-1.5 text-xs"
+              onClick={handleOpenOutline}
+            >
+              <ExternalLink className="h-3 w-3" />
+              查看完整大纲
+            </Button>
           </div>
         </CollapsibleContent>
       </Collapsible>
@@ -141,29 +176,60 @@ function NovelOutlineCard({ outline }: { outline: NovelOutlineSummary }) {
   );
 }
 
-function VolumeOutlineItem({ volume }: { volume: VolumeOutlineSummary }) {
+function VolumeOutlineItem({ volume, projectId }: { volume: VolumeOutlineSummary; projectId: string }) {
   const [isOpen, setIsOpen] = useState(false);
+  const { setEditingOutline } = useOutlineEditing();
+  const { data: fullOutline } = useVolumeOutline(projectId, volume.volume_number);
+
+  const handleOpenOutline = () => {
+    if (fullOutline) {
+      setEditingOutline({
+        type: "volume",
+        data: fullOutline,
+      });
+    }
+  };
 
   return (
-    <div className="rounded-lg border border-border/30 bg-card/30 overflow-hidden">
+    <div className="rounded-lg border border-border/30 bg-card/30 overflow-hidden group">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger asChild>
-          <button className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary/5 transition-colors text-left">
-            {isOpen ? (
-              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            ) : (
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            )}
-            <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <span className="text-sm truncate flex-1">{volume.title}</span>
-            <span className="text-[10px] text-muted-foreground shrink-0">
-              第{volume.chapter_start}-{volume.chapter_end}章
-            </span>
-          </button>
-        </CollapsibleTrigger>
+        <div className="flex items-center">
+          <CollapsibleTrigger asChild>
+            <button className="flex-1 flex items-center gap-2 px-3 py-2 hover:bg-primary/5 transition-colors text-left">
+              {isOpen ? (
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              )}
+              <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-sm truncate flex-1">{volume.title}</span>
+              <span className="text-[10px] text-muted-foreground shrink-0">
+                第{volume.chapter_start}-{volume.chapter_end}章
+              </span>
+            </button>
+          </CollapsibleTrigger>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 mr-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={handleOpenOutline}
+            title="在编辑区查看"
+          >
+            <ExternalLink className="h-3 w-3" />
+          </Button>
+        </div>
         <CollapsibleContent>
-          <div className="px-3 pb-2.5 pt-1 border-t border-border/20">
+          <div className="px-3 pb-2.5 pt-1 border-t border-border/20 space-y-2">
             <p className="text-xs text-muted-foreground">{volume.volume_goal}</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full gap-1.5 text-xs h-7"
+              onClick={handleOpenOutline}
+            >
+              <ExternalLink className="h-3 w-3" />
+              查看详情
+            </Button>
           </div>
         </CollapsibleContent>
       </Collapsible>
