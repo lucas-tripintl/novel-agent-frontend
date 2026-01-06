@@ -235,6 +235,9 @@ export function SimpleTiptapEditor({
   }, [editor, editable]);
 
   // 监听内联编辑状态变化，更新 diff 预览
+  // 使用 replacementText 作为依赖项，确保在流式更新时重新触发
+  const replacementText = inlineEdit.suggestion?.replacementText ?? "";
+
   useEffect(() => {
     if (!editor) return;
 
@@ -254,6 +257,9 @@ export function SimpleTiptapEditor({
           originalText: suggestion.originalText,
           newText: suggestion.replacementText,
         });
+
+        // 清除选区，将光标移到选区末尾
+        editor.commands.setTextSelection(range.to);
 
         // 更新操作栏位置（使用 queueMicrotask 避免同步 setState 警告）
         const { view } = editor;
@@ -277,6 +283,7 @@ export function SimpleTiptapEditor({
     inlineEdit.status,
     inlineEdit.suggestion,
     inlineEdit.range,
+    replacementText,
   ]);
 
   // 处理点击进入编辑模式

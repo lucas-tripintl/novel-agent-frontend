@@ -227,6 +227,9 @@ export function TiptapEditor({
   }, [editor, appendContent]);
 
   // 监听内联编辑状态变化，更新 diff 预览
+  // 使用 replacementText 作为依赖项，确保在流式更新时重新触发
+  const replacementText = inlineEdit.suggestion?.replacementText ?? "";
+
   useEffect(() => {
     if (!editor) return;
 
@@ -259,7 +262,7 @@ export function TiptapEditor({
       // 清除预览
       editor.commands.clearEditPreview();
     }
-  }, [editor, inlineEdit.status, inlineEdit.suggestion, inlineEdit.range]);
+  }, [editor, inlineEdit.status, inlineEdit.suggestion, inlineEdit.range, replacementText]);
 
   // 处理接受编辑
   const handleAcceptEdit = useCallback(() => {

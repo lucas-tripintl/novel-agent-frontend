@@ -21,6 +21,10 @@ export function useStreamWrite(options: UseStreamWriteOptions = {}) {
   const [error, setError] = useState<Error | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // 使用 ref 存储最新的 options，避免闭包陷阱
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+
   const {
     setStreaming,
     appendStreamingBuffer,
@@ -61,7 +65,7 @@ export function useStreamWrite(options: UseStreamWriteOptions = {}) {
               // AI 自动选择的设定
               if (event.autoSelectedEntities) {
                 setAutoSelectedEntities(event.autoSelectedEntities);
-                options.onContext?.(event.autoSelectedEntities);
+                optionsRef.current.onContext?.(event.autoSelectedEntities);
               }
               break;
 
@@ -71,7 +75,7 @@ export function useStreamWrite(options: UseStreamWriteOptions = {}) {
                 totalText += event.text;
                 appendStreamingBuffer(event.text);
                 updateLastMessage(totalText, false);
-                options.onChunk?.(event.text);
+                optionsRef.current.onChunk?.(event.text);
               }
               break;
 
@@ -83,14 +87,14 @@ export function useStreamWrite(options: UseStreamWriteOptions = {}) {
             case "done":
               // 完成
               updateLastMessage(totalText, true);
-              options.onDone?.(event.totalChars || totalText.length);
+              optionsRef.current.onDone?.(event.totalChars || totalText.length);
               break;
 
             case "error":
               // 错误
               const err = new Error(event.message || "写作过程中出错");
               setError(err);
-              options.onError?.(err);
+              optionsRef.current.onError?.(err);
               break;
           }
         }
@@ -101,7 +105,7 @@ export function useStreamWrite(options: UseStreamWriteOptions = {}) {
         } else {
           const error = err as Error;
           setError(error);
-          options.onError?.(error);
+          optionsRef.current.onError?.(error);
 
           // 更新消息为错误状态
           addMessage({
@@ -124,7 +128,6 @@ export function useStreamWrite(options: UseStreamWriteOptions = {}) {
       setAutoSelectedEntities,
       addMessage,
       updateLastMessage,
-      options,
     ]
   );
 
@@ -147,6 +150,10 @@ export function useStreamReview(options: UseStreamWriteOptions = {}) {
   const [isReviewing, setIsReviewing] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // 使用 ref 存储最新的 options，避免闭包陷阱
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
   const { addMessage, updateLastMessage } = useWritingStore();
 
@@ -176,19 +183,19 @@ export function useStreamReview(options: UseStreamWriteOptions = {}) {
               if (event.text) {
                 reviewContent += event.text;
                 updateLastMessage(reviewContent, false);
-                options.onChunk?.(event.text);
+                optionsRef.current.onChunk?.(event.text);
               }
               break;
 
             case "done":
               updateLastMessage(reviewContent, true);
-              options.onDone?.(reviewContent.length);
+              optionsRef.current.onDone?.(reviewContent.length);
               break;
 
             case "error":
               const err = new Error(event.message || "审稿过程中出错");
               setError(err);
-              options.onError?.(err);
+              optionsRef.current.onError?.(err);
               break;
           }
         }
@@ -196,7 +203,7 @@ export function useStreamReview(options: UseStreamWriteOptions = {}) {
         if ((err as Error).name !== "AbortError") {
           const error = err as Error;
           setError(error);
-          options.onError?.(error);
+          optionsRef.current.onError?.(error);
 
           addMessage({
             role: "assistant",
@@ -210,7 +217,7 @@ export function useStreamReview(options: UseStreamWriteOptions = {}) {
         abortControllerRef.current = null;
       }
     },
-    [addMessage, updateLastMessage, options]
+    [addMessage, updateLastMessage]
   );
 
   const stopReview = useCallback(() => {

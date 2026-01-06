@@ -60,13 +60,20 @@ export function SkillSelector({ className }: SkillSelectorProps) {
               <span className="max-w-[100px] truncate text-amber-600 dark:text-amber-400">
                 {selectedSkillInfo.name}
               </span>
-              <button
-                className="ml-0.5 hover:text-destructive transition-colors"
+              <span
+                role="button"
+                tabIndex={0}
+                className="ml-0.5 hover:text-destructive transition-colors cursor-pointer"
                 onClick={handleClear}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    handleClear(e as unknown as React.MouseEvent);
+                  }
+                }}
                 title="取消技能"
               >
                 <X className="h-3 w-3" />
-              </button>
+              </span>
             </button>
           </HoverCardTrigger>
           <HoverCardContent side="bottom" className="w-64 p-3">

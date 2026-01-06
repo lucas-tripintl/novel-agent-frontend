@@ -44,13 +44,6 @@ export function InlineEditActions({
         className
       )}
     >
-      {/* 修改说明 */}
-      {explanation && (
-        <span className="text-xs text-muted-foreground max-w-[200px] truncate mr-2">
-          {explanation}
-        </span>
-      )}
-
       {/* 流式生成指示 */}
       {isStreaming && (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground mr-2">

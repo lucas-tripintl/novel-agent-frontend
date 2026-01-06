@@ -177,10 +177,10 @@ export interface UseSendChatMessageOptions {
   onTextEnd?: (messageId: string, fullText: string) => void;
   /** 工具调用开始 */
   onToolCallStart?: (toolCall: ToolCallState) => void;
-  /** 工具调用参数 */
-  onToolCallArgs?: (toolCallId: string, args: string) => void;
+  /** 工具调用参数（流式增量） */
+  onToolCallArgs?: (toolCallId: string, argsBuffer: string, partialArgs: Record<string, unknown>) => void;
   /** 工具调用结束 */
-  onToolCallEnd?: (toolCallId: string, toolName: string) => void;
+  onToolCallEnd?: (toolCallId: string, toolName: string, args: Record<string, unknown>) => void;
   /** 运行结束 */
   onFinish?: () => void;
   /** 运行出错 */
@@ -201,13 +201,17 @@ export function useSendChatMessage(
   const toolCallsMapRef = useRef<Map<string, ToolCallState>>(new Map());
   const queryClient = useQueryClient();
 
+  // 使用 ref 存储最新的 options，避免闭包陷阱
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+
   const sendMessage = useCallback(
     async (request: SendChatMessageRequest, overrideSessionId?: string) => {
       const effectiveSessionId = overrideSessionId ?? sessionId;
       if (!effectiveSessionId) {
         const err = new Error("会话 ID 不能为空");
         setError(err);
-        options.onError?.(err);
+        optionsRef.current.onError?.(err);
         return;
       }
 
@@ -220,23 +224,24 @@ export function useSendChatMessage(
 
       abortControllerRef.current = new AbortController();
 
+      // 使用 optionsRef.current 获取最新回调，避免闭包陷阱
       const subscriber: AgentSubscriber = {
         onRunInitialized: () => {
-          options.onStart?.();
+          optionsRef.current.onStart?.();
         },
 
         onTextMessageStartEvent: ({ event }) => {
-          options.onTextStart?.(event.messageId);
+          optionsRef.current.onTextStart?.(event.messageId);
         },
 
         onTextMessageContentEvent: ({ event, textMessageBuffer }) => {
           textBufferRef.current = textMessageBuffer;
           setCurrentText(textMessageBuffer);
-          options.onTextContent?.(event.delta, textMessageBuffer);
+          optionsRef.current.onTextContent?.(event.delta, textMessageBuffer);
         },
 
         onTextMessageEndEvent: ({ event, textMessageBuffer }) => {
-          options.onTextEnd?.(event.messageId, textMessageBuffer);
+          optionsRef.current.onTextEnd?.(event.messageId, textMessageBuffer);
         },
 
         onToolCallStartEvent: ({ event }) => {
@@ -248,30 +253,32 @@ export function useSendChatMessage(
           };
           toolCallsMapRef.current.set(event.toolCallId, toolCall);
           setToolCalls(Array.from(toolCallsMapRef.current.values()));
-          options.onToolCallStart?.(toolCall);
+          optionsRef.current.onToolCallStart?.(toolCall);
         },
 
-        onToolCallArgsEvent: ({ event, toolCallBuffer }) => {
+        onToolCallArgsEvent: ({ event, toolCallBuffer, partialToolCallArgs }) => {
           const tc = toolCallsMapRef.current.get(event.toolCallId);
           if (tc) {
             tc.args = toolCallBuffer;
             setToolCalls(Array.from(toolCallsMapRef.current.values()));
-            options.onToolCallArgs?.(event.toolCallId, toolCallBuffer);
+            // 传递字符串 buffer 和 SDK 部分解析的对象
+            optionsRef.current.onToolCallArgs?.(event.toolCallId, toolCallBuffer, partialToolCallArgs);
           }
         },
 
-        onToolCallEndEvent: ({ event, toolCallName }) => {
+        onToolCallEndEvent: ({ event, toolCallName, toolCallArgs }) => {
           const tc = toolCallsMapRef.current.get(event.toolCallId);
           if (tc) {
             tc.isComplete = true;
             setToolCalls(Array.from(toolCallsMapRef.current.values()));
-            options.onToolCallEnd?.(event.toolCallId, toolCallName);
+            // 传递 SDK 解析后的完整参数对象
+            optionsRef.current.onToolCallEnd?.(event.toolCallId, toolCallName, toolCallArgs);
           }
         },
 
         onRunFinalized: () => {
           setIsStreaming(false);
-          options.onFinish?.();
+          optionsRef.current.onFinish?.();
 
           // 刷新消息列表
           queryClient.invalidateQueries({
@@ -290,13 +297,13 @@ export function useSendChatMessage(
               ? runError
               : new Error(String(runError));
           setError(err);
-          options.onError?.(err);
+          optionsRef.current.onError?.(err);
         },
 
         onRunErrorEvent: ({ event }) => {
           const err = new Error(event.message);
           setError(err);
-          options.onError?.(err);
+          optionsRef.current.onError?.(err);
         },
       };
 
@@ -314,14 +321,14 @@ export function useSendChatMessage(
         } else {
           const error = err as Error;
           setError(error);
-          options.onError?.(error);
+          optionsRef.current.onError?.(error);
         }
       } finally {
         setIsStreaming(false);
         abortControllerRef.current = null;
       }
     },
-    [projectId, sessionId, options, queryClient]
+    [projectId, sessionId, queryClient]
   );
 
   const cancel = useCallback(() => {

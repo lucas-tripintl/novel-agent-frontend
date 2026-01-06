@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getTask, listTasks } from "@/lib/api/tasks";
 import type { TaskRead, TaskStatus } from "@/types/api";
@@ -20,7 +21,16 @@ export function useTaskPolling(
   const queryClient = useQueryClient();
   const { enabled = true, onComplete, onFailed } = options ?? {};
 
-  return useQuery({
+  // 使用 ref 存储回调，避免闭包陷阱
+  const onCompleteRef = useRef(onComplete);
+  const onFailedRef = useRef(onFailed);
+  onCompleteRef.current = onComplete;
+  onFailedRef.current = onFailed;
+
+  // 追踪是否已经触发过回调，避免重复调用
+  const hasCalledRef = useRef(false);
+
+  const query = useQuery({
     queryKey: ["task", taskId],
     queryFn: async () => {
       if (!taskId) throw new Error("No task ID");
@@ -31,13 +41,8 @@ export function useTaskPolling(
       const task = query.state.data;
       if (!task) return POLL_INTERVAL;
 
-      // 任务完成或失败时停止轮询
-      if (task.status === "completed") {
-        onComplete?.(task);
-        return false;
-      }
-      if (task.status === "failed" || task.status === "cancelled") {
-        onFailed?.(task);
+      // 任务完成或失败时停止轮询（不在这里调用回调）
+      if (task.status === "completed" || task.status === "failed" || task.status === "cancelled") {
         return false;
       }
 
@@ -45,6 +50,27 @@ export function useTaskPolling(
     },
     staleTime: 0, // 始终重新获取
   });
+
+  // 使用 useEffect 监听任务状态变化，触发回调
+  useEffect(() => {
+    const task = query.data;
+    if (!task || hasCalledRef.current) return;
+
+    if (task.status === "completed") {
+      hasCalledRef.current = true;
+      onCompleteRef.current?.(task);
+    } else if (task.status === "failed" || task.status === "cancelled") {
+      hasCalledRef.current = true;
+      onFailedRef.current?.(task);
+    }
+  }, [query.data]);
+
+  // taskId 变化时重置状态
+  useEffect(() => {
+    hasCalledRef.current = false;
+  }, [taskId]);
+
+  return query;
 }
 
 /**

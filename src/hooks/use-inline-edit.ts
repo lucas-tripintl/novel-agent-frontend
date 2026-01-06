@@ -17,6 +17,7 @@ import {
   useContextEntities,
   useEditorContent,
   useSelectedSkill,
+  useWritingStore,
 } from "@/stores/writing-store";
 import type { QuickAction, EditTargetType, EditSuggestion } from "@/types/inline-edit";
 import type { SendChatMessageRequest } from "@/types/chat";
@@ -116,12 +117,15 @@ export function useInlineEdit({
         if (tc.name === "suggest_edit") {
           currentToolCallRef.current = { id: tc.id, argsBuffer: "" };
 
+          // 使用 getState() 获取最新状态，避免闭包陷阱
+          const currentInlineEdit = useWritingStore.getState().inlineEdit;
+
           // 初始化编辑建议
           const initialSuggestion: EditSuggestion = {
             id: tc.id,
-            targetType: inlineEdit.targetType ?? "content",
-            range: inlineEdit.range,
-            originalText: inlineEdit.originalText,
+            targetType: currentInlineEdit.targetType ?? "content",
+            range: currentInlineEdit.range,
+            originalText: currentInlineEdit.originalText,
             replacementText: "",
             isComplete: false,
           };
@@ -129,21 +133,29 @@ export function useInlineEdit({
         }
       },
 
-      onToolCallArgs: (toolCallId, argsBuffer) => {
+      onToolCallArgs: (toolCallId, argsBuffer, partialArgs) => {
         if (currentToolCallRef.current?.id === toolCallId) {
           currentToolCallRef.current.argsBuffer = argsBuffer;
 
-          // 尝试解析部分 JSON
-          const parsed = parsePartialJSON(argsBuffer);
-          if (parsed.replacement_text !== undefined) {
+          // 优先使用 SDK 解析的部分参数，备用手动解析
+          const parsed = (partialArgs && typeof partialArgs === "object" && Object.keys(partialArgs).length > 0)
+            ? partialArgs
+            : parsePartialJSON(argsBuffer);
+
+          // 兼容 snake_case 和 camelCase 两种格式
+          const replacementText = parsed.replacement_text ?? parsed.replacementText;
+          const originalText = parsed.original_text ?? parsed.originalText;
+          const explanation = parsed.explanation;
+
+          if (replacementText !== undefined) {
             const update: Partial<EditSuggestion> = {
-              replacementText: String(parsed.replacement_text),
+              replacementText: String(replacementText),
             };
-            if (parsed.original_text !== undefined) {
-              update.originalText = String(parsed.original_text);
+            if (originalText !== undefined) {
+              update.originalText = String(originalText);
             }
-            if (parsed.explanation !== undefined) {
-              update.explanation = String(parsed.explanation);
+            if (explanation !== undefined) {
+              update.explanation = String(explanation);
             }
             updateEditSuggestion(update);
             onPreviewUpdate?.(update);
@@ -151,14 +163,25 @@ export function useInlineEdit({
         }
       },
 
-      onToolCallEnd: (toolCallId, toolName) => {
+      onToolCallEnd: (toolCallId, toolName, args) => {
         if (toolName === "suggest_edit" && currentToolCallRef.current?.id === toolCallId) {
-          // 最终解析完整 JSON
-          const parsed = parsePartialJSON(currentToolCallRef.current.argsBuffer);
+          // 使用 getState() 获取最新状态，避免闭包陷阱
+          const currentInlineEdit = useWritingStore.getState().inlineEdit;
+
+          // SDK 传递的是解析后的对象，如果没有则使用本地 ref 解析
+          const parsed = (args && typeof args === "object")
+            ? args as Record<string, unknown>
+            : parsePartialJSON(currentToolCallRef.current.argsBuffer);
+
+          // 兼容 snake_case 和 camelCase 两种格式
+          const replacementText = parsed.replacement_text ?? parsed.replacementText ?? "";
+          const originalText = parsed.original_text ?? parsed.originalText ?? currentInlineEdit.originalText;
+          const explanation = parsed.explanation;
+
           const finalUpdate: Partial<EditSuggestion> = {
             isComplete: true,
-            replacementText: String(parsed.replacement_text ?? ""),
-            explanation: parsed.explanation ? String(parsed.explanation) : undefined,
+            replacementText: String(replacementText),
+            explanation: explanation ? String(explanation) : undefined,
           };
           updateEditSuggestion(finalUpdate);
           setInlineEditStatus("previewing");
@@ -166,11 +189,11 @@ export function useInlineEdit({
           // 获取完整的建议
           const completeSuggestion: EditSuggestion = {
             id: toolCallId,
-            targetType: inlineEdit.targetType ?? "content",
-            range: inlineEdit.range,
-            originalText: String(parsed.original_text ?? inlineEdit.originalText),
-            replacementText: String(parsed.replacement_text ?? ""),
-            explanation: parsed.explanation ? String(parsed.explanation) : undefined,
+            targetType: currentInlineEdit.targetType ?? "content",
+            range: currentInlineEdit.range,
+            originalText: String(originalText),
+            replacementText: String(replacementText),
+            explanation: explanation ? String(explanation) : undefined,
             isComplete: true,
           };
           onEditComplete?.(completeSuggestion);
@@ -179,8 +202,10 @@ export function useInlineEdit({
       },
 
       onFinish: () => {
+        // 使用 getState() 获取最新状态，避免闭包陷阱
+        const currentInlineEdit = useWritingStore.getState().inlineEdit;
         // 如果没有收到 suggest_edit 工具调用，重置状态
-        if (!inlineEdit.suggestion) {
+        if (!currentInlineEdit.suggestion) {
           setInlineEditStatus("idle");
         }
       },

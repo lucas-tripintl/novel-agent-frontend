@@ -9,6 +9,7 @@ import {
   useSelectedSkill,
   useSelectedModel,
   useEditorContent,
+  useWritingStore,
 } from "@/stores/writing-store";
 import {
   useChatSessions,
@@ -114,11 +115,15 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
       setStreamingChatContent(fullText);
     },
     onToolCallStart: (tc) => {
-      setActiveToolCalls([...activeToolCalls, tc]);
+      // 使用 getState() 获取最新状态，避免闭包陷阱
+      const current = useWritingStore.getState().activeToolCalls;
+      setActiveToolCalls([...current, tc]);
     },
     onToolCallEnd: (id) => {
+      // 使用 getState() 获取最新状态，避免闭包陷阱
+      const current = useWritingStore.getState().activeToolCalls;
       setActiveToolCalls(
-        activeToolCalls.map((tc) =>
+        current.map((tc) =>
           tc.id === id ? { ...tc, isComplete: true } : tc
         )
       );
@@ -194,11 +199,11 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
   }, [displayMessages.length, streamingContent]);
 
   // 每次进入项目时自动创建新会话（不再复用旧会话）
-  const [hasInitialized, setHasInitialized] = useState(false);
+  const hasInitializedRef = useRef(false);
   useEffect(() => {
     // 只在首次进入且没有当前会话时创建新会话
-    if (!hasInitialized && !currentSessionId && !createSession.isPending) {
-      setHasInitialized(true);
+    if (!hasInitializedRef.current && !currentSessionId && !createSession.isPending) {
+      hasInitializedRef.current = true;
       createSession.mutateAsync({ model_id: selectedModelId ?? undefined })
         .then((newSession) => {
           setCurrentChatSession(newSession.id);
@@ -207,7 +212,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
           console.error("自动创建会话失败:", error);
         });
     }
-  }, [hasInitialized, currentSessionId, createSession, setCurrentChatSession, selectedModelId]);
+  }, [currentSessionId, createSession, setCurrentChatSession, selectedModelId]);
 
   const handleSend = useCallback(async () => {
     if (!inputValue.trim() || isStreaming) return;

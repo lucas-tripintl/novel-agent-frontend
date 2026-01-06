@@ -110,8 +110,12 @@ export const InlineEditDecoration = Extension.create<InlineEditDecorationOptions
               tr.setMeta(InlineEditDecorationPluginKey, {
                 clearPreview: true,
               } as PluginMeta);
-              // 执行替换
-              tr.replaceWith(from, to, state.schema.text(newText));
+              // 执行替换：如果 newText 为空，删除原文；否则替换
+              if (newText) {
+                tr.replaceWith(from, to, state.schema.text(newText));
+              } else {
+                tr.delete(from, to);
+              }
             }
             return true;
           },
@@ -162,22 +166,25 @@ export const InlineEditDecoration = Extension.create<InlineEditDecorationOptions
                 );
 
                 // 2. 新文本添加标记（widget decoration 插入到原文后）
-                decorations.push(
-                  Decoration.widget(
-                    to,
-                    () => {
-                      const span = document.createElement("span");
-                      span.className = additionClass;
-                      span.textContent = newText;
-                      span.setAttribute("data-new-text", "true");
-                      return span;
-                    },
-                    {
-                      side: 1, // 插入到位置后面
-                      key: "inline-edit-addition",
-                    }
-                  )
-                );
+                // 只在 newText 非空时创建 widget，避免显示空的绿色标记
+                if (newText) {
+                  decorations.push(
+                    Decoration.widget(
+                      to,
+                      () => {
+                        const span = document.createElement("span");
+                        span.className = additionClass;
+                        span.textContent = newText;
+                        span.setAttribute("data-new-text", "true");
+                        return span;
+                      },
+                      {
+                        side: 1, // 插入到位置后面
+                        key: "inline-edit-addition",
+                      }
+                    )
+                  );
+                }
 
                 return {
                   decorations: DecorationSet.create(
