@@ -202,8 +202,9 @@ export function useSendChatMessage(
   const queryClient = useQueryClient();
 
   const sendMessage = useCallback(
-    async (request: SendChatMessageRequest) => {
-      if (!sessionId) {
+    async (request: SendChatMessageRequest, overrideSessionId?: string) => {
+      const effectiveSessionId = overrideSessionId ?? sessionId;
+      if (!effectiveSessionId) {
         const err = new Error("会话 ID 不能为空");
         setError(err);
         options.onError?.(err);
@@ -274,11 +275,11 @@ export function useSendChatMessage(
 
           // 刷新消息列表
           queryClient.invalidateQueries({
-            queryKey: chatKeys.messages(projectId, sessionId),
+            queryKey: chatKeys.messages(projectId, effectiveSessionId),
           });
           // 刷新会话（更新 message_count）
           queryClient.invalidateQueries({
-            queryKey: chatKeys.session(projectId, sessionId),
+            queryKey: chatKeys.session(projectId, effectiveSessionId),
           });
         },
 
@@ -302,7 +303,7 @@ export function useSendChatMessage(
       try {
         await sendChatMessage(
           projectId,
-          sessionId,
+          effectiveSessionId,
           request,
           subscriber,
           abortControllerRef.current

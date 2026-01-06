@@ -249,8 +249,8 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
       },
     };
 
-    // 发送消息
-    await sendMessage(request);
+    // 发送消息（传入 sessionId 以确保使用新创建的会话）
+    await sendMessage(request, sessionId);
   }, [
     inputValue,
     isStreaming,
