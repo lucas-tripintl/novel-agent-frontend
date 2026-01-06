@@ -8,22 +8,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import {
   Sparkles,
   Expand,
   RefreshCw,
   Minimize2,
-  MoreHorizontal,
   Wand2,
-  ChevronDown,
 } from "lucide-react";
 import type { Editor } from "@tiptap/react";
 import type { QuickAction, EditTargetType } from "@/types/inline-edit";
@@ -45,8 +36,6 @@ interface SelectionToolbarProps {
   targetType: EditTargetType;
   /** 快捷操作点击回调 */
   onQuickAction: (action: QuickAction, selectedText: string, range: { from: number; to: number }) => void;
-  /** 打开自定义编辑（更多）回调 */
-  onOpenCustomEdit: (selectedText: string, range: { from: number; to: number }) => void;
   /** 额外的类名 */
   className?: string;
 }
@@ -61,7 +50,6 @@ export function SelectionToolbar({
   editor,
   targetType,
   onQuickAction,
-  onOpenCustomEdit,
   className,
 }: SelectionToolbarProps) {
   const [position, setPosition] = useState<ToolbarPosition>({
@@ -169,13 +157,6 @@ export function SelectionToolbar({
     [selectedText, selectionRange, onQuickAction]
   );
 
-  // 处理"更多"点击
-  const handleOpenCustomEdit = useCallback(() => {
-    if (!selectedText || !selectionRange) return;
-    onOpenCustomEdit(selectedText, selectionRange);
-    setPosition((prev) => ({ ...prev, visible: false }));
-  }, [selectedText, selectionRange, onOpenCustomEdit]);
-
   if (!position.visible || !selectedText) {
     return null;
   }
@@ -240,33 +221,6 @@ export function SelectionToolbar({
         </Tooltip>
       )}
 
-      {/* 更多选项 */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 px-2">
-            <MoreHorizontal className="h-3.5 w-3.5" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuItem onClick={handleOpenCustomEdit}>
-            <Wand2 className="h-4 w-4 mr-2" />
-            自定义编辑...
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          {/* 显示未启用的快捷操作 */}
-          {quickActionsConfig.actions
-            .filter((action) => !quickActionsConfig.enabledIds.includes(action.id))
-            .map((action) => (
-              <DropdownMenuItem
-                key={action.id}
-                onClick={() => handleQuickAction(action)}
-              >
-                {action.icon && ICON_MAP[action.icon]}
-                <span className="ml-2">{action.label}</span>
-              </DropdownMenuItem>
-            ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
     </div>
   );
 

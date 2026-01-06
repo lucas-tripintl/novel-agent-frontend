@@ -22,7 +22,7 @@ import { useInlineEditState } from "@/stores/writing-store";
 import type { QuickAction, EditTargetType } from "@/types/inline-edit";
 import { InlineEditDecoration } from "./extensions/inline-edit-decoration";
 import { SelectionToolbar } from "./selection-toolbar";
-import { InlineEditActions } from "./inline-edit-actions";
+import { FloatingInlineEditActions } from "./inline-edit-actions";
 
 export interface SimpleTiptapEditorProps {
   /** 内容（纯文本或 Markdown） */
@@ -92,8 +92,6 @@ export function SimpleTiptapEditor({
 }: SimpleTiptapEditorProps) {
   // 读写分离状态：是否处于编辑模式
   const [isEditing, setIsEditing] = useState(false);
-  // 操作栏位置
-  const [actionsPosition, setActionsPosition] = useState({ x: 0, y: 0 });
   // 用于区分程序设置内容和用户输入
   const isSettingContentRef = useRef(false);
   // 容器引用
@@ -260,17 +258,6 @@ export function SimpleTiptapEditor({
 
         // 清除选区，将光标移到选区末尾
         editor.commands.setTextSelection(range.to);
-
-        // 更新操作栏位置（使用 queueMicrotask 避免同步 setState 警告）
-        const { view } = editor;
-        const endCoords = view.coordsAtPos(range.to);
-        const editorRect = view.dom.getBoundingClientRect();
-        queueMicrotask(() => {
-          setActionsPosition({
-            x: endCoords.left - editorRect.left,
-            y: endCoords.bottom - editorRect.top + 8,
-          });
-        });
       }
     } else {
       // 清除预览
@@ -332,13 +319,6 @@ export function SimpleTiptapEditor({
     [onQuickAction]
   );
 
-  // 处理打开自定义编辑
-  const handleOpenCustomEdit = useCallback(
-    (selectedText: string, range: { from: number; to: number }) => {
-      onOpenCustomEdit?.(selectedText, range);
-    },
-    [onOpenCustomEdit]
-  );
 
   // 是否显示内联编辑操作栏
   const showInlineEditActions =
@@ -383,28 +363,20 @@ export function SimpleTiptapEditor({
           editor={editor}
           targetType={targetType}
           onQuickAction={handleQuickAction}
-          onOpenCustomEdit={handleOpenCustomEdit}
         />
       )}
 
       {/* 内联编辑操作栏 */}
       {showInlineEditActions && (
-        <div
-          className="absolute z-50"
-          style={{
-            left: actionsPosition.x,
-            top: actionsPosition.y,
-          }}
-        >
-          <InlineEditActions
-            isComplete={inlineEdit.suggestion?.isComplete ?? false}
-            isStreaming={inlineEdit.status === "streaming"}
-            explanation={inlineEdit.suggestion?.explanation}
-            onAccept={handleAcceptEdit}
-            onReject={handleRejectEdit}
-            onRegenerate={onRegenerateEdit}
-          />
-        </div>
+        <FloatingInlineEditActions
+          editor={editor}
+          range={inlineEdit.range}
+          isComplete={inlineEdit.suggestion?.isComplete ?? false}
+          isStreaming={inlineEdit.status === "streaming"}
+          onAccept={handleAcceptEdit}
+          onReject={handleRejectEdit}
+          onRegenerate={onRegenerateEdit}
+        />
       )}
     </div>
   );

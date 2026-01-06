@@ -91,6 +91,23 @@ export async function getChapter(projectId: string, chapterNumber: number) {
   );
 }
 
+export interface ChapterCreateData {
+  chapter_number: number;
+  title?: string;
+  content?: string;
+  status?: "draft" | "imported" | "outlined" | "drafted" | "reviewed" | "published";
+}
+
+export async function createChapter(
+  projectId: string,
+  data: ChapterCreateData
+) {
+  return apiClient.post<ChapterRead>(
+    `/projects/${projectId}/chapters`,
+    data
+  );
+}
+
 export interface ChapterUpdateData {
   title?: string;
   content?: string;
@@ -192,6 +209,22 @@ export async function listEntities(
 
 export async function getEntity(projectId: string, entityId: string) {
   return apiClient.get<EntityRead>(`/projects/${projectId}/entities/${entityId}`);
+}
+
+/**
+ * 跨项目查询实体
+ * project_ids 可选，不传时返回用户所有项目的实体
+ */
+export async function listEntitiesCrossProject(params?: {
+  project_ids?: string[];
+  entity_type?: EntityType;
+  keyword?: string;
+  skip?: number;
+  limit?: number;
+}) {
+  return apiClient.get<PaginatedResponse<EntityRead>>("/entities", {
+    params: params as unknown as Record<string, string | number | boolean | undefined>,
+  });
 }
 
 export interface EntityUpdateData {

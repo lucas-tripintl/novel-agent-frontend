@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { useProjectChapters, useDeleteChapter } from "@/hooks/use-projects";
+import { useProjectChapters, useDeleteChapter, useCreateChapter } from "@/hooks/use-projects";
 import { useWritingStore, useEntityEditing, useEditorContent, useOutlineEditing } from "@/stores/writing-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,7 @@ export function ChapterList({ projectId }: ChapterListProps) {
     fetchNextPage,
   } = useProjectChapters(projectId, { order: sortOrder });
   const deleteChapterMutation = useDeleteChapter(projectId);
+  const createChapterMutation = useCreateChapter(projectId);
 
   const { chapterId, setContext } = useWritingStore();
   const { editingEntity, isEntityDirty, closeEntityEditor } = useEntityEditing();
@@ -169,9 +170,24 @@ export function ChapterList({ projectId }: ChapterListProps) {
     }
   };
 
-  const handleNewChapter = () => {
-    // TODO: 创建新章节
-    console.log("创建新章节");
+  const handleNewChapter = async () => {
+    // 计算下一个章节号：找到当前最大章节号 + 1
+    const maxChapterNumber = chapters.reduce(
+      (max, ch) => Math.max(max, ch.chapter_number),
+      0
+    );
+    const nextChapterNumber = maxChapterNumber + 1;
+
+    try {
+      const newChapter = await createChapterMutation.mutateAsync({
+        chapter_number: nextChapterNumber,
+        title: `第${nextChapterNumber}章`,
+      });
+      // 创建成功后自动选中新章节
+      setContext(projectId, newChapter.id, newChapter.chapter_number);
+    } catch {
+      // 错误由 React Query 处理，这里不需要额外处理
+    }
   };
 
   if (isLoading) {
@@ -204,9 +220,14 @@ export function ChapterList({ projectId }: ChapterListProps) {
             size="sm"
             className="w-full gap-1.5"
             onClick={handleNewChapter}
+            disabled={createChapterMutation.isPending}
           >
-            <Plus className="h-3.5 w-3.5" />
-            <span>新建章节</span>
+            {createChapterMutation.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Plus className="h-3.5 w-3.5" />
+            )}
+            <span>{createChapterMutation.isPending ? "创建中..." : "新建章节"}</span>
           </Button>
         </div>
 

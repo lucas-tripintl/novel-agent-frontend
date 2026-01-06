@@ -9,6 +9,7 @@ import {
   createSkill,
   updateSkill,
   deleteSkill,
+  generateSkill,
   listProjectSkills,
   enableProjectSkill,
   disableProjectSkill,
@@ -18,6 +19,7 @@ import type {
   SkillListParams,
   SkillCreate,
   SkillUpdate,
+  SkillGenerateRequest,
   ProjectSkillListParams,
   EnableSkillRequest,
   ReorderSkillsRequest,
@@ -101,6 +103,20 @@ export function useDeleteSkill() {
 
   return useMutation({
     mutationFn: (skillId: string) => deleteSkill(skillId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: skillKeys.lists() });
+    },
+  });
+}
+
+/**
+ * AI 生成技能
+ */
+export function useGenerateSkill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: SkillGenerateRequest) => generateSkill(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: skillKeys.lists() });
     },

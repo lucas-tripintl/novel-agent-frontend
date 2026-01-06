@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { SimpleTiptapEditor } from "@/components/write/editor/simple-tiptap-editor";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -520,28 +521,18 @@ function SkillDialogContent({
 
                 {/* 内容 */}
                 <div className="space-y-2">
-                  <Label htmlFor="content">
-                    Prompt 内容 {isEditing && "(Markdown)"}
-                  </Label>
-                  {isEditing ? (
-                    <Textarea
-                      id="content"
-                      value={editedContent}
-                      onChange={(e) => setEditedContent(e.target.value)}
-                      placeholder="输入技能的 prompt 内容（支持 Markdown 格式）..."
-                      className="min-h-[200px] max-h-[300px] font-mono text-sm resize-y"
-                    />
-                  ) : (
-                    <div className="prose prose-sm dark:prose-invert max-w-none bg-muted/30 rounded-md p-4 overflow-auto max-h-[300px]">
-                      {renderContent ? (
-                        <pre className="whitespace-pre-wrap font-mono text-sm break-words">
-                          {renderContent}
-                        </pre>
-                      ) : (
-                        <p className="text-muted-foreground italic">暂无内容</p>
-                      )}
-                    </div>
-                  )}
+                  <Label>内容</Label>
+                  <SimpleTiptapEditor
+                    value={renderContent || ""}
+                    onChange={(value) => setEditedContent(value)}
+                    targetType="entity"
+                    mode="multi-line"
+                    markdown
+                    placeholder="输入技能的 prompt 内容（支持 Markdown 格式）..."
+                    className="min-h-[200px] max-h-[300px] overflow-auto"
+                    enableInlineEdit={false}
+                    readOnly={!isEditing}
+                  />
                 </div>
               </div>
             </ScrollArea>

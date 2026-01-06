@@ -131,3 +131,33 @@ export interface SkillListParams {
 export interface ProjectSkillListParams {
   stage?: SkillStage;
 }
+
+// ============ AI 生成技能 ============
+
+/** AI 生成技能请求 */
+export interface SkillGenerateRequest {
+  /** 生成指导，最多 2000 字 */
+  guidance: string;
+  /** 参考内容（可选），最多 10000 字 */
+  reference_content?: string | null;
+  /** 技能类型 */
+  category: SkillCategory;
+  /** 适用阶段（至少选择一个） */
+  applicable_stages: SkillStage[];
+}
+
+/** AI 生成技能响应 */
+export interface SkillGenerateResponse {
+  /** 生成的技能 ID */
+  skill_id: string;
+  /** 技能名称 */
+  name: string;
+  /** 技能描述 */
+  description: string;
+  /** 技能内容（Markdown 格式的提示词） */
+  content: string;
+  /** 技能分类 */
+  category: string;
+  /** 适用阶段 */
+  applicable_stages: string[];
+}

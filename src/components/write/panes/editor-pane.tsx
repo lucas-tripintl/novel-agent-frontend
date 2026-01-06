@@ -53,10 +53,19 @@ export function EditorPane({ projectId }: EditorPaneProps) {
 
   // 加载细纲内容
   useEffect(() => {
+    const queryKeyStr = JSON.stringify(["chapterOutlines", "detail", projectId, chapterNumber]);
+    console.log("[EditorPane] 细纲数据变化:", {
+      projectId,
+      chapterNumber,
+      hasData: !!chapterOutlineData,
+      content: chapterOutlineData?.content?.slice(0, 100),
+      queryKeyStr,
+    });
     if (chapterOutlineData) {
+      console.log("[EditorPane] 加载细纲内容到 store:", chapterOutlineData.content?.slice(0, 100));
       loadChapterOutline(chapterOutlineData.content || "");
     }
-  }, [chapterOutlineData, loadChapterOutline]);
+  }, [chapterOutlineData, chapterNumber, projectId, loadChapterOutline]);
 
   // 切换章节时重置滚动位置
   useEffect(() => {

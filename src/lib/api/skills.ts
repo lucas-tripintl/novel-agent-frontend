@@ -14,6 +14,8 @@ import type {
   ProjectSkillListParams,
   EnableSkillRequest,
   ReorderSkillsRequest,
+  SkillGenerateRequest,
+  SkillGenerateResponse,
 } from "@/types/skills";
 
 // ============ 技能库管理 ============
@@ -56,6 +58,14 @@ export async function updateSkill(skillId: string, data: SkillUpdate) {
  */
 export async function deleteSkill(skillId: string) {
   return apiClient.delete(`/skills/${skillId}`);
+}
+
+/**
+ * AI 生成技能
+ * 根据用户指导和参考内容自动生成写作技能
+ */
+export async function generateSkill(data: SkillGenerateRequest) {
+  return apiClient.post<SkillGenerateResponse>("/skills/generate", data);
 }
 
 // ============ 项目技能配置 ============

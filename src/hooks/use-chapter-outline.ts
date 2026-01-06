@@ -10,7 +10,8 @@ import {
   deleteChapterOutline,
   generateChapterOutline,
 } from "@/lib/api/chapter-outlines";
-import type { ChapterOutlineCreate } from "@/types/chapter-outline";
+import { useTaskStore } from "@/stores/task-store";
+import type { ChapterOutlineCreate, ChapterOutlineRead } from "@/types/chapter-outline";
 
 // Query keys
 export const chapterOutlineKeys = {
@@ -52,20 +53,50 @@ export function useChapterOutline(
   projectId: string | null,
   chapterNumber: number | null
 ) {
+  const queryKey = chapterOutlineKeys.detail(projectId ?? "", chapterNumber ?? 0);
+
   return useQuery({
-    queryKey: chapterOutlineKeys.detail(projectId ?? "", chapterNumber ?? 0),
+    queryKey,
     queryFn: async () => {
+      console.log("[useChapterOutline] 开始查询:", { projectId, chapterNumber, queryKey });
       try {
         const response = await getChapterOutline(projectId!, chapterNumber!);
-        return response.data;
-      } catch (error) {
-        // 细纲不存在时返回 null（而不是 undefined）
-        if (error instanceof Error && error.message.includes("404")) {
-          return null;
+        console.log("[useChapterOutline] API 原始响应:", JSON.stringify(response).slice(0, 500));
+
+        // API 可能返回两种格式：
+        // 1. 直接返回 ChapterOutlineRead 对象（有 id 字段）
+        // 2. 包装在 SuccessResponse 中: { success: true, data: ChapterOutlineRead }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rawResponse = response as any;
+        let data: ChapterOutlineRead | null;
+
+        if (rawResponse?.success === true && rawResponse?.data) {
+          // 包装格式
+          data = rawResponse.data as ChapterOutlineRead;
+        } else if (rawResponse?.id) {
+          // 直接返回数据格式（检查 id 字段即可）
+          data = rawResponse as ChapterOutlineRead;
+        } else {
+          data = null;
         }
-        // 检查是否是 API 错误响应
+
+        console.log("[useChapterOutline] 提取数据:", {
+          projectId,
+          chapterNumber,
+          hasData: !!data,
+          dataContent: data?.content?.slice(0, 100),
+        });
+
+        return data;
+      } catch (error) {
+        console.log("[useChapterOutline] 查询异常:", { projectId, chapterNumber, error });
+        // 检查是否是 ApiError（有 status 属性）
         const apiError = error as { status?: number };
         if (apiError.status === 404) {
+          return null;
+        }
+        // 兜底：检查 message 中是否包含 404
+        if (error instanceof Error && error.message.includes("404")) {
           return null;
         }
         throw error;
@@ -74,6 +105,8 @@ export function useChapterOutline(
     enabled: !!projectId && !!chapterNumber && chapterNumber > 0,
     // 细纲可能不存在，不重试
     retry: false,
+    // 细纲数据经常更新（AI 生成），不使用 staleTime
+    staleTime: 0,
   });
 }
 
@@ -144,7 +177,7 @@ export function useDeleteChapterOutline(projectId: string) {
  * 返回任务 ID，需要轮询任务状态获取结果
  */
 export function useGenerateChapterOutline(projectId: string) {
-  const queryClient = useQueryClient();
+  const setHasNewTask = useTaskStore((state) => state.setHasNewTask);
 
   return useMutation({
     mutationFn: async ({
@@ -157,15 +190,10 @@ export function useGenerateChapterOutline(projectId: string) {
       const response = await generateChapterOutline(projectId, chapterNumber, { prompt });
       return response.data;
     },
-    onSuccess: (data, { chapterNumber }) => {
+    onSuccess: (data) => {
       console.log(`细纲生成任务已创建: ${data.message}`);
-      // 稍后刷新细纲（任务完成后）
-      // 这里可以启动轮询逻辑，但目前先简单处理
-      setTimeout(() => {
-        queryClient.invalidateQueries({
-          queryKey: chapterOutlineKeys.detail(projectId, chapterNumber),
-        });
-      }, 5000);
+      // 标记有新任务，自动展开任务面板
+      setHasNewTask(true);
     },
     onError: (error) => {
       console.error("生成细纲任务创建失败:", error);

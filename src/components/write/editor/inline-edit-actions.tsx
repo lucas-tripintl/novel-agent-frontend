@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -8,14 +10,13 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Check, X, RotateCcw, Loader2 } from "lucide-react";
+import type { Editor } from "@tiptap/react";
 
 interface InlineEditActionsProps {
   /** 是否流式完成 */
   isComplete: boolean;
   /** 是否正在流式生成 */
   isStreaming?: boolean;
-  /** 修改说明 */
-  explanation?: string;
   /** 接受编辑 */
   onAccept: () => void;
   /** 拒绝编辑 */
@@ -29,7 +30,6 @@ interface InlineEditActionsProps {
 export function InlineEditActions({
   isComplete,
   isStreaming = false,
-  explanation,
   onAccept,
   onReject,
   onRegenerate,
@@ -38,110 +38,173 @@ export function InlineEditActions({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 p-2",
-        "bg-popover/95 backdrop-blur-sm border border-border rounded-lg shadow-lg",
-        "animate-in fade-in-0 slide-in-from-bottom-2 duration-200",
+        "flex items-center gap-1 p-1",
+        "bg-popover border border-border rounded-lg shadow-lg",
+        "animate-in fade-in-0 zoom-in-95 duration-150",
         className
       )}
+      onMouseDown={(e) => e.preventDefault()} // 防止失去焦点
     >
       {/* 流式生成指示 */}
       {isStreaming && (
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mr-2">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground px-1">
           <Loader2 className="h-3 w-3 animate-spin" />
           <span>生成中...</span>
         </div>
       )}
 
-      {/* 操作按钮 */}
-      <div className="flex items-center gap-1">
-        {/* 接受 */}
+      {/* 接受 */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs gap-1 text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/30"
+            onClick={onAccept}
+            disabled={!isComplete || isStreaming}
+          >
+            <Check className="h-3.5 w-3.5" />
+            <span>接受</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          接受修改 (⌘+Enter)
+        </TooltipContent>
+      </Tooltip>
+
+      {/* 拒绝 */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs gap-1 text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30"
+            onClick={onReject}
+          >
+            <X className="h-3.5 w-3.5" />
+            <span>拒绝</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          拒绝修改 (Esc)
+        </TooltipContent>
+      </Tooltip>
+
+      {/* 分隔符 */}
+      {onRegenerate && <div className="w-px h-5 bg-border mx-0.5" />}
+
+      {/* 重新生成 */}
+      {onRegenerate && (
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              size="sm"
               variant="ghost"
-              className={cn(
-                "h-7 px-2 gap-1",
-                "text-green-600 hover:text-green-700 hover:bg-green-100",
-                "dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/30"
-              )}
-              onClick={onAccept}
-              disabled={!isComplete || isStreaming}
+              size="sm"
+              className="h-7 px-2 text-muted-foreground hover:text-foreground"
+              onClick={onRegenerate}
+              disabled={isStreaming}
             >
-              <Check className="h-4 w-4" />
-              <span className="text-xs">接受</span>
+              <RotateCcw className="h-3.5 w-3.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">
-            接受修改 (⌘+Enter)
+          <TooltipContent side="top" className="text-xs">
+            重新生成
           </TooltipContent>
         </Tooltip>
-
-        {/* 拒绝 */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="sm"
-              variant="ghost"
-              className={cn(
-                "h-7 px-2 gap-1",
-                "text-red-600 hover:text-red-700 hover:bg-red-100",
-                "dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30"
-              )}
-              onClick={onReject}
-            >
-              <X className="h-4 w-4" />
-              <span className="text-xs">拒绝</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">
-            拒绝修改 (Esc)
-          </TooltipContent>
-        </Tooltip>
-
-        {/* 重新生成 */}
-        {onRegenerate && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 px-2 text-muted-foreground hover:text-foreground"
-                onClick={onRegenerate}
-                disabled={isStreaming}
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">
-              重新生成
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </div>
+      )}
     </div>
   );
 }
 
-/** 浮动版本的操作栏 */
+/** 浮动版本的操作栏（基于编辑器选区定位） */
 interface FloatingInlineEditActionsProps extends InlineEditActionsProps {
-  /** 位置 */
-  position: { x: number; y: number };
+  /** Tiptap 编辑器实例 */
+  editor: Editor | null;
+  /** 选区范围 */
+  range: { from: number; to: number } | null;
 }
 
 export function FloatingInlineEditActions({
-  position,
+  editor,
+  range,
   ...props
 }: FloatingInlineEditActionsProps) {
-  return (
+  const [position, setPosition] = useState({ x: 0, y: 0, visible: false });
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  // 计算工具栏位置（视口坐标，用于 fixed 定位）
+  const updatePosition = useCallback(() => {
+    if (!editor || !range) {
+      setPosition((prev) => ({ ...prev, visible: false }));
+      return;
+    }
+
+    const { view } = editor;
+    const startCoords = view.coordsAtPos(range.from);
+    const endCoords = view.coordsAtPos(range.to);
+
+    const toolbarWidth = toolbarRef.current?.offsetWidth ?? 200;
+    const toolbarHeight = toolbarRef.current?.offsetHeight ?? 40;
+
+    // X 位置：选区中间
+    const centerX = (startCoords.left + endCoords.right) / 2;
+    let x = centerX - toolbarWidth / 2;
+
+    // X 边界检查（视口）
+    x = Math.max(8, Math.min(x, window.innerWidth - toolbarWidth - 8));
+
+    // Y 位置：优先显示在选区上方
+    let y = startCoords.top - toolbarHeight - 8;
+
+    // Y 边界检查：上方空间不足则显示在选区下方
+    if (y < 8) {
+      y = endCoords.bottom + 8;
+    }
+
+    setPosition({ x, y, visible: true });
+  }, [editor, range]);
+
+  // 监听选区/范围变化、resize、滚动，重新计算位置
+  useEffect(() => {
+    // 使用 requestAnimationFrame 确保 DOM 更新后计算位置
+    const frameId = requestAnimationFrame(updatePosition);
+
+    const handleResize = () => requestAnimationFrame(updatePosition);
+    const handleScroll = () => requestAnimationFrame(updatePosition);
+
+    window.addEventListener("resize", handleResize);
+    // 捕获阶段监听，确保能捕获到各种滚动容器
+    window.addEventListener("scroll", handleScroll, true);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [updatePosition]);
+
+  if (!position.visible) {
+    return null;
+  }
+
+  // 使用 Portal 渲染到 body，突破父容器 overflow 限制
+  const toolbar = (
     <div
+      ref={toolbarRef}
       className="fixed z-50"
       style={{
         left: position.x,
         top: position.y,
       }}
+      onMouseDown={(e) => e.preventDefault()} // 防止失去焦点
     >
       <InlineEditActions {...props} />
     </div>
   );
+
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(toolbar, document.body);
 }

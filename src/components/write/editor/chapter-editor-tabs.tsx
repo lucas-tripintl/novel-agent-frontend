@@ -12,6 +12,7 @@ import { TiptapEditor } from "./tiptap-editor";
 import { SimpleTiptapEditor } from "./simple-tiptap-editor";
 import { useInlineEdit } from "@/hooks/use-inline-edit";
 import { useGenerateChapterOutline } from "@/hooks/use-chapter-outline";
+import { useTasks } from "@/hooks/use-tasks";
 import { useStreamWrite } from "@/hooks/use-stream-write";
 import { Sparkles, FileText, BookOpen, AlignLeft, Loader2 } from "lucide-react";
 import type { QuickAction } from "@/types/inline-edit";
@@ -40,6 +41,31 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
   } = useChapterOutlineState();
 
   const { isStreaming } = useStreamingState();
+
+  // 获取当前项目的任务列表
+  const { data: tasksData } = useTasks(projectId);
+
+  // 检查是否有正在进行的细纲生成任务
+  const isOutlineGenerating = useMemo(() => {
+    if (!tasksData?.items || !chapterNumber) return false;
+    return tasksData.items.some(
+      (task) =>
+        task.job_type === "generate_chapter_outline" &&
+        (task.status === "queued" || task.status === "running") &&
+        task.meta?.chapter_number === chapterNumber
+    );
+  }, [tasksData?.items, chapterNumber]);
+
+  // 检查是否有正在进行的章节写作任务
+  const isChapterWriting = useMemo(() => {
+    if (!tasksData?.items || !chapterNumber) return false;
+    return tasksData.items.some(
+      (task) =>
+        task.job_type === "write_chapter" &&
+        (task.status === "queued" || task.status === "running") &&
+        task.meta?.chapter_number === chapterNumber
+    );
+  }, [tasksData?.items, chapterNumber]);
 
   // 生成细纲 mutation
   const generateOutlineMutation = useGenerateChapterOutline(projectId);
@@ -240,36 +266,50 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
 
       {/* 正文 Tab */}
       <TabsContent value="content" className="flex-1 m-0 mt-0 min-h-0">
-        <TiptapEditor
-          content={content}
-          onChange={setContent}
-          isReadOnly={isStreaming}
-          placeholder="开始创作你的故事..."
-          targetType="content"
-          enableInlineEdit={!!projectId && !isStreaming}
-          onQuickAction={handleContentQuickAction}
-          onOpenCustomEdit={handleContentCustomEdit}
-          onAcceptEdit={handleAcceptEdit}
-          onRejectEdit={handleRejectEdit}
-        />
+        {isChapterWriting ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 min-h-[400px]">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">AI 正在创作中...</p>
+          </div>
+        ) : (
+          <TiptapEditor
+            content={content}
+            onChange={setContent}
+            isReadOnly={isStreaming}
+            placeholder="开始创作你的故事..."
+            targetType="content"
+            enableInlineEdit={!!projectId && !isStreaming}
+            onQuickAction={handleContentQuickAction}
+            onOpenCustomEdit={handleContentCustomEdit}
+            onAcceptEdit={handleAcceptEdit}
+            onRejectEdit={handleRejectEdit}
+          />
+        )}
       </TabsContent>
 
       {/* 细纲 Tab */}
       <TabsContent value="outline" className="flex-1 m-0 mt-0 min-h-0 p-4 flex flex-col">
-        <SimpleTiptapEditor
-          value={chapterOutline}
-          onChange={setChapterOutline}
-          targetType="novel-outline"
-          mode="multi-line"
-          markdown={true}
-          placeholder="输入章节细纲：剧情设计、情绪节奏、冲突设计、爽点伏笔..."
-          className="flex-1 min-h-[300px]"
-          enableInlineEdit={!!projectId}
-          onQuickAction={handleOutlineQuickAction}
-          onOpenCustomEdit={handleOutlineCustomEdit}
-          onAcceptEdit={handleAcceptEdit}
-          onRejectEdit={handleRejectEdit}
-        />
+        {isOutlineGenerating ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 min-h-[300px]">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">正在生成细纲...</p>
+          </div>
+        ) : (
+          <SimpleTiptapEditor
+            value={chapterOutline}
+            onChange={setChapterOutline}
+            targetType="novel-outline"
+            mode="multi-line"
+            markdown={true}
+            placeholder="输入章节细纲：剧情设计、情绪节奏、冲突设计、爽点伏笔..."
+            className="flex-1 min-h-[300px]"
+            enableInlineEdit={!!projectId}
+            onQuickAction={handleOutlineQuickAction}
+            onOpenCustomEdit={handleOutlineCustomEdit}
+            onAcceptEdit={handleAcceptEdit}
+            onRejectEdit={handleRejectEdit}
+          />
+        )}
         <p className="mt-3 text-xs text-muted-foreground shrink-0">
           细纲是写作前的规划文档，包含剧情设计、情绪节奏、冲突设计等。
           支持 Markdown 格式。点击「生成细纲」可 AI 自动生成。

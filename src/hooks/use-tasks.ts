@@ -22,7 +22,9 @@ import type {
   GenerateChapterOutlineParams,
 } from "@/types/api";
 import { useTaskStore } from "@/stores/task-store";
+import { useWritingStore } from "@/stores/writing-store";
 import { outlineKeys, projectTaskKeys } from "./use-outlines";
+import { chapterOutlineKeys } from "./use-chapter-outline";
 
 // ============ Query Keys ============
 
@@ -51,8 +53,8 @@ function hasActiveTasks(tasks: TaskRead[]): boolean {
 const TASK_TYPE_REFRESH_MAP: Record<string, string[]> = {
   generate_novel_outline: ["outlines"],
   generate_volume_outline: ["outlines"],
-  generate_chapter_outline: ["outlines"],
-  write_chapter: ["chapters"],
+  generate_chapter_outline: ["outlines", "chapterOutlines"],
+  write_chapter: ["chapters", "chapterOutlines"],
 };
 
 /**
@@ -105,12 +107,14 @@ export function useTasks(
       newStates.set(task.id, task.status);
       const prevStatus = prevStates.get(task.id);
 
-      // 检测任务从 running/queued 变为 completed
-      if (
-        prevStatus &&
-        (prevStatus === "running" || prevStatus === "queued") &&
-        task.status === "completed"
-      ) {
+      // 检测任务完成：
+      // 1. 从 running/queued 变为 completed（状态变化）
+      // 2. 首次出现就是 completed（任务完成很快的情况）
+      const isNewlyCompleted =
+        task.status === "completed" &&
+        prevStatus !== "completed";
+
+      if (isNewlyCompleted) {
         // 根据任务类型刷新相关数据
         const refreshTypes = TASK_TYPE_REFRESH_MAP[task.job_type];
         if (refreshTypes?.includes("outlines")) {
@@ -120,9 +124,59 @@ export function useTasks(
           queryClient.invalidateQueries({ queryKey: outlineKeys.volumes(projectId) });
           queryClient.invalidateQueries({ queryKey: projectTaskKeys.summary(projectId) });
         }
+        if (refreshTypes?.includes("chapterOutlines")) {
+          // 刷新章节细纲缓存
+          // 确保 chapterNumber 是数字类型（API 可能返回字符串）
+          const rawChapterNumber = task.meta?.chapter_number;
+          const chapterNumber = rawChapterNumber ? Number(rawChapterNumber) : undefined;
+          const queryKey = chapterNumber
+            ? chapterOutlineKeys.detail(projectId, chapterNumber)
+            : null;
+          console.log("[useTasks] 刷新细纲缓存:", {
+            taskId: task.id,
+            jobType: task.job_type,
+            rawChapterNumber,
+            chapterNumber,
+            projectId,
+            queryKey,
+          });
+          // 刷新所有细纲列表
+          queryClient.invalidateQueries({ queryKey: chapterOutlineKeys.lists() });
+          // 精确刷新指定章节的细纲
+          if (chapterNumber && queryKey) {
+            // 使缓存无效，触发活跃查询重新获取
+            // 注意：不使用 exact: true，因为 React Query 需要比较整个数组
+            queryClient.invalidateQueries({
+              queryKey,
+              refetchType: "all",
+            });
+            console.log("[useTasks] 已触发细纲缓存失效:", {
+              queryKey,
+              queryKeyStr: JSON.stringify(queryKey),
+            });
+          }
+        }
         if (refreshTypes?.includes("chapters")) {
           // 刷新章节列表缓存
           queryClient.invalidateQueries({ queryKey: ["chapters", projectId] });
+          // 精确刷新指定章节的详情
+          const chapterNumber = task.meta?.chapter_number as number | undefined;
+          if (chapterNumber) {
+            queryClient.invalidateQueries({
+              queryKey: ["chapter", projectId, chapterNumber],
+            });
+          }
+        }
+
+        // 任务完成后自动切换 Tab
+        const { setActiveEditorTab, chapterNumber: currentChapterNumber } = useWritingStore.getState();
+        const taskChapterNumber = task.meta?.chapter_number as number | undefined;
+        if (taskChapterNumber === currentChapterNumber) {
+          if (task.job_type === "generate_chapter_outline") {
+            setActiveEditorTab("outline");
+          } else if (task.job_type === "write_chapter") {
+            setActiveEditorTab("content");
+          }
         }
       }
     }

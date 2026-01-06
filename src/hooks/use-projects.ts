@@ -10,6 +10,7 @@ import {
   getProject,
   listChapters,
   getChapter,
+  createChapter,
   updateChapter,
   deleteChapter,
   listGoldenFingers,
@@ -18,6 +19,7 @@ import {
   deleteEntity,
   type ChapterSortOrder,
   type ProjectUpdateData,
+  type ChapterCreateData,
   type ChapterUpdateData,
   type GoldenFingerUpdateData,
 } from "@/lib/api/projects";
@@ -163,6 +165,21 @@ export function useUpdateProject() {
     onSuccess: (_, { projectId }) => {
       queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
+    },
+  });
+}
+
+/**
+ * 创建章节
+ */
+export function useCreateChapter(projectId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: ChapterCreateData) => createChapter(projectId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.chapters(projectId) });
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
     },
   });
 }

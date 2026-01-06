@@ -31,6 +31,7 @@ import {
   ArrowDown,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import {
@@ -44,6 +45,7 @@ import {
 } from "@/hooks/use-skills";
 import type { SkillCategory, SkillStage, SkillVisibility, SkillSortBy, SortOrder, SkillBrief } from "@/types/skills";
 import { SkillDialog } from "@/components/skills/skill-dialog";
+import { GenerateSkillDialog } from "@/components/skills/generate-skill-dialog";
 
 /** 每页显示数量 */
 const PAGE_SIZE = 12;
@@ -62,6 +64,7 @@ export default function SkillsPage() {
   const [selectedSkill, setSelectedSkill] = useState<SkillBrief | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreateMode, setIsCreateMode] = useState(false);
+  const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
 
   // 获取技能列表
   const {
@@ -114,6 +117,18 @@ export default function SkillsPage() {
 
   const handleSaved = useCallback(() => {
     refetch();
+  }, [refetch]);
+
+  const handleGenerateSuccess = useCallback(async (skillId: string) => {
+    // 刷新列表
+    const result = await refetch();
+    // 在刷新后的列表中找到新生成的技能
+    const newSkill = result.data?.items?.find((s) => s.id === skillId);
+    if (newSkill) {
+      setSelectedSkill(newSkill);
+      setIsCreateMode(false);
+      setIsDialogOpen(true);
+    }
   }, [refetch]);
 
   const clearFilters = useCallback(() => {
@@ -169,10 +184,16 @@ export default function SkillsPage() {
               可注入到 AI 写作 Prompt 中的可复用文本片段，指导写作风格与技巧
             </p>
           </div>
-          <Button onClick={handleCreateSkill}>
-            <Plus className="mr-2 h-4 w-4" />
-            创建技能
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setIsGenerateDialogOpen(true)}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              提取技能
+            </Button>
+            <Button onClick={handleCreateSkill}>
+              <Plus className="mr-2 h-4 w-4" />
+              创建技能
+            </Button>
+          </div>
         </div>
 
         {/* 筛选栏 */}
@@ -330,7 +351,7 @@ export default function SkillsPage() {
               {skills.map((skill) => (
                 <Card
                   key={skill.id}
-                  className="bg-card/50 border-border/50 hover:border-primary/30 transition-all cursor-pointer"
+                  className="bg-card/50 border-border/50 hover:border-primary/30 transition-all cursor-pointer flex flex-col"
                   onClick={() => handleViewSkill(skill)}
                 >
                   <CardHeader className="pb-3">
@@ -356,35 +377,37 @@ export default function SkillsPage() {
                     </div>
                     <CardTitle className="text-base">{skill.name}</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    {/* 描述 */}
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {skill.description || "暂无描述"}
-                    </p>
+                  <CardContent className="flex flex-col flex-1">
+                    <div className="space-y-3 flex-1">
+                      {/* 描述 */}
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {skill.description || "暂无描述"}
+                      </p>
 
-                    {/* 适用阶段 */}
-                    <div className="flex flex-wrap gap-1.5">
-                      {skill.applicable_stages.slice(0, 3).map((stage) => (
-                        <Badge
-                          key={stage}
-                          variant="secondary"
-                          className="text-xs"
-                        >
-                          {getSkillStageLabel(stage)}
-                        </Badge>
-                      ))}
-                      {skill.applicable_stages.length > 3 && (
-                        <Badge variant="secondary" className="text-xs">
-                          +{skill.applicable_stages.length - 3}
-                        </Badge>
-                      )}
+                      {/* 适用阶段 */}
+                      <div className="flex flex-wrap gap-1.5">
+                        {skill.applicable_stages.slice(0, 3).map((stage) => (
+                          <Badge
+                            key={stage}
+                            variant="secondary"
+                            className="text-xs"
+                          >
+                            {getSkillStageLabel(stage)}
+                          </Badge>
+                        ))}
+                        {skill.applicable_stages.length > 3 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{skill.applicable_stages.length - 3}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
 
-                    {/* 操作按钮 */}
+                    {/* 操作按钮 - 固定在底部 */}
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full"
+                      className="w-full mt-3"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleViewSkill(skill);
@@ -467,6 +490,13 @@ export default function SkillsPage() {
           if (!open) handleCloseDialog();
         }}
         onSave={handleSaved}
+      />
+
+      {/* AI 生成技能对话框 */}
+      <GenerateSkillDialog
+        open={isGenerateDialogOpen}
+        onOpenChange={setIsGenerateDialogOpen}
+        onSuccess={handleGenerateSuccess}
       />
     </MainLayout>
   );
