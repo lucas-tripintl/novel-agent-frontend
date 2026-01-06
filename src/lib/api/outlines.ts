@@ -1,5 +1,5 @@
 /**
- * 大纲查询 API
+ * 大纲 API - 查询、编辑、删除
  */
 
 import { apiClient } from "./client";
@@ -7,8 +7,10 @@ import type { PaginatedResponse } from "@/types/api";
 import type {
   OutlinesSummary,
   NovelOutline,
+  NovelOutlineUpdateParams,
   VolumeOutline,
   VolumeOutlineSummary,
+  VolumeOutlineUpdateParams,
   ProjectTasksSummary,
 } from "@/types/outline";
 
@@ -108,4 +110,62 @@ export async function getProjectActiveTasks(
   const queryString = searchParams.toString();
   const url = `/projects/${projectId}/tasks/active${queryString ? `?${queryString}` : ""}`;
   return apiClient.get<import("@/types/api").TaskRead[]>(url);
+}
+
+// ============ 大纲编辑 ============
+
+/**
+ * 更新总纲
+ * PUT /api/v1/projects/{project_id}/outlines/novel
+ */
+export async function updateNovelOutline(
+  projectId: string,
+  data: NovelOutlineUpdateParams
+): Promise<NovelOutline> {
+  return apiClient.put<NovelOutline>(
+    `/projects/${projectId}/outlines/novel`,
+    data
+  );
+}
+
+/**
+ * 更新卷纲
+ * PUT /api/v1/projects/{project_id}/outlines/volumes/{volume_number}
+ */
+export async function updateVolumeOutline(
+  projectId: string,
+  volumeNumber: number,
+  data: VolumeOutlineUpdateParams
+): Promise<VolumeOutline> {
+  return apiClient.put<VolumeOutline>(
+    `/projects/${projectId}/outlines/volumes/${volumeNumber}`,
+    data
+  );
+}
+
+// ============ 大纲删除 ============
+
+/**
+ * 删除总纲
+ * DELETE /api/v1/projects/{project_id}/outlines/novel
+ */
+export async function deleteNovelOutline(
+  projectId: string
+): Promise<{ message: string }> {
+  return apiClient.delete<{ message: string }>(
+    `/projects/${projectId}/outlines/novel`
+  );
+}
+
+/**
+ * 删除卷纲
+ * DELETE /api/v1/projects/{project_id}/outlines/volumes/{volume_number}
+ */
+export async function deleteVolumeOutline(
+  projectId: string,
+  volumeNumber: number
+): Promise<{ message: string }> {
+  return apiClient.delete<{ message: string }>(
+    `/projects/${projectId}/outlines/volumes/${volumeNumber}`
+  );
 }

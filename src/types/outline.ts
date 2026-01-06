@@ -34,6 +34,20 @@ export interface NovelOutline {
   updated_at: string;
 }
 
+/** 总纲更新参数 */
+export interface NovelOutlineUpdateParams {
+  title?: string;
+  genre?: string;
+  target_words?: number;
+  target_volumes?: number;
+  core_theme?: string;
+  core_conflict?: string;
+  ending_direction?: string;
+  protagonist_arc?: string;
+  content?: string;
+  key_plotlines?: string[];
+}
+
 // ============ 卷纲 ============
 
 /** 卷纲摘要（用于列表和汇总） */
@@ -66,6 +80,20 @@ export interface VolumeOutline {
   metadata_?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+}
+
+/** 卷纲更新参数 */
+export interface VolumeOutlineUpdateParams {
+  title?: string;
+  chapter_start?: number;
+  chapter_end?: number;
+  target_words?: number;
+  volume_goal?: string;
+  main_conflict?: string;
+  key_events?: string[];
+  ending_hook?: string;
+  content?: string;
+  plotline_goals?: Record<string, string>;
 }
 
 // ============ 大纲状态汇总 ============

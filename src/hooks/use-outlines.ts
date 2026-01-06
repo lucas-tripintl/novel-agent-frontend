@@ -11,6 +11,10 @@ import {
   getCurrentVolumeOutline,
   getProjectTasksSummary,
   getProjectActiveTasks,
+  updateNovelOutline,
+  updateVolumeOutline,
+  deleteNovelOutline,
+  deleteVolumeOutline,
 } from "@/lib/api/outlines";
 import {
   generateNovelOutline,
@@ -22,6 +26,10 @@ import type {
   GenerateVolumeOutlineParams,
   GenerateChapterOutlineParams,
 } from "@/types/api";
+import type {
+  NovelOutlineUpdateParams,
+  VolumeOutlineUpdateParams,
+} from "@/types/outline";
 import { useTaskPanelActions } from "@/stores/task-store";
 import { taskKeys } from "./use-tasks";
 
@@ -192,6 +200,78 @@ export function useGenerateChapterOutline(projectId: string) {
       queryClient.invalidateQueries({ queryKey: taskKeys.all });
       setExpanded(true);
       setHasNewTask(true);
+    },
+  });
+}
+
+// ============ 大纲编辑 Mutations ============
+
+/**
+ * 更新总纲
+ */
+export function useUpdateNovelOutline(projectId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: NovelOutlineUpdateParams) =>
+      updateNovelOutline(projectId, params),
+    onSuccess: () => {
+      // 刷新总纲和汇总数据
+      queryClient.invalidateQueries({ queryKey: outlineKeys.novel(projectId) });
+      queryClient.invalidateQueries({ queryKey: outlineKeys.summary(projectId) });
+    },
+  });
+}
+
+/**
+ * 更新卷纲
+ */
+export function useUpdateVolumeOutline(projectId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ volumeNumber, data }: { volumeNumber: number; data: VolumeOutlineUpdateParams }) =>
+      updateVolumeOutline(projectId, volumeNumber, data),
+    onSuccess: (_, { volumeNumber }) => {
+      // 刷新指定卷纲、卷纲列表和汇总数据
+      queryClient.invalidateQueries({ queryKey: outlineKeys.volume(projectId, volumeNumber) });
+      queryClient.invalidateQueries({ queryKey: outlineKeys.volumes(projectId) });
+      queryClient.invalidateQueries({ queryKey: outlineKeys.summary(projectId) });
+    },
+  });
+}
+
+// ============ 大纲删除 Mutations ============
+
+/**
+ * 删除总纲
+ */
+export function useDeleteNovelOutline(projectId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => deleteNovelOutline(projectId),
+    onSuccess: () => {
+      // 刷新总纲和汇总数据
+      queryClient.invalidateQueries({ queryKey: outlineKeys.novel(projectId) });
+      queryClient.invalidateQueries({ queryKey: outlineKeys.summary(projectId) });
+    },
+  });
+}
+
+/**
+ * 删除卷纲
+ */
+export function useDeleteVolumeOutline(projectId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (volumeNumber: number) => deleteVolumeOutline(projectId, volumeNumber),
+    onSuccess: (_, volumeNumber) => {
+      // 刷新指定卷纲、卷纲列表和汇总数据
+      queryClient.invalidateQueries({ queryKey: outlineKeys.volume(projectId, volumeNumber) });
+      queryClient.invalidateQueries({ queryKey: outlineKeys.volumes(projectId) });
+      queryClient.invalidateQueries({ queryKey: outlineKeys.summary(projectId) });
     },
   });
 }
