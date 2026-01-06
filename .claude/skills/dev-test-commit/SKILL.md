@@ -32,7 +32,7 @@ allowed-tools: Bash(pnpm:*), Bash(git:*), mcp__playwright__*
 
 - 检查是否已在运行：`pgrep -f "next dev"`
 - 如未运行，后台启动：`pnpm dev`（run_in_background: true）
-- 等待服务器就绪（http://localhost:3000）
+- 等待服务器就绪（http://192.168.0.77:3000）
 
 ### 4. Playwright 自动测试
 
