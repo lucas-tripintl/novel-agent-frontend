@@ -196,24 +196,24 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
   }
 
   return (
-    <div className="flex h-full flex-col min-h-0">
+    <div className="flex h-full flex-col min-h-0 w-full">
       {/* 搜索栏 */}
-      <div className="px-3 pb-2">
+      <div className="px-2 pb-2">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="搜索设定..."
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
-            className="pl-8 h-8 text-sm bg-background/50"
+            className="pl-7 h-7 text-xs bg-background/50"
           />
         </div>
       </div>
 
       {/* 模式提示 */}
       {mode === "auto" && (
-        <div className="mx-3 mb-2 p-2 rounded-md bg-primary/5 border border-primary/20">
-          <p className="text-xs text-muted-foreground">
+        <div className="mx-2 mb-2 p-1.5 rounded-md bg-primary/5 border border-primary/20">
+          <p className="text-[11px] text-muted-foreground">
             <Sparkles className="inline h-3 w-3 mr-1 text-primary" />
             全自动模式下，AI 会自动选择相关设定
           </p>
@@ -222,11 +222,11 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
 
       {/* 设定列表 */}
       <ScrollArea className="flex-1 min-h-0">
-        <div className="p-3 pt-0">
+        <div className="p-2 pt-0">
           {nonEmptyCategories.length === 0 ? (
             <div className="flex flex-col items-center py-8 text-center">
-              <Globe className="h-10 w-10 text-muted-foreground/50 mb-3" />
-              <p className="text-sm text-muted-foreground">
+              <Globe className="h-8 w-8 text-muted-foreground/50 mb-2" />
+              <p className="text-xs text-muted-foreground">
                 {searchKeyword ? "没有匹配的设定" : "暂无设定"}
               </p>
             </div>
@@ -250,24 +250,24 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
                     value={category.type}
                     className="border border-border/30 rounded-md bg-background/50"
                   >
-                    <AccordionTrigger className="hover:no-underline px-3 py-2">
-                      <div className="flex items-center gap-2 flex-1">
-                        <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center">
-                          <Icon className="h-3.5 w-3.5 text-primary" />
+                    <AccordionTrigger className="hover:no-underline px-2 py-1.5">
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                          <Icon className="h-3 w-3 text-primary" />
                         </div>
-                        <span className="text-sm font-medium">
+                        <span className="text-xs font-medium truncate flex-1 min-w-0">
                           {getTypeLabel(category.type)}
                         </span>
                         <Badge
                           variant="outline"
-                          className="ml-auto font-mono text-[10px]"
+                          className="font-mono text-[10px] shrink-0"
                         >
                           {catEntities.length}
                         </Badge>
                         {mode === "director" && selectedInCategory > 0 && (
                           <Badge
                             variant="secondary"
-                            className="font-mono text-[10px]"
+                            className="font-mono text-[10px] shrink-0"
                           >
                             +{selectedInCategory}
                           </Badge>
@@ -275,8 +275,8 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
                       </div>
                     </AccordionTrigger>
 
-                    <AccordionContent className="px-3 pb-3">
-                      <div className="space-y-1">
+                    <AccordionContent className="px-2 pb-2">
+                      <div className="space-y-0.5">
                         {catEntities.map((entity) => (
                           <EntityRow
                             key={entity.id}
@@ -340,7 +340,7 @@ function EntityRow({
       <HoverCardTrigger asChild>
         <div
           className={cn(
-            "flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors group",
+            "flex items-center gap-1.5 px-1.5 py-1 rounded transition-colors group min-w-0",
             isSelectable && "cursor-pointer",
             isSelected
               ? "bg-primary/10 border border-primary/30"
@@ -354,55 +354,55 @@ function EntityRow({
           {isSelectable && (
             <div
               className={cn(
-                "h-4 w-4 rounded-full border flex items-center justify-center shrink-0",
+                "h-3.5 w-3.5 rounded-full border flex items-center justify-center shrink-0",
                 isSelected
                   ? "bg-primary border-primary"
                   : "border-muted-foreground/30"
               )}
             >
-              {isSelected && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
+              {isSelected && <Check className="h-2 w-2 text-primary-foreground" />}
             </div>
           )}
 
           {/* 名称 */}
-          <span className="text-sm flex-1 truncate">{entity.name}</span>
+          <span className="text-xs flex-1 truncate min-w-0">{entity.name}</span>
 
-          {/* 标签 */}
+          {/* 标签 - 在窄屏隐藏 */}
           {entity.tags && entity.tags.length > 0 && (
-            <Badge variant="outline" className="text-[10px] shrink-0">
+            <Badge variant="outline" className="text-[10px] shrink-0 hidden sm:inline-flex">
               {getTagLabel(entity.tags[0], getLabel, getFieldValueLabel)}
             </Badge>
           )}
 
           {/* 操作按钮组 */}
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          <div className="flex items-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6"
+              className="h-5 w-5"
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit();
               }}
             >
-              <Edit3 className="h-3 w-3" />
+              <Edit3 className="h-2.5 w-2.5" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+              className="h-5 w-5 text-muted-foreground hover:text-destructive"
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete();
               }}
             >
-              <Trash2 className="h-3 w-3" />
+              <Trash2 className="h-2.5 w-2.5" />
             </Button>
           </div>
         </div>
       </HoverCardTrigger>
 
-      <HoverCardContent side="right" align="start" className="w-72 p-3">
+      <HoverCardContent side="right" align="start" className="w-64 p-2">
         <EntityPreview entity={entity} onEdit={onEdit} />
       </HoverCardContent>
     </HoverCard>
@@ -431,36 +431,36 @@ function EntityPreview({ entity, onEdit }: EntityPreviewProps) {
   })();
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {/* 头部 */}
-      <div className="flex items-start gap-2">
-        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-          <Icon className="h-4 w-4 text-primary" />
+      <div className="flex items-start gap-1.5">
+        <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center shrink-0">
+          <Icon className="h-3 w-3 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className="font-semibold text-sm truncate">{entity.name}</h4>
-          <p className="text-xs text-muted-foreground">{typeLabel}</p>
+          <h4 className="font-semibold text-xs truncate">{entity.name}</h4>
+          <p className="text-[10px] text-muted-foreground">{typeLabel}</p>
         </div>
       </div>
 
       {/* 内容摘要 */}
       {entity.content && (
-        <p className="text-xs text-muted-foreground line-clamp-3">
+        <p className="text-[11px] text-muted-foreground line-clamp-3">
           {entity.content}
         </p>
       )}
 
       {/* 标签 */}
       {entity.tags && entity.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {entity.tags.slice(0, 4).map((tag) => (
+        <div className="flex flex-wrap gap-0.5">
+          {entity.tags.slice(0, 3).map((tag) => (
             <Badge key={tag} variant="secondary" className="text-[10px]">
               {getTagLabel(tag, getLabel, getFieldValueLabel)}
             </Badge>
           ))}
-          {entity.tags.length > 4 && (
+          {entity.tags.length > 3 && (
             <Badge variant="outline" className="text-[10px]">
-              +{entity.tags.length - 4}
+              +{entity.tags.length - 3}
             </Badge>
           )}
         </div>
@@ -470,11 +470,11 @@ function EntityPreview({ entity, onEdit }: EntityPreviewProps) {
       <Button
         variant="outline"
         size="sm"
-        className="w-full mt-2 gap-1.5"
+        className="w-full mt-1 gap-1 text-[11px] h-6"
         onClick={onEdit}
       >
-        <Edit3 className="h-3 w-3" />
-        查看/编辑设定
+        <Edit3 className="h-2.5 w-2.5" />
+        查看/编辑
       </Button>
     </div>
   );

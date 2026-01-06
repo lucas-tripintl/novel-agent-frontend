@@ -122,28 +122,28 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
   );
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full w-full min-w-0">
       {/* 头部 */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
-        <span className="text-sm text-muted-foreground">
+      <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/50">
+        <span className="text-xs text-muted-foreground truncate">
           按阶段配置技能
         </span>
       </div>
 
       {/* 阶段列表 */}
       <ScrollArea className="flex-1">
-        <div className="p-2 space-y-1">
+        <div className="p-1.5 space-y-1">
           {/* 加载状态 */}
           {isLoading && (
             <>
               {[...Array(5)].map((_, i) => (
                 <div
                   key={i}
-                  className="p-2 rounded-md border border-border/50 bg-card/30"
+                  className="p-1.5 rounded border border-border/50 bg-card/30"
                 >
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="h-4 w-4" />
-                    <Skeleton className="h-4 flex-1" />
+                  <div className="flex items-center gap-1.5">
+                    <Skeleton className="h-3 w-3" />
+                    <Skeleton className="h-3 flex-1" />
                   </div>
                 </div>
               ))}
@@ -152,13 +152,13 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
 
           {/* 错误状态 */}
           {isError && (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <AlertCircle className="h-8 w-8 text-destructive mb-2" />
-              <p className="text-sm text-muted-foreground">加载失败</p>
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <AlertCircle className="h-6 w-6 text-destructive mb-1.5" />
+              <p className="text-xs text-muted-foreground">加载失败</p>
               <Button
                 variant="ghost"
                 size="sm"
-                className="mt-2"
+                className="mt-1.5 h-6 text-xs"
                 onClick={() => refetch()}
               >
                 重试
@@ -180,22 +180,22 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
                     open={isExpanded}
                     onOpenChange={() => toggleStage(stage.value)}
                   >
-                    <div className="rounded-md border border-border/50 bg-card/30 overflow-hidden">
+                    <div className="rounded border border-border/50 bg-card/30 overflow-hidden min-w-0">
                       {/* 阶段标题 */}
                       <CollapsibleTrigger asChild>
-                        <div className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent/30 transition-colors">
+                        <div className="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer hover:bg-accent/30 transition-colors min-w-0">
                           <ChevronRight
                             className={cn(
-                              "h-4 w-4 text-muted-foreground transition-transform",
+                              "h-3 w-3 text-muted-foreground transition-transform shrink-0",
                               isExpanded && "rotate-90"
                             )}
                           />
-                          <span className="font-medium text-sm flex-1">
+                          <span className="font-medium text-xs flex-1 truncate min-w-0">
                             {stage.label}
                           </span>
                           <Badge
                             variant="secondary"
-                            className="text-xs h-5 px-1.5"
+                            className="text-[10px] h-4 px-1 shrink-0"
                           >
                             {skills.length}/{MAX_SKILLS_PER_STAGE}
                           </Badge>
@@ -204,9 +204,9 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
 
                       {/* 技能列表 */}
                       <CollapsibleContent>
-                        <div className="px-3 pb-2 pt-1 space-y-1.5 border-t border-border/30">
+                        <div className="px-2 pb-1.5 pt-1 space-y-1 border-t border-border/30">
                           {skills.length === 0 ? (
-                            <p className="text-xs text-muted-foreground py-2 text-center">
+                            <p className="text-[11px] text-muted-foreground py-1.5 text-center">
                               暂无技能
                             </p>
                           ) : (
@@ -224,11 +224,11 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="w-full h-7 text-xs text-muted-foreground hover:text-foreground"
+                            className="w-full h-6 text-[11px] text-muted-foreground hover:text-foreground"
                             onClick={() => setAddingStage(stage.value)}
                             disabled={!canAdd}
                           >
-                            <Plus className="h-3 w-3 mr-1" />
+                            <Plus className="h-2.5 w-2.5 mr-0.5" />
                             {canAdd ? "添加技能" : "已达上限"}
                           </Button>
                         </div>
@@ -271,28 +271,28 @@ function StageSkillItem({
   isRemoving: boolean;
 }) {
   return (
-    <div className="group flex items-center gap-2 px-2 py-1.5 rounded bg-background/50 hover:bg-accent/30 transition-colors">
-      <span className="text-xs flex-1 truncate">{skill.skill_name}</span>
-      <Badge variant="outline" className="text-[10px] h-4 px-1">
+    <div className="group flex items-center gap-1 px-1.5 py-1 rounded bg-background/50 hover:bg-accent/30 transition-colors min-w-0">
+      <span className="text-[11px] flex-1 truncate min-w-0">{skill.skill_name}</span>
+      <Badge variant="outline" className="text-[10px] h-3.5 px-0.5 shrink-0 hidden sm:inline-flex">
         {getSkillCategoryLabel(skill.skill_category)}
       </Badge>
       {/* 如果是所有阶段生效的技能，显示标记 */}
       {!skill.stage && (
-        <Badge variant="secondary" className="text-[10px] h-4 px-1">
+        <Badge variant="secondary" className="text-[10px] h-3.5 px-0.5 shrink-0">
           全局
         </Badge>
       )}
       <Button
         variant="ghost"
         size="sm"
-        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+        className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
         onClick={onRemove}
         disabled={isRemoving}
       >
         {isRemoving ? (
-          <Loader2 className="h-3 w-3 animate-spin" />
+          <Loader2 className="h-2.5 w-2.5 animate-spin" />
         ) : (
-          <X className="h-3 w-3" />
+          <X className="h-2.5 w-2.5" />
         )}
       </Button>
     </div>

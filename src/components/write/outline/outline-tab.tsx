@@ -81,7 +81,7 @@ export function OutlineTab({ projectId }: OutlineTabProps) {
 
   return (
     <ScrollArea className="h-full">
-      <div className="p-3 space-y-3">
+      <div className="p-2 space-y-2">
         {/* 总纲 */}
         {data.novel_outline && (
           <NovelOutlineCard outline={data.novel_outline} projectId={projectId} />
@@ -89,13 +89,13 @@ export function OutlineTab({ projectId }: OutlineTabProps) {
 
         {/* 卷纲列表 */}
         {data.volumes.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 px-1">
-              <BookMarked className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs font-medium text-muted-foreground">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 px-0.5">
+              <BookMarked className="h-3 w-3 text-muted-foreground shrink-0" />
+              <span className="text-[11px] font-medium text-muted-foreground truncate">
                 分卷大纲
               </span>
-              <Badge variant="secondary" className="text-[10px] px-1.5">
+              <Badge variant="secondary" className="text-[10px] px-1 shrink-0">
                 {data.volume_count}卷
               </Badge>
             </div>
@@ -134,79 +134,80 @@ function NovelOutlineCard({ outline, projectId }: { outline: NovelOutlineSummary
 
   return (
     <>
-    <div className="rounded-lg border border-border/50 bg-card/50 overflow-hidden group">
+    <div className="rounded-lg border border-border/50 bg-card/50 overflow-hidden group w-full min-w-0">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <div className="flex items-center">
+        <div className="flex items-center min-w-0">
           <CollapsibleTrigger asChild>
-            <button className="flex-1 flex items-center gap-2 px-3 py-2.5 hover:bg-primary/5 transition-colors text-left">
+            <button className="flex-1 flex items-center gap-1.5 px-2 py-2 hover:bg-primary/5 transition-colors text-left min-w-0">
               {isOpen ? (
-                <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               ) : (
-                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               )}
-              <BookText className="h-4 w-4 text-primary shrink-0" />
-              <span className="font-medium text-sm truncate flex-1">
+              <BookText className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="font-medium text-xs truncate flex-1 min-w-0">
                 {outline.title}
               </span>
               {outline.genre && (
-                <Badge variant="outline" className="text-[10px] shrink-0">
+                <Badge variant="outline" className="text-[10px] shrink-0 hidden sm:inline-flex">
                   {outline.genre}
                 </Badge>
               )}
             </button>
           </CollapsibleTrigger>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={handleOpenOutline}
-            title="在编辑区查看"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 mr-1 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <MoreHorizontal className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => setShowDeleteDialog(true)}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                删除总纲
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={handleOpenOutline}
+              title="在编辑区查看"
+            >
+              <ExternalLink className="h-3 w-3" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 mr-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <MoreHorizontal className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  删除总纲
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         <CollapsibleContent>
-          <div className="px-3 pb-3 space-y-2 border-t border-border/30 pt-2">
+          <div className="px-2 pb-2 space-y-1.5 border-t border-border/30 pt-2">
             {/* 目标 */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Target className="h-3 w-3" />
-              <span>
-                目标：{(outline.target_words / 10000).toFixed(0)}万字 /{" "}
-                {outline.target_volumes}卷
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
+              <Target className="h-3 w-3 shrink-0" />
+              <span className="truncate">
+                {(outline.target_words / 10000).toFixed(0)}万字 / {outline.target_volumes}卷
               </span>
             </div>
 
             {/* 核心主题 */}
-            <div className="text-xs">
-              <span className="text-muted-foreground">核心主题：</span>
-              <span className="text-foreground">{outline.core_theme}</span>
+            <div className="text-[11px] leading-relaxed">
+              <span className="text-muted-foreground">主题：</span>
+              <span className="text-foreground line-clamp-2">{outline.core_theme}</span>
             </div>
 
             {/* 查看详情按钮 */}
             <Button
               variant="outline"
               size="sm"
-              className="w-full mt-2 gap-1.5 text-xs"
+              className="w-full mt-1.5 gap-1 text-[11px] h-7"
               onClick={handleOpenOutline}
             >
               <ExternalLink className="h-3 w-3" />
@@ -251,63 +252,65 @@ function VolumeOutlineItem({ volume, projectId }: { volume: VolumeOutlineSummary
 
   return (
     <>
-    <div className="rounded-lg border border-border/30 bg-card/30 overflow-hidden group">
+    <div className="rounded-lg border border-border/30 bg-card/30 overflow-hidden group w-full min-w-0">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <div className="flex items-center">
+        <div className="flex items-center min-w-0">
           <CollapsibleTrigger asChild>
-            <button className="flex-1 flex items-center gap-2 px-3 py-2 hover:bg-primary/5 transition-colors text-left">
+            <button className="flex-1 flex items-center gap-1.5 px-2 py-1.5 hover:bg-primary/5 transition-colors text-left min-w-0">
               {isOpen ? (
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
               ) : (
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
               )}
-              <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <span className="text-sm truncate flex-1">{volume.title}</span>
-              <span className="text-[10px] text-muted-foreground shrink-0">
-                第{volume.chapter_start}-{volume.chapter_end}章
+              <FileText className="h-3 w-3 text-muted-foreground shrink-0" />
+              <span className="text-xs truncate flex-1 min-w-0">{volume.title}</span>
+              <span className="text-[10px] text-muted-foreground shrink-0 hidden sm:inline">
+                {volume.chapter_start}-{volume.chapter_end}章
               </span>
             </button>
           </CollapsibleTrigger>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={handleOpenOutline}
-            title="在编辑区查看"
-          >
-            <ExternalLink className="h-3 w-3" />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 mr-1 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <MoreHorizontal className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => setShowDeleteDialog(true)}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                删除卷纲
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={handleOpenOutline}
+              title="在编辑区查看"
+            >
+              <ExternalLink className="h-2.5 w-2.5" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 mr-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <MoreHorizontal className="h-2.5 w-2.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  删除卷纲
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         <CollapsibleContent>
-          <div className="px-3 pb-2.5 pt-1 border-t border-border/20 space-y-2">
-            <p className="text-xs text-muted-foreground">{volume.volume_goal}</p>
+          <div className="px-2 pb-2 pt-1 border-t border-border/20 space-y-1.5">
+            <p className="text-[11px] text-muted-foreground line-clamp-2">{volume.volume_goal}</p>
             <Button
               variant="ghost"
               size="sm"
-              className="w-full gap-1.5 text-xs h-7"
+              className="w-full gap-1 text-[11px] h-6"
               onClick={handleOpenOutline}
             >
-              <ExternalLink className="h-3 w-3" />
+              <ExternalLink className="h-2.5 w-2.5" />
               查看详情
             </Button>
           </div>
