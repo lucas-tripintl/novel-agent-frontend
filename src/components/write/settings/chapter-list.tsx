@@ -197,6 +197,19 @@ export function ChapterList({ projectId }: ChapterListProps) {
         onDiscard={handleConfirmDiscard}
       />
       <div className="flex h-full flex-col min-h-0">
+        {/* 新建章节按钮 */}
+        <div className="p-3 border-b border-border/50">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full gap-1.5"
+            onClick={handleNewChapter}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>新建章节</span>
+          </Button>
+        </div>
+
         {/* 排序控制栏 */}
         {totalCount > 0 && (
           <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
@@ -347,19 +360,6 @@ export function ChapterList({ projectId }: ChapterListProps) {
             )}
           </div>
         </ScrollArea>
-
-        {/* 新建章节按钮 */}
-        <div className="p-3 border-t border-border/50">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full gap-1.5"
-            onClick={handleNewChapter}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <span>新建章节</span>
-          </Button>
-        </div>
       </div>
 
       {/* 章节编辑面板 */}

@@ -221,8 +221,14 @@ export function useInlineEdit({
 
   /** 请求编辑 */
   const requestEdit = useCallback(
-    async (instruction: string, quickAction?: QuickAction) => {
-      if (!inlineEdit.originalText) {
+    async (
+      instruction: string,
+      quickAction?: QuickAction,
+      overrideOriginalText?: string // 直接传入的文本，避免闭包陷阱
+    ) => {
+      // 优先使用传入的文本，避免闭包捕获旧值
+      const originalText = overrideOriginalText ?? inlineEdit.originalText;
+      if (!originalText) {
         const err = new Error("缺少必要的编辑上下文");
         setInlineEditError(err.message);
         onError?.(err);
@@ -244,7 +250,7 @@ export function useInlineEdit({
           },
         ],
         state: {
-          selected_text: inlineEdit.originalText,
+          selected_text: originalText,
           inline_edit: true,
           context_entity_ids: contextEntities.map((e) => e.id),
           skill_id: quickAction?.skillId ?? selectedSkillId ?? undefined,
@@ -280,8 +286,8 @@ export function useInlineEdit({
       // 先设置编辑上下文
       startInlineEdit(targetType, selectedText, range);
 
-      // 然后发送请求
-      await requestEdit(action.instruction, action);
+      // 直接传递 selectedText，避免闭包陷阱
+      await requestEdit(action.instruction, action, selectedText);
     },
     [startInlineEdit, requestEdit]
   );

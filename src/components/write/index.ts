@@ -13,7 +13,8 @@ export { EntityBrowser } from "./settings/entity-browser";
 
 // 编辑器组件
 export { TiptapEditor } from "./editor/tiptap-editor";
-export { ChapterHeader } from "./editor/chapter-header";
+export { ChapterTitleBar } from "./editor/chapter-title-bar";
+export { ChapterEditorTabs } from "./editor/chapter-editor-tabs";
 
 // AI 助手组件
 export { SelectedContext } from "./assistant/selected-context";

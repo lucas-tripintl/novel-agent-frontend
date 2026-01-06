@@ -7,7 +7,6 @@ import {
   groupEntitiesByCategory,
   getCategoryConfig,
 } from "@/hooks/use-project-elements";
-import { useDeleteEntity } from "@/hooks/use-projects";
 import { useEnumStore } from "@/stores/enum-store";
 import { useWritingStore, useWritingMode, useEntityEditing } from "@/stores/writing-store";
 import type { EntityRead, EntityType } from "@/types/api";
@@ -15,7 +14,6 @@ import type { SelectedEntity } from "@/types/writing";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Accordion,
@@ -23,7 +21,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
 import { cn } from "@/lib/utils";
 import {
   Search,
@@ -40,11 +37,7 @@ import {
   Workflow,
   Users,
   Circle,
-  Plus,
   Check,
-  Loader2,
-  Edit3,
-  Trash2,
 } from "lucide-react";
 
 // 标签本地化函数
@@ -101,10 +94,8 @@ interface EntityBrowserProps {
 export function EntityBrowser({ projectId }: EntityBrowserProps) {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
-  const [entityToDelete, setEntityToDelete] = useState<EntityRead | null>(null);
 
   const { data, isLoading } = useProjectElements(projectId, true);
-  const deleteEntityMutation = useDeleteEntity(projectId);
   const mode = useWritingMode();
   const { selectedEntities, addEntity, removeEntity } = useWritingStore();
   const { setEditingEntity } = useEntityEditing();
@@ -165,18 +156,6 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
   // 打开设定编辑
   const openEntityEditor = (entity: EntityRead) => {
     setEditingEntity(entity);
-  };
-
-  // 处理删除确认
-  const handleDeleteConfirm = async () => {
-    if (entityToDelete) {
-      await deleteEntityMutation.mutateAsync(entityToDelete.id);
-      // 如果删除的实体已被选中，从选中列表移除
-      if (isEntitySelected(entityToDelete.id)) {
-        removeEntity(entityToDelete.id);
-      }
-      setEntityToDelete(null);
-    }
   };
 
   if (isLoading) {
@@ -279,8 +258,7 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
                             isSelected={isEntitySelected(entity.id)}
                             isSelectable={mode === "director"}
                             onToggle={() => toggleEntity(entity)}
-                            onEdit={() => openEntityEditor(entity)}
-                            onDelete={() => setEntityToDelete(entity)}
+                            onClick={() => openEntityEditor(entity)}
                             getLabel={getLabel}
                             getFieldValueLabel={getFieldValueLabel}
                           />
@@ -294,15 +272,6 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
           )}
         </div>
       </ScrollArea>
-
-      {/* 删除确认对话框 */}
-      <ConfirmDeleteDialog
-        open={!!entityToDelete}
-        onOpenChange={(open) => !open && setEntityToDelete(null)}
-        targetName={entityToDelete ? `「${entityToDelete.name}」` : ""}
-        onConfirm={handleDeleteConfirm}
-        isPending={deleteEntityMutation.isPending}
-      />
     </div>
   );
 }
@@ -314,8 +283,7 @@ interface EntityRowProps {
   isSelected: boolean;
   isSelectable: boolean;
   onToggle: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  onClick: () => void;
   getLabel: (enumName: string, value: string) => string;
   getFieldValueLabel: (fieldName: string, value: string) => string;
 }
@@ -325,8 +293,7 @@ function EntityRow({
   isSelected,
   isSelectable,
   onToggle,
-  onEdit,
-  onDelete,
+  onClick,
   getLabel,
   getFieldValueLabel,
 }: EntityRowProps) {
@@ -341,7 +308,7 @@ function EntityRow({
           ? "hover:bg-muted/50 border border-transparent"
           : "hover:bg-muted/50 border border-transparent"
       )}
-      onClick={isSelectable ? onToggle : onEdit}
+      onClick={isSelectable ? onToggle : onClick}
     >
       {/* 选择指示器 */}
       {isSelectable && (
@@ -366,32 +333,6 @@ function EntityRow({
           {getTagLabel(entity.tags[0], getLabel, getFieldValueLabel)}
         </Badge>
       )}
-
-      {/* 操作按钮组 */}
-      <div className="flex items-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-5 w-5"
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit();
-          }}
-        >
-          <Edit3 className="h-2.5 w-2.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-5 w-5 text-muted-foreground hover:text-destructive"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-        >
-          <Trash2 className="h-2.5 w-2.5" />
-        </Button>
-      </div>
     </div>
   );
 }

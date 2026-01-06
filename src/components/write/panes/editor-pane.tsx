@@ -1,11 +1,18 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useWritingStore, useStreamingState, useEntityEditing, useOutlineEditing } from "@/stores/writing-store";
+import {
+  useWritingStore,
+  useStreamingState,
+  useEntityEditing,
+  useOutlineEditing,
+  useChapterOutlineState,
+} from "@/stores/writing-store";
 import { useChapter } from "@/hooks/use-projects";
+import { useChapterOutline } from "@/hooks/use-chapter-outline";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { TiptapEditor } from "../editor/tiptap-editor";
-import { ChapterHeader } from "../editor/chapter-header";
+import { ChapterTitleBar } from "../editor/chapter-title-bar";
+import { ChapterEditorTabs } from "../editor/chapter-editor-tabs";
 import { EntityEditor } from "../editor/entity-editor";
 import { OutlineEditor } from "../editor/outline-editor";
 import { FileText, Sparkles } from "lucide-react";
@@ -15,16 +22,23 @@ interface EditorPaneProps {
 }
 
 export function EditorPane({ projectId }: EditorPaneProps) {
-  const { chapterId, chapterNumber, content, setContent, loadDraft } = useWritingStore();
+  const { chapterId, chapterNumber, loadDraft } = useWritingStore();
   const { isStreaming } = useStreamingState();
   const { editingEntity } = useEntityEditing();
   const { editingOutline } = useOutlineEditing();
+  const { loadChapterOutline } = useChapterOutlineState();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // 使用章节详情 API 获取完整内容（直接使用 store 中的 chapterNumber）
+  // 使用章节详情 API 获取完整内容
   const { data: chapterDetail } = useChapter(projectId, chapterNumber ?? 0, {
     enabled: !!chapterId && !!chapterNumber && chapterNumber > 0,
   });
+
+  // 使用章节细纲 API
+  const { data: chapterOutlineData } = useChapterOutline(
+    projectId,
+    chapterNumber
+  );
 
   // 加载章节内容
   useEffect(() => {
@@ -36,6 +50,13 @@ export function EditorPane({ projectId }: EditorPaneProps) {
       });
     }
   }, [chapterDetail, loadDraft]);
+
+  // 加载细纲内容
+  useEffect(() => {
+    if (chapterOutlineData) {
+      loadChapterOutline(chapterOutlineData.content || "");
+    }
+  }, [chapterOutlineData, loadChapterOutline]);
 
   // 切换章节时重置滚动位置
   useEffect(() => {
@@ -97,24 +118,17 @@ export function EditorPane({ projectId }: EditorPaneProps) {
       )}
 
       <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0">
-        <div className="max-w-3xl mx-auto px-6 py-8">
-          {/* 章节头部 */}
-          <ChapterHeader
-            chapterNumber={chapterNumber || 1}
-          />
+        <div className="max-w-3xl mx-auto px-6 py-6">
+          {/* 章节标题栏 */}
+          <ChapterTitleBar chapterNumber={chapterNumber || 1} />
 
-          {/* 编辑器 */}
-          <div className="mt-6">
-            <TiptapEditor
-              content={content}
-              onChange={setContent}
-              isReadOnly={isStreaming}
-              placeholder="开始创作你的故事..."
-            />
+          {/* 章节编辑器 Tabs */}
+          <div className="mt-4">
+            <ChapterEditorTabs projectId={projectId} />
           </div>
 
           {/* 底部留白 */}
-          <div className="h-[30vh]" />
+          <div className="h-[20vh]" />
         </div>
       </ScrollArea>
     </div>

@@ -65,14 +65,22 @@ interface WritingState {
   // ============ 编辑器内容 ============
   /** 章节标题 */
   title: string;
-  /** 章节概要 */
+  /** 章节摘要（对应后端 summary） */
   outline: string;
   /** 正文内容 */
   content: string;
-  /** 是否有未保存的更改 */
+  /** 是否有未保存的更改（正文/摘要） */
   isDirty: boolean;
   /** 最后保存时间 */
   lastSavedAt: Date | null;
+
+  // ============ 章节细纲（独立存储） ============
+  /** 当前活动的编辑器 Tab */
+  activeEditorTab: "content" | "outline" | "summary";
+  /** 章节细纲内容（独立于 Chapter，对接 ChapterOutline API） */
+  chapterOutline: string;
+  /** 细纲是否有未保存的更改 */
+  isChapterOutlineDirty: boolean;
 
   // ============ AI 对话 ============
   /** 对话消息列表 */
@@ -156,7 +164,7 @@ interface WritingState {
 
   /** 更新标题 */
   setTitle: (title: string) => void;
-  /** 更新概要 */
+  /** 更新摘要 */
   setOutline: (outline: string) => void;
   /** 更新内容 */
   setContent: (content: string) => void;
@@ -164,6 +172,15 @@ interface WritingState {
   markAsSaved: () => void;
   /** 加载章节草稿 */
   loadDraft: (draft: Partial<ChapterDraft>) => void;
+
+  /** 设置活动的编辑器 Tab */
+  setActiveEditorTab: (tab: "content" | "outline" | "summary") => void;
+  /** 更新章节细纲 */
+  setChapterOutline: (content: string) => void;
+  /** 加载章节细纲（不标记为脏） */
+  loadChapterOutline: (content: string) => void;
+  /** 标记细纲为已保存 */
+  markChapterOutlineSaved: () => void;
 
   /** 添加消息 */
   addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void;
@@ -287,6 +304,10 @@ const initialState = {
   content: "",
   isDirty: false,
   lastSavedAt: null,
+  // 细纲状态
+  activeEditorTab: "content" as const,
+  chapterOutline: "",
+  isChapterOutlineDirty: false,
   messages: [],
   isStreaming: false,
   streamingBuffer: "",
@@ -336,6 +357,10 @@ export const useWritingStore = create<WritingState>()(
           outline: "",
           content: "",
           isDirty: false,
+          // 重置细纲状态
+          chapterOutline: "",
+          isChapterOutlineDirty: false,
+          activeEditorTab: "content" as const,
           messages: [],
           streamingBuffer: "",
           // 切换项目/章节时清空选中的设定
@@ -407,6 +432,23 @@ export const useWritingStore = create<WritingState>()(
           isDirty: false,
           lastSavedAt: draft.lastSavedAt ?? null,
         }),
+
+      // ============ 细纲 Actions ============
+      setActiveEditorTab: (tab) => set({ activeEditorTab: tab }),
+
+      setChapterOutline: (content) =>
+        set((state) => ({
+          chapterOutline: content,
+          isChapterOutlineDirty: content !== state.chapterOutline,
+        })),
+
+      loadChapterOutline: (content) =>
+        set({
+          chapterOutline: content,
+          isChapterOutlineDirty: false,
+        }),
+
+      markChapterOutlineSaved: () => set({ isChapterOutlineDirty: false }),
 
       addMessage: (message) => {
         const newMessage: ChatMessage = {
@@ -820,6 +862,21 @@ export function useQuickActionsConfig() {
       setEnabledQuickActions: state.setEnabledQuickActions,
       addQuickAction: state.addQuickAction,
       removeQuickAction: state.removeQuickAction,
+    }))
+  );
+}
+
+/** 获取章节细纲状态 */
+export function useChapterOutlineState() {
+  return useWritingStore(
+    useShallow((state) => ({
+      activeEditorTab: state.activeEditorTab,
+      chapterOutline: state.chapterOutline,
+      isChapterOutlineDirty: state.isChapterOutlineDirty,
+      setActiveEditorTab: state.setActiveEditorTab,
+      setChapterOutline: state.setChapterOutline,
+      loadChapterOutline: state.loadChapterOutline,
+      markChapterOutlineSaved: state.markChapterOutlineSaved,
     }))
   );
 }
