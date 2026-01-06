@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   useChatSessions,
-  useCreateChatSession,
   useDeleteChatSession,
 } from "@/hooks/use-chat";
 import { useChatSessionState } from "@/stores/writing-store";
@@ -12,7 +11,6 @@ import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale/zh-CN";
 import {
   History,
-  Plus,
   Trash2,
   MessageSquare,
   Loader2,
@@ -40,20 +38,9 @@ export function SessionHistory({ projectId }: SessionHistoryProps) {
     { status: "active" },
     { enabled: open }
   );
-  const createSession = useCreateChatSession(projectId);
   const deleteSession = useDeleteChatSession(projectId);
 
   const sessions = data?.items ?? [];
-
-  const handleCreateSession = async () => {
-    try {
-      const newSession = await createSession.mutateAsync({});
-      setCurrentChatSession(newSession.id);
-      setOpen(false);
-    } catch (error) {
-      console.error("创建会话失败:", error);
-    }
-  };
 
   const handleSelectSession = (sessionId: string) => {
     setCurrentChatSession(sessionId);
@@ -108,24 +95,7 @@ export function SessionHistory({ projectId }: SessionHistoryProps) {
           </SheetTitle>
         </SheetHeader>
 
-        <div className="p-3 border-b">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full justify-start gap-2"
-            onClick={handleCreateSession}
-            disabled={createSession.isPending}
-          >
-            {createSession.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="h-4 w-4" />
-            )}
-            新建对话
-          </Button>
-        </div>
-
-        <ScrollArea className="h-[calc(100vh-140px)]">
+        <ScrollArea className="h-[calc(100vh-80px)]">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -141,11 +111,19 @@ export function SessionHistory({ projectId }: SessionHistoryProps) {
                 const isActive = session.id === currentSessionId;
 
                 return (
-                  <button
+                  <div
                     key={session.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleSelectSession(session.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleSelectSession(session.id);
+                      }
+                    }}
                     className={cn(
-                      "w-full flex items-start gap-3 p-3 rounded-lg text-left",
+                      "w-full flex items-start gap-3 p-3 rounded-lg text-left cursor-pointer group",
                       "transition-colors hover:bg-muted/50",
                       isActive && "bg-primary/10 border border-primary/20"
                     )}
@@ -187,7 +165,7 @@ export function SessionHistory({ projectId }: SessionHistoryProps) {
                         <Trash2 className="h-3.5 w-3.5" />
                       )}
                     </Button>
-                  </button>
+                  </div>
                 );
               })}
             </div>

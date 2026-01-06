@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSelectedModel } from "@/stores/writing-store";
-import { useModels } from "@/hooks/use-chat";
+import { useSelectedModel, useChatSessionState } from "@/stores/writing-store";
+import { useModels, useUpdateChatSession } from "@/hooks/use-chat";
 import { cn } from "@/lib/utils";
 import { Cpu, ChevronDown, Loader2, Check, Brain } from "lucide-react";
 import {
@@ -16,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 interface ModelSelectorProps {
+  projectId: string;
   className?: string;
 }
 
@@ -32,10 +33,12 @@ function getProviderStyle(providerType: string) {
   return providerStyles[providerType.toLowerCase()] ?? providerStyles.default;
 }
 
-export function ModelSelector({ className }: ModelSelectorProps) {
+export function ModelSelector({ projectId, className }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
   const { selectedModelId, setSelectedModel } = useSelectedModel();
+  const { currentSessionId } = useChatSessionState();
   const { data: models, isLoading } = useModels();
+  const updateSession = useUpdateChatSession(projectId);
 
   const selectedModel = models?.find((m) => m.id === selectedModelId);
 
@@ -49,6 +52,13 @@ export function ModelSelector({ className }: ModelSelectorProps) {
 
   const handleSelect = (modelId: string) => {
     setSelectedModel(modelId);
+    // 如果有当前会话，同时更新会话的模型设置
+    if (currentSessionId) {
+      updateSession.mutate({
+        sessionId: currentSessionId,
+        data: { model_id: modelId },
+      });
+    }
     setOpen(false);
   };
 

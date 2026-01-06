@@ -28,6 +28,7 @@ import {
   Send,
   Loader2,
   StopCircle,
+  Plus,
 } from "lucide-react";
 import { SelectedContext } from "../assistant/selected-context";
 import { ChatMessage } from "../assistant/chat-message";
@@ -192,12 +193,21 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [displayMessages.length, streamingContent]);
 
-  // 自动选择或创建会话
+  // 每次进入项目时自动创建新会话（不再复用旧会话）
+  const [hasInitialized, setHasInitialized] = useState(false);
   useEffect(() => {
-    if (!currentSessionId && sessions.length > 0) {
-      setCurrentChatSession(sessions[0].id);
+    // 只在首次进入且没有当前会话时创建新会话
+    if (!hasInitialized && !currentSessionId && !createSession.isPending) {
+      setHasInitialized(true);
+      createSession.mutateAsync({ model_id: selectedModelId ?? undefined })
+        .then((newSession) => {
+          setCurrentChatSession(newSession.id);
+        })
+        .catch((error) => {
+          console.error("自动创建会话失败:", error);
+        });
     }
-  }, [currentSessionId, sessions, setCurrentChatSession]);
+  }, [hasInitialized, currentSessionId, createSession, setCurrentChatSession, selectedModelId]);
 
   const handleSend = useCallback(async () => {
     if (!inputValue.trim() || isStreaming) return;
@@ -272,6 +282,20 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
     }
   };
 
+  // 创建新对话
+  const handleCreateNewSession = useCallback(async () => {
+    if (createSession.isPending || isStreaming) return;
+    try {
+      const newSession = await createSession.mutateAsync({
+        model_id: selectedModelId ?? undefined,
+      });
+      setCurrentChatSession(newSession.id);
+      setLocalMessages([]);
+    } catch (error) {
+      console.error("创建新对话失败:", error);
+    }
+  }, [createSession, isStreaming, selectedModelId, setCurrentChatSession]);
+
   return (
     <div className="flex h-full flex-col border-l border-border/50 bg-card/30 min-h-0">
       {/* 头部 */}
@@ -301,7 +325,21 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <ModelSelector />
+          <ModelSelector projectId={projectId} />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            title="新建对话"
+            onClick={handleCreateNewSession}
+            disabled={createSession.isPending || isStreaming}
+          >
+            {createSession.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+            ) : (
+              <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+            )}
+          </Button>
           <SessionHistory projectId={projectId} />
         </div>
       </div>
