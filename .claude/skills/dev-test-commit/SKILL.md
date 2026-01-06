@@ -39,8 +39,11 @@ allowed-tools: Bash(pnpm:*), Bash(git:*), mcp__playwright__*
 使用 MCP Playwright 工具执行测试：
 
 ```
-4.1 启动浏览器
+4.1 启动浏览器并注入认证 Token
     - mcp__playwright__browser_navigate 访问目标页面
+    - 读取 .env.local 中的 AUTH_DATA（完整的认证 JSON）
+    - mcp__playwright__browser_evaluate 注入到 localStorage:
+      function: "() => { localStorage.setItem('novel-agent-auth', AUTH_DATA); location.reload(); }"
 
 4.2 执行测试检查
     - mcp__playwright__browser_screenshot 截图查看页面状态
@@ -50,8 +53,23 @@ allowed-tools: Bash(pnpm:*), Bash(git:*), mcp__playwright__*
 4.3 验证结果
     - 检查页面元素是否正确渲染
     - 验证交互行为是否符合预期
-    - 检查控制台是否有错误
+    - 检查控制台是否有错误（mcp__playwright__browser_console_messages）
 ```
+
+**Token 注入示例代码：**
+
+项目使用 Zustand persist，localStorage key 为 `novel-agent-auth`。
+
+从 `.env.local` 读取 `AUTH_DATA`（完整 JSON），然后注入：
+
+```javascript
+// mcp__playwright__browser_evaluate
+{
+  "function": "() => { localStorage.setItem('novel-agent-auth', 'AUTH_DATA的值'); location.reload(); }"
+}
+```
+
+配置方法见 `auth-config.md`。
 
 ### 5. 测试结果处理
 
