@@ -51,9 +51,8 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
     },
   });
 
-  // 内联编辑 hook（用于摘要）
+  // 内联编辑 hook
   const {
-    inlineEdit,
     executeQuickAction,
     startCustomEdit,
     acceptEdit,
@@ -61,14 +60,46 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
   } = useInlineEdit({
     projectId,
     onEditComplete: (suggestion) => {
-      console.log("摘要编辑完成:", suggestion);
+      console.log("内联编辑完成:", suggestion);
     },
     onError: (error) => {
-      console.error("摘要内联编辑错误:", error);
+      console.error("内联编辑错误:", error);
     },
   });
 
-  // 处理摘要快捷操作
+  // ========== 正文内联编辑 ==========
+  const handleContentQuickAction = (
+    action: QuickAction,
+    selectedText: string,
+    range: { from: number; to: number }
+  ) => {
+    executeQuickAction(action, selectedText, range, "content");
+  };
+
+  const handleContentCustomEdit = (
+    selectedText: string,
+    range: { from: number; to: number }
+  ) => {
+    startCustomEdit(selectedText, range, "content");
+  };
+
+  // ========== 细纲内联编辑 ==========
+  const handleOutlineQuickAction = (
+    action: QuickAction,
+    selectedText: string,
+    range: { from: number; to: number }
+  ) => {
+    executeQuickAction(action, selectedText, range, "novel-outline");
+  };
+
+  const handleOutlineCustomEdit = (
+    selectedText: string,
+    range: { from: number; to: number }
+  ) => {
+    startCustomEdit(selectedText, range, "novel-outline");
+  };
+
+  // ========== 摘要内联编辑 ==========
   const handleSummaryQuickAction = (
     action: QuickAction,
     selectedText: string,
@@ -77,7 +108,6 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
     executeQuickAction(action, selectedText, range, "outline");
   };
 
-  // 处理摘要自定义编辑
   const handleSummaryCustomEdit = (
     selectedText: string,
     range: { from: number; to: number }
@@ -85,15 +115,12 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
     startCustomEdit(selectedText, range, "outline");
   };
 
-  // 处理接受编辑
-  const handleAcceptEdit = (newText: string) => {
-    if (inlineEdit.targetType === "outline") {
-      setOutline(newText);
-    }
+  // ========== 通用编辑处理 ==========
+  const handleAcceptEdit = () => {
+    // 内容通过 editor 的 onUpdate 自动更新，这里只需清理状态
     acceptEdit();
   };
 
-  // 处理拒绝编辑
   const handleRejectEdit = () => {
     rejectEdit();
   };
@@ -218,6 +245,12 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
           onChange={setContent}
           isReadOnly={isStreaming}
           placeholder="开始创作你的故事..."
+          targetType="content"
+          enableInlineEdit={!!projectId && !isStreaming}
+          onQuickAction={handleContentQuickAction}
+          onOpenCustomEdit={handleContentCustomEdit}
+          onAcceptEdit={handleAcceptEdit}
+          onRejectEdit={handleRejectEdit}
         />
       </TabsContent>
 
@@ -226,7 +259,7 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
         <SimpleTiptapEditor
           value={chapterOutline}
           onChange={setChapterOutline}
-          targetType="outline"
+          targetType="novel-outline"
           mode="multi-line"
           markdown={true}
           placeholder={`## 剧情设计
@@ -247,6 +280,10 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
 埋设伏笔：...`}
           className="min-h-[300px]"
           enableInlineEdit={!!projectId}
+          onQuickAction={handleOutlineQuickAction}
+          onOpenCustomEdit={handleOutlineCustomEdit}
+          onAcceptEdit={handleAcceptEdit}
+          onRejectEdit={handleRejectEdit}
         />
         <p className="mt-3 text-xs text-muted-foreground">
           细纲是写作前的规划文档，包含剧情设计、情绪节奏、冲突设计等。

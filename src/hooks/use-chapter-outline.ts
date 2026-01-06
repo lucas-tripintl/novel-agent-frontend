@@ -45,6 +45,8 @@ export function useChapterOutlines(
 
 /**
  * 获取单个章节细纲
+ *
+ * 注意：细纲可能不存在（404），此时返回 null
  */
 export function useChapterOutline(
   projectId: string | null,
@@ -53,11 +55,24 @@ export function useChapterOutline(
   return useQuery({
     queryKey: chapterOutlineKeys.detail(projectId ?? "", chapterNumber ?? 0),
     queryFn: async () => {
-      const response = await getChapterOutline(projectId!, chapterNumber!);
-      return response.data;
+      try {
+        const response = await getChapterOutline(projectId!, chapterNumber!);
+        return response.data;
+      } catch (error) {
+        // 细纲不存在时返回 null（而不是 undefined）
+        if (error instanceof Error && error.message.includes("404")) {
+          return null;
+        }
+        // 检查是否是 API 错误响应
+        const apiError = error as { status?: number };
+        if (apiError.status === 404) {
+          return null;
+        }
+        throw error;
+      }
     },
     enabled: !!projectId && !!chapterNumber && chapterNumber > 0,
-    // 细纲可能不存在，不应该报错
+    // 细纲可能不存在，不重试
     retry: false,
   });
 }
