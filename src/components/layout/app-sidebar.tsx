@@ -24,6 +24,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Blend,
   BookOpen,
+  Database,
   FileText,
   FolderOpen,
   Layers,
@@ -88,6 +89,11 @@ const analysisNavItems = [
 ];
 
 const creationNavItems = [
+  {
+    title: "设定库",
+    icon: Database,
+    href: "/entities",
+  },
   {
     title: "模式提取",
     icon: Sparkles,

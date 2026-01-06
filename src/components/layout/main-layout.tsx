@@ -11,7 +11,7 @@ interface MainLayoutProps {
 export function MainLayout({ children }: MainLayoutProps) {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background bg-grid">
+      <div className="flex h-screen w-full overflow-hidden bg-background bg-grid">
         {/* 渐变背景效果 */}
         <div className="pointer-events-none fixed inset-0 bg-gradient-radial" />
 

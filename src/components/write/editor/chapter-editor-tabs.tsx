@@ -12,8 +12,8 @@ import { TiptapEditor } from "./tiptap-editor";
 import { SimpleTiptapEditor } from "./simple-tiptap-editor";
 import { useInlineEdit } from "@/hooks/use-inline-edit";
 import { useGenerateChapterOutline } from "@/hooks/use-chapter-outline";
+import { useGenerateChapterSummary } from "@/hooks/use-generate-summary";
 import { useTasks } from "@/hooks/use-tasks";
-import { useStreamWrite } from "@/hooks/use-stream-write";
 import { Sparkles, FileText, BookOpen, AlignLeft, Loader2 } from "lucide-react";
 import type { QuickAction } from "@/types/inline-edit";
 
@@ -23,14 +23,11 @@ interface ChapterEditorTabsProps {
 
 export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
   const {
-    chapterId,
     chapterNumber,
     content,
     setContent,
     outline,
     setOutline,
-    selectedEntities,
-    mode,
   } = useWritingStore();
 
   const {
@@ -70,12 +67,8 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
   // 生成细纲 mutation
   const generateOutlineMutation = useGenerateChapterOutline(projectId);
 
-  // 流式写作
-  const { startWrite, isStreaming: isWriting } = useStreamWrite({
-    onDone: (totalChars) => {
-      console.log("写作完成，总字数:", totalChars);
-    },
-  });
+  // 生成摘要 mutation
+  const generateSummaryMutation = useGenerateChapterSummary();
 
   // 内联编辑 hook
   const {
@@ -151,13 +144,9 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
     rejectEdit();
   };
 
-  // 生成按钮配置
+  // 生成按钮配置（仅细纲和摘要，正文通过工具栏的"开始书写"生成）
   const generateConfig = useMemo(
     () => ({
-      content: {
-        label: "生成正文",
-        icon: BookOpen,
-      },
       outline: {
         label: "生成细纲",
         icon: FileText,
@@ -170,23 +159,11 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
     []
   );
 
-  // 处理生成
+  // 处理生成（仅细纲和摘要）
   const handleGenerate = useCallback(() => {
     if (!chapterNumber) return;
 
     switch (activeEditorTab) {
-      case "content":
-        // 生成正文
-        if (!chapterId) return;
-        startWrite({
-          projectId,
-          chapterId,
-          mode,
-          entityIds: selectedEntities.map((e) => e.id),
-          outline: outline || undefined,
-        });
-        break;
-
       case "outline":
         // 生成细纲
         generateOutlineMutation.mutate({
@@ -196,29 +173,41 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
         break;
 
       case "summary":
-        // 生成摘要 - TODO: 调用 AI Chat
-        console.log("生成摘要 - 基于正文内容");
+        // 生成摘要 - 基于正文内容
+        if (!content || content.length < 100) {
+          alert("正文内容不足 100 字，无法生成摘要");
+          return;
+        }
+        generateSummaryMutation.mutate(content, {
+          onSuccess: (data) => {
+            setOutline(data.summary);
+          },
+          onError: (error) => {
+            console.error("生成摘要失败:", error);
+            alert("生成摘要失败，请稍后重试");
+          },
+        });
         break;
     }
   }, [
     activeEditorTab,
     chapterNumber,
-    chapterId,
-    projectId,
-    mode,
-    selectedEntities,
-    outline,
-    startWrite,
+    content,
     generateOutlineMutation,
+    generateSummaryMutation,
+    setOutline,
   ]);
 
   // 是否正在生成
   const isGenerating =
     isStreaming ||
-    isWriting ||
-    generateOutlineMutation.isPending;
+    generateOutlineMutation.isPending ||
+    generateSummaryMutation.isPending;
 
-  const currentConfig = generateConfig[activeEditorTab];
+  // 当前 tab 的生成配置（content tab 没有生成按钮）
+  const currentConfig = activeEditorTab !== "content"
+    ? generateConfig[activeEditorTab]
+    : null;
 
   return (
     <Tabs
@@ -243,25 +232,27 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
           </TabsTrigger>
         </TabsList>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 gap-1.5 text-xs text-primary hover:text-primary"
-          onClick={handleGenerate}
-          disabled={isGenerating || !chapterNumber}
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="h-3 w-3 animate-spin" />
-              生成中...
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-3 w-3" />
-              {currentConfig.label}
-            </>
-          )}
-        </Button>
+        {currentConfig && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 text-xs text-primary hover:text-primary"
+            onClick={handleGenerate}
+            disabled={isGenerating || !chapterNumber}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin" />
+                生成中...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-3 w-3" />
+                {currentConfig.label}
+              </>
+            )}
+          </Button>
+        )}
       </div>
 
       {/* 正文 Tab */}

@@ -7,7 +7,9 @@ import {
   useEntityEditing,
   useOutlineEditing,
   useChapterOutlineState,
+  useEditorContent,
 } from "@/stores/writing-store";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 import { useChapter } from "@/hooks/use-projects";
 import { useChapterOutline } from "@/hooks/use-chapter-outline";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,8 +28,13 @@ export function EditorPane({ projectId }: EditorPaneProps) {
   const { isStreaming } = useStreamingState();
   const { editingEntity } = useEntityEditing();
   const { editingOutline } = useOutlineEditing();
-  const { loadChapterOutline } = useChapterOutlineState();
+  const { loadChapterOutline, isChapterOutlineDirty } = useChapterOutlineState();
+  const { isDirty } = useEditorContent();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // 浏览器关闭/刷新时提示未保存更改
+  const hasUnsavedChanges = isDirty || isChapterOutlineDirty;
+  useUnsavedChangesWarning(hasUnsavedChanges);
 
   // 使用章节详情 API 获取完整内容
   const { data: chapterDetail } = useChapter(projectId, chapterNumber ?? 0, {

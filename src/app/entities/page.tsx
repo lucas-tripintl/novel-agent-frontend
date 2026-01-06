@@ -13,70 +13,77 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Library,
-  Blend,
+  Database,
   Search,
   AlertCircle,
   Eye,
-  Zap,
+  Globe,
+  User,
+  MapPin,
   GitBranch,
-  Users,
-  Swords,
-  Heart,
-  TrendingUp,
   Sparkles,
+  BookOpen,
+  Package,
+  Zap,
+  PenTool,
+  FileText,
   LayoutGrid,
   Loader2,
 } from "lucide-react";
-import Link from "next/link";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { useInfinitePatterns, PATTERN_TYPE_OPTIONS } from "@/hooks/use-patterns";
-import { getPatternTypeLabel } from "@/types/pattern";
-import type { EntityType } from "@/types/api";
+import { useInfiniteEntities, ENTITY_LIBRARY_TYPE_OPTIONS } from "@/hooks/use-entities";
+import { useProjects } from "@/hooks/use-projects";
+import type { EntityType, EntityRead } from "@/types/api";
 import { formatTimeAgo } from "@/lib/utils/time";
-import { PatternDetailDialog } from "@/components/elements/pattern-detail-dialog";
-import type { PatternRead } from "@/types/pattern";
 import { NovelFilter } from "@/components/common/novel-filter";
 import { cn } from "@/lib/utils";
+import { useEnumStore } from "@/stores/enum-store";
 
 // 分类图标映射
 const categoryIcons: Record<string, React.ReactNode> = {
   all: <LayoutGrid className="h-4 w-4" />,
-  power_system: <Zap className="h-4 w-4" />,
-  plot_pattern: <GitBranch className="h-4 w-4" />,
-  character_archetype: <Users className="h-4 w-4" />,
-  conflict_pattern: <Swords className="h-4 w-4" />,
-  relationship_dynamic: <Heart className="h-4 w-4" />,
-  conflict_escalation: <TrendingUp className="h-4 w-4" />,
-  cheat_evolution: <Sparkles className="h-4 w-4" />,
+  worldview: <Globe className="h-4 w-4" />,
+  character: <User className="h-4 w-4" />,
+  location: <MapPin className="h-4 w-4" />,
+  plotline: <GitBranch className="h-4 w-4" />,
+  golden_finger: <Sparkles className="h-4 w-4" />,
+  foreshadowing: <BookOpen className="h-4 w-4" />,
+  item: <Package className="h-4 w-4" />,
+  cool_point_pattern: <Zap className="h-4 w-4" />,
+  writing_technique: <PenTool className="h-4 w-4" />,
+  golden_opening_report: <FileText className="h-4 w-4" />,
 };
 
-export default function ElementsPage() {
+export default function EntitiesPage() {
   const [typeFilter, setTypeFilter] = useState<EntityType | "all">("all");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedPattern, setSelectedPattern] = useState<PatternRead | null>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedEntity, setSelectedEntity] = useState<EntityRead | null>(null);
 
   // 滚动容器和 sentinel 引用
   const scrollRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const handleViewPattern = useCallback((pattern: PatternRead) => {
-    setSelectedPattern(pattern);
-    setIsDetailOpen(true);
-  }, []);
+  // 枚举本地化
+  const getLabel = useEnumStore((state) => state.getLabel);
 
-  const handleCloseDetail = useCallback(() => {
-    setIsDetailOpen(false);
-    setSelectedPattern(null);
+  // 获取项目列表（用于显示项目名称）
+  const { data: projectsData } = useProjects({ limit: 100 });
+  const projectNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    projectsData?.items.forEach((p) => map.set(p.id, p.name));
+    return map;
+  }, [projectsData]);
+
+  const handleViewEntity = useCallback((entity: EntityRead) => {
+    setSelectedEntity(entity);
+    // TODO: 打开详情对话框
   }, []);
 
   // 切换分类时重置滚动位置
   const handleTypeChange = useCallback((type: EntityType | "all") => {
     setTypeFilter(type);
-    // 重置滚动位置
     if (scrollRef.current) {
       const viewport = scrollRef.current.querySelector("[data-radix-scroll-area-viewport]");
       if (viewport) {
@@ -85,7 +92,7 @@ export default function ElementsPage() {
     }
   }, []);
 
-  // 获取抽象模式列表（无限滚动）
+  // 获取设定列表（无限滚动）
   const {
     data,
     isLoading,
@@ -95,10 +102,10 @@ export default function ElementsPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useInfinitePatterns({
+  } = useInfiniteEntities({
     entity_type: typeFilter === "all" ? undefined : typeFilter,
     keyword: debouncedSearch || undefined,
-    source_project_id: selectedProjectId || undefined,
+    project_id: selectedProjectId || undefined,
   });
 
   // 防抖搜索
@@ -110,7 +117,7 @@ export default function ElementsPage() {
   }, [searchQuery]);
 
   // 合并所有页的数据
-  const patterns = useMemo(() => {
+  const entities = useMemo(() => {
     return data?.pages.flatMap((page) => page.items) ?? [];
   }, [data]);
 
@@ -140,6 +147,15 @@ export default function ElementsPage() {
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  // 获取实体类型的本地化标签
+  const getTypeLabel = (type: EntityType) => {
+    const enumLabel = getLabel("EntityType", type);
+    if (enumLabel !== type) return enumLabel;
+    // fallback 到静态配置
+    const option = ENTITY_LIBRARY_TYPE_OPTIONS.find((o) => o.value === type);
+    return option?.label ?? type;
+  };
+
   return (
     <MainLayout>
       <div className="flex flex-col h-full overflow-hidden">
@@ -148,11 +164,11 @@ export default function ElementsPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                <Library className="h-6 w-6 text-primary" />
-                元素库
+                <Database className="h-6 w-6 text-primary" />
+                设定库
               </h1>
               <p className="text-muted-foreground mt-1 text-sm">
-                从已分析作品中提取的抽象模式，可用于融合创作
+                从已分析作品中提取的设定数据
               </p>
             </div>
           </div>
@@ -171,7 +187,7 @@ export default function ElementsPage() {
             <div className="flex-1 max-w-sm relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="搜索模式名称..."
+                placeholder="搜索设定名称..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 bg-background/50"
@@ -181,7 +197,7 @@ export default function ElementsPage() {
             {/* 统计 */}
             {total > 0 && (
               <span className="text-sm text-muted-foreground font-mono">
-                共 <span className="text-foreground font-semibold">{total}</span> 个模式
+                共 <span className="text-foreground font-semibold">{total}</span> 个设定
               </span>
             )}
           </div>
@@ -192,7 +208,7 @@ export default function ElementsPage() {
           {/* 左侧分类导航（固定不滚动） */}
           <nav className="shrink-0 w-40">
             <div className="space-y-1">
-              {PATTERN_TYPE_OPTIONS.map((option) => {
+              {ENTITY_LIBRARY_TYPE_OPTIONS.map((option) => {
                 const isActive = typeFilter === option.value;
                 const Icon = categoryIcons[option.value];
 
@@ -223,7 +239,7 @@ export default function ElementsPage() {
             {/* 分隔线与提示 */}
             <div className="mt-6 pt-4 border-t border-border/40">
               <p className="text-xs text-muted-foreground/60 leading-relaxed px-1">
-                点击分类筛选模式
+                点击分类筛选设定
               </p>
             </div>
           </nav>
@@ -250,7 +266,6 @@ export default function ElementsPage() {
                             <Skeleton className="h-6 w-16" />
                             <Skeleton className="h-6 w-16" />
                           </div>
-                          <Skeleton className="h-9 w-full" />
                         </CardContent>
                       </Card>
                     ))}
@@ -265,7 +280,7 @@ export default function ElementsPage() {
                       <div className="flex-1">
                         <h3 className="font-semibold text-destructive">加载失败</h3>
                         <p className="text-sm text-muted-foreground">
-                          {error instanceof Error ? error.message : "无法加载元素库数据"}
+                          {error instanceof Error ? error.message : "无法加载设定库数据"}
                         </p>
                       </div>
                       <Button variant="outline" onClick={() => refetch()}>
@@ -275,53 +290,59 @@ export default function ElementsPage() {
                   </Card>
                 )}
 
-                {/* 元素网格 */}
-                {!isLoading && !isError && patterns.length > 0 && (
+                {/* 设定网格 */}
+                {!isLoading && !isError && entities.length > 0 && (
                   <>
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                      {patterns.map((pattern) => (
+                      {entities.map((entity) => (
                         <Card
-                          key={pattern.id}
-                          className="bg-card/50 border-border/50 hover:border-primary/30 hover:shadow-md transition-all duration-200 group flex flex-col"
+                          key={entity.id}
+                          className="bg-card/50 border-border/50 hover:border-primary/30 hover:shadow-md transition-all duration-200 group cursor-pointer flex flex-col"
+                          onClick={() => handleViewEntity(entity)}
                         >
                           <CardHeader className="pb-3">
                             <div className="flex items-center justify-between">
                               <Badge variant="outline" className="text-xs">
-                                {getPatternTypeLabel(pattern.entity_type)}
+                                {getTypeLabel(entity.entity_type)}
                               </Badge>
                               <span className="text-xs text-muted-foreground font-mono">
-                                {formatTimeAgo(pattern.created_at)}
+                                {formatTimeAgo(entity.created_at)}
                               </span>
                             </div>
                             <CardTitle className="text-base group-hover:text-primary transition-colors">
-                              {pattern.name}
+                              {entity.name}
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="flex flex-col flex-1 space-y-3">
-                            {/* 模式描述 */}
+                            {/* 设定描述 */}
                             <p className="text-sm text-muted-foreground line-clamp-3 flex-1">
-                              {pattern.content || "暂无描述"}
+                              {entity.content || "暂无描述"}
                             </p>
 
-                            {/* 标签 */}
-                            {pattern.tags && pattern.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5">
-                                {pattern.tags.slice(0, 4).map((tag, idx) => (
-                                  <Badge
-                                    key={idx}
-                                    variant="secondary"
-                                    className="text-xs"
-                                  >
-                                    {tag}
-                                  </Badge>
-                                ))}
-                                {pattern.tags.length > 4 && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    +{pattern.tags.length - 4}
-                                  </Badge>
-                                )}
-                              </div>
-                            )}
+                            {/* 来源项目 + 标签 */}
+                            <div className="flex flex-wrap gap-1.5">
+                              {/* 项目名称 */}
+                              {projectNameMap.get(entity.project_id) && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {projectNameMap.get(entity.project_id)}
+                                </Badge>
+                              )}
+                              {/* 标签 */}
+                              {entity.tags?.slice(0, 2).map((tag, idx) => (
+                                <Badge
+                                  key={idx}
+                                  variant="outline"
+                                  className="text-xs"
+                                >
+                                  {tag}
+                                </Badge>
+                              ))}
+                              {entity.tags && entity.tags.length > 2 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{entity.tags.length - 2}
+                                </Badge>
+                              )}
+                            </div>
 
                             {/* 操作按钮 - 固定在底部 */}
                             <div className="flex gap-2 mt-auto pt-2">
@@ -329,16 +350,13 @@ export default function ElementsPage() {
                                 variant="outline"
                                 size="sm"
                                 className="flex-1"
-                                onClick={() => handleViewPattern(pattern)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleViewEntity(entity);
+                                }}
                               >
                                 <Eye className="mr-2 h-4 w-4" />
                                 查看
-                              </Button>
-                              <Button variant="outline" size="sm" className="flex-1" asChild>
-                                <Link href={`/fusion/create?elements=${pattern.id}`}>
-                                  <Blend className="mr-2 h-4 w-4" />
-                                  融合
-                                </Link>
                               </Button>
                             </div>
                           </CardContent>
@@ -357,9 +375,9 @@ export default function ElementsPage() {
                           <span className="text-sm">加载更多...</span>
                         </div>
                       )}
-                      {!hasNextPage && patterns.length > 0 && (
+                      {!hasNextPage && entities.length > 0 && (
                         <span className="text-sm text-muted-foreground/60">
-                          已加载全部 {total} 个模式
+                          已加载全部 {total} 个设定
                         </span>
                       )}
                     </div>
@@ -367,19 +385,19 @@ export default function ElementsPage() {
                 )}
 
                 {/* 空状态 */}
-                {!isLoading && !isError && patterns.length === 0 && (
+                {!isLoading && !isError && entities.length === 0 && (
                   <Card className="bg-card/30 border-dashed border-2">
                     <CardContent className="flex flex-col items-center justify-center py-16">
-                      <Library className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                      <Database className="h-12 w-12 text-muted-foreground/50 mb-4" />
                       <h3 className="text-lg font-semibold mb-2">
                         {searchQuery || typeFilter !== "all" || selectedProjectId
-                          ? "没有找到匹配的模式"
-                          : "暂无抽象模式"}
+                          ? "没有找到匹配的设定"
+                          : "暂无设定数据"}
                       </h3>
                       <p className="text-muted-foreground text-center max-w-sm">
                         {searchQuery || typeFilter !== "all" || selectedProjectId
                           ? "尝试调整筛选条件"
-                          : "分析更多作品并提取模式后，将在此处显示"}
+                          : "分析更多作品后，将在此处显示"}
                       </p>
                       {(searchQuery || typeFilter !== "all" || selectedProjectId) && (
                         <Button
@@ -402,18 +420,6 @@ export default function ElementsPage() {
           </div>
         </div>
       </div>
-
-      {/* Pattern 详情对话框 */}
-      <PatternDetailDialog
-        pattern={selectedPattern}
-        open={isDetailOpen}
-        onOpenChange={(open) => {
-          if (!open) handleCloseDetail();
-        }}
-        onSave={() => {
-          refetch();
-        }}
-      />
     </MainLayout>
   );
 }

@@ -13,11 +13,14 @@ interface TaskPanelState {
   isExpanded: boolean;
   /** 是否有新任务（用于提示） */
   hasNewTask: boolean;
+  /** 是否为最小化（圆形）状态 */
+  isMinimized: boolean;
 
   // Actions
   setExpanded: (expanded: boolean) => void;
   toggleExpanded: () => void;
   setHasNewTask: (hasNew: boolean) => void;
+  setMinimized: (minimized: boolean) => void;
 }
 
 export const useTaskStore = create<TaskPanelState>()(
@@ -25,15 +28,18 @@ export const useTaskStore = create<TaskPanelState>()(
     (set) => ({
       isExpanded: false,
       hasNewTask: false,
+      isMinimized: false,
 
       setExpanded: (expanded) => set({ isExpanded: expanded }),
       toggleExpanded: () => set((state) => ({ isExpanded: !state.isExpanded })),
       setHasNewTask: (hasNew) =>
         set((state) => ({
           hasNewTask: hasNew,
-          // 有新任务时自动展开
+          // 有新任务时自动展开，同时退出最小化状态
           isExpanded: hasNew ? true : state.isExpanded,
+          isMinimized: hasNew ? false : state.isMinimized,
         })),
+      setMinimized: (minimized) => set({ isMinimized: minimized }),
     }),
     {
       name: "novel-agent-task-panel",
@@ -53,6 +59,7 @@ export function useTaskPanelState() {
     useShallow((state) => ({
       isExpanded: state.isExpanded,
       hasNewTask: state.hasNewTask,
+      isMinimized: state.isMinimized,
     }))
   );
 }
@@ -64,6 +71,7 @@ export function useTaskPanelActions() {
       setExpanded: state.setExpanded,
       toggleExpanded: state.toggleExpanded,
       setHasNewTask: state.setHasNewTask,
+      setMinimized: state.setMinimized,
     }))
   );
 }

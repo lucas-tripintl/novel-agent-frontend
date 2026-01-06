@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import type { ProjectRead } from "@/types/api";
-import { useWritingStore, useEditorContent, useStreamingState } from "@/stores/writing-store";
+import { useWritingStore, useStreamingState } from "@/stores/writing-store";
 import { writingModes, type WritingMode } from "@/types/writing";
-import { useWriteChapter } from "@/hooks/use-tasks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -22,38 +21,33 @@ import {
   Play,
   Square,
   FileSearch,
-  Save,
-  Cloud,
-  CloudOff,
   PanelLeftClose,
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
-  Loader2,
 } from "lucide-react";
 import { EditorSettings } from "./editor/editor-settings";
+import { WriteChapterDialog } from "./write-chapter-dialog";
 
 interface WritingToolbarProps {
   project: ProjectRead;
 }
 
 export function WritingToolbar({ project }: WritingToolbarProps) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+
   const {
     mode,
     setMode,
     chapterNumber,
-    outline,
     isLeftPaneCollapsed,
     isRightPaneCollapsed,
     toggleLeftPane,
     toggleRightPane,
   } = useWritingStore();
 
-  const { content, isDirty } = useEditorContent();
+  const content = useWritingStore((state) => state.content);
   const { isStreaming } = useStreamingState();
-
-  // 写作流水线
-  const writeChapterMutation = useWriteChapter();
 
   // 计算字数
   const wordCount = useMemo(() => {
@@ -64,22 +58,6 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
     return chineseChars + englishWords;
   }, [content]);
 
-  const handleStartWrite = () => {
-    // 构建写作提示
-    const prompt = chapterNumber
-      ? `完成第${chapterNumber}章`
-      : "续写当前章节";
-
-    writeChapterMutation.mutate({
-      projectId: project.id,
-      params: {
-        prompt,
-        chapter_number: chapterNumber ?? undefined,
-        skip_review: false,
-      },
-    });
-  };
-
   const handleStopWrite = () => {
     // TODO: 停止流式写作
     console.log("停止书写");
@@ -89,13 +67,6 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
     // TODO: 触发 AI 审稿
     console.log("AI 审稿");
   };
-
-  const handleSave = () => {
-    // TODO: 保存章节
-    console.log("保存");
-  };
-
-  const isSubmitting = writeChapterMutation.isPending;
 
   return (
     <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b border-border/50 bg-background/80 backdrop-blur-sm px-4">
@@ -169,15 +140,10 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
           <Button
             size="sm"
             className="gap-1.5 glow-primary"
-            onClick={handleStartWrite}
-            disabled={isSubmitting}
+            onClick={() => setDialogOpen(true)}
           >
-            {isSubmitting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Play className="h-3.5 w-3.5" />
-            )}
-            <span>{isSubmitting ? "提交中..." : "开始书写"}</span>
+            <Play className="h-3.5 w-3.5" />
+            <span>开始书写</span>
           </Button>
         )}
 
@@ -204,32 +170,6 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="font-mono">{wordCount.toLocaleString()}</span>
           <span>字</span>
-        </div>
-
-        <Separator orientation="vertical" className="h-6" />
-
-        {/* 保存状态 */}
-        <div className="flex items-center gap-2">
-          {isDirty ? (
-            <>
-              <CloudOff className="h-4 w-4 text-amber-500" />
-              <span className="text-xs text-amber-500">未保存</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1 h-7"
-                onClick={handleSave}
-              >
-                <Save className="h-3.5 w-3.5" />
-                <span className="text-xs">保存</span>
-              </Button>
-            </>
-          ) : (
-            <>
-              <Cloud className="h-4 w-4 text-primary" />
-              <span className="text-xs text-muted-foreground">已保存</span>
-            </>
-          )}
         </div>
 
         <Separator orientation="vertical" className="h-6" />
@@ -280,6 +220,14 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
           <EditorSettings />
         </div>
       </div>
+
+      {/* 写作配置对话框 */}
+      <WriteChapterDialog
+        projectId={project.id}
+        chapterNumber={chapterNumber}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </header>
   );
 }

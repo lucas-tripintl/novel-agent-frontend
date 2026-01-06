@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import type { ProjectRead } from "@/types/api";
 import { useWritingStore } from "@/stores/writing-store";
+import { useContextSourceSync } from "@/hooks/use-context-source-sync";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -26,6 +27,9 @@ export function WritingPanel({ project }: WritingPanelProps) {
   useEffect(() => {
     setContext(project.id, null);
   }, [project.id, setContext]);
+
+  // 自动同步 AI 助手上下文来源
+  useContextSourceSync();
 
   return (
     <div className="flex h-screen flex-col bg-background overflow-hidden">

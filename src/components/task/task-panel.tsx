@@ -1,6 +1,7 @@
 "use client";
 
-import { Zap, ChevronUp, ChevronDown } from "lucide-react";
+import { useEffect } from "react";
+import { Activity, ChevronUp, ChevronDown, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,11 +11,19 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useTasks, useCancelTask } from "@/hooks/use-tasks";
 import { useTaskPanelState, useTaskPanelActions } from "@/stores/task-store";
 import { TaskItem } from "./task-item";
 import type { TaskRead } from "@/types/api";
+
+/** 无活跃任务后多久自动最小化（毫秒） */
+const MINIMIZE_DELAY = 10000;
 
 interface TaskPanelProps {
   projectId: string | null;
@@ -22,8 +31,8 @@ interface TaskPanelProps {
 }
 
 export function TaskPanel({ projectId, className }: TaskPanelProps) {
-  const { isExpanded } = useTaskPanelState();
-  const { toggleExpanded, setHasNewTask } = useTaskPanelActions();
+  const { isExpanded, isMinimized } = useTaskPanelState();
+  const { toggleExpanded, setHasNewTask, setMinimized } = useTaskPanelActions();
   const { data, isLoading } = useTasks(projectId);
   const cancelMutation = useCancelTask();
 
@@ -35,6 +44,22 @@ export function TaskPanel({ projectId, className }: TaskPanelProps) {
     (t) => t.status === "completed" || t.status === "failed" || t.status === "cancelled"
   );
   const activeCount = activeTasks.length;
+
+  // 10 秒无活跃任务后自动最小化
+  useEffect(() => {
+    if (activeCount > 0) {
+      // 有活跃任务时，立即退出最小化
+      setMinimized(false);
+      return;
+    }
+
+    // 没有活跃任务，启动计时器
+    const timer = setTimeout(() => {
+      setMinimized(true);
+    }, MINIMIZE_DELAY);
+
+    return () => clearTimeout(timer);
+  }, [activeCount, setMinimized]);
 
   // 处理取消任务
   const handleCancel = (taskId: string) => {
@@ -55,14 +80,56 @@ export function TaskPanel({ projectId, className }: TaskPanelProps) {
     }
   };
 
+  // 点击圆形按钮恢复正常状态
+  const handleMinimizedClick = () => {
+    setMinimized(false);
+    setHasNewTask(false);
+  };
+
   // 没有项目时不显示
   if (!projectId) return null;
 
+  // 最小化状态：圆形按钮
+  if (isMinimized) {
+    return (
+      <div
+        className={cn(
+          "fixed bottom-4 left-4 z-50",
+          "transition-all duration-300 ease-out",
+          className
+        )}
+      >
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleMinimizedClick}
+              className={cn(
+                "h-12 w-12 rounded-full",
+                "bg-card/50 backdrop-blur-sm border border-border/50 shadow-lg",
+                "hover:bg-card/80 hover:scale-105",
+                "transition-all duration-200"
+              )}
+            >
+              <Activity className="h-5 w-5 text-primary" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            <p>任务</p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    );
+  }
+
+  // 正常状态：完整面板
   return (
     <div
       className={cn(
         "fixed bottom-4 left-4 z-50 w-80",
         "bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl shadow-lg overflow-hidden",
+        "transition-all duration-300 ease-out",
         className
       )}
     >
@@ -74,8 +141,8 @@ export function TaskPanel({ projectId, className }: TaskPanelProps) {
             className="w-full flex items-center justify-between px-4 py-3 h-auto hover:bg-transparent"
           >
             <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-primary" />
-              <span className="font-medium text-sm">任务</span>
+              <Activity className="h-4 w-4 text-primary" />
+              <span className="font-medium text-sm text-foreground">任务</span>
               {activeCount > 0 && (
                 <Badge variant="default" className="text-[10px] px-1.5 py-0">
                   {activeCount}

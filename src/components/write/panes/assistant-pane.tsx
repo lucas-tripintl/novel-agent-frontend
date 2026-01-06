@@ -5,11 +5,14 @@ import {
   useWritingMode,
   useContextEntities,
   useChatSessionState,
-  useSelectedTextContext,
   useSelectedSkill,
   useSelectedModel,
   useEditorContent,
   useWritingStore,
+  useActiveContextSource,
+  useEntityEditing,
+  useOutlineEditing,
+  useChapterOutlineState,
 } from "@/stores/writing-store";
 import {
   useChatSessions,
@@ -61,8 +64,11 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
 
   const mode = useWritingMode();
   const contextEntities = useContextEntities();
-  const { content: editorContent } = useEditorContent();
-  const { selectedTextContext } = useSelectedTextContext();
+  const { content: editorContent, outline } = useEditorContent();
+  const { chapterOutline } = useChapterOutlineState();
+  const { activeContextSource } = useActiveContextSource();
+  const { editingEntity } = useEntityEditing();
+  const { editingOutline } = useOutlineEditing();
   const { selectedSkillId } = useSelectedSkill();
   const { selectedModelId } = useSelectedModel();
   const {
@@ -245,6 +251,30 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
     setLocalMessages([userMessage]);
     setInputValue("");
 
+    // 根据 activeContextSource.type 获取实际内容
+    const getContextContent = (): string | undefined => {
+      if (!activeContextSource?.enabled) return undefined;
+
+      switch (activeContextSource.type) {
+        case "editor-content":
+          return editorContent;
+        case "editor-outline":
+          return chapterOutline;
+        case "editor-summary":
+          return outline;
+        case "entity-detail":
+          // 设定详情
+          return editingEntity
+            ? `【${editingEntity.name}】\n${editingEntity.content}`
+            : undefined;
+        case "outline-detail":
+          // 大纲详情
+          return editingOutline?.data.content ?? undefined;
+        default:
+          return undefined;
+      }
+    };
+
     // 组装请求
     const request: SendChatMessageRequest = {
       messages: [{ role: "user", content: userMessage.content }],
@@ -254,11 +284,8 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
           contextEntities.length > 0
             ? contextEntities.map((e) => e.id)
             : undefined,
-        // 选中文本或本章内容
-        selected_text:
-          selectedTextContext?.enabled
-            ? selectedTextContext.text ?? editorContent
-            : undefined,
+        // 根据上下文类型获取内容
+        selected_text: getContextContent(),
         // 技能
         skill_id: selectedSkillId ?? undefined,
       },
@@ -271,8 +298,12 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
     isStreaming,
     currentSessionId,
     contextEntities,
-    selectedTextContext,
+    activeContextSource,
     editorContent,
+    chapterOutline,
+    outline,
+    editingEntity,
+    editingOutline,
     selectedSkillId,
     selectedModelId,
     createSession,

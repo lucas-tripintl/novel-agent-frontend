@@ -2,7 +2,9 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useProjectChapters, useDeleteChapter, useCreateChapter } from "@/hooks/use-projects";
-import { useWritingStore, useEntityEditing, useEditorContent, useOutlineEditing } from "@/stores/writing-store";
+import { useWritingStore, useEntityEditing, useEditorContent, useOutlineEditing, useChapterOutlineState, useChapterSaveState } from "@/stores/writing-store";
+import { saveChapter } from "@/lib/api/writing";
+import { upsertChapterOutline } from "@/lib/api/chapter-outlines";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,9 +70,25 @@ export function ChapterList({ projectId }: ChapterListProps) {
   const { editingEntity, isEntityDirty, closeEntityEditor } = useEntityEditing();
   const { editingOutline, closeOutlineEditor } = useOutlineEditing();
   const { isDirty: isChapterDirty } = useEditorContent();
+  const { isChapterOutlineDirty } = useChapterOutlineState();
+
+  // 保存状态
+  const {
+    projectId: currentProjectId,
+    chapterId: currentChapterId,
+    chapterNumber: currentChapterNumber,
+    title: currentTitle,
+    outline: currentOutline,
+    content: currentContent,
+    chapterOutline: currentChapterOutline,
+    isDirty,
+    markAsSaved,
+    markChapterOutlineSaved,
+  } = useChapterSaveState();
 
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingChapterId, setPendingChapterId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -150,8 +168,8 @@ export function ChapterList({ projectId }: ChapterListProps) {
     // 如果点击的是当前章节，且不在设定/大纲编辑模式，不做任何操作
     if (selectedChapterId === chapterId && !editingEntity && !editingOutline) return;
 
-    // 检查是否有未保存的更改（设定编辑或章节编辑）
-    const hasUnsavedChanges = isEntityDirty || (isChapterDirty && !editingEntity);
+    // 检查是否有未保存的更改（设定编辑、章节编辑或细纲编辑）
+    const hasUnsavedChanges = isEntityDirty || ((isChapterDirty || isChapterOutlineDirty) && !editingEntity);
 
     if (hasUnsavedChanges) {
       setPendingChapterId(selectedChapterId);
@@ -159,6 +177,59 @@ export function ChapterList({ projectId }: ChapterListProps) {
       setShowConfirmDialog(true);
     } else {
       doSwitchChapter(selectedChapterId, selectedChapterNumber);
+    }
+  };
+
+  // 保存当前章节并切换
+  const handleSaveAndSwitch = async () => {
+    if (!currentProjectId || !currentChapterId || !currentChapterNumber) {
+      // 如果没有当前章节，直接切换
+      if (pendingChapterId && pendingChapterNumber !== null) {
+        doSwitchChapter(pendingChapterId, pendingChapterNumber);
+        setPendingChapterId(null);
+        setPendingChapterNumber(null);
+      }
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const tasks: Promise<unknown>[] = [];
+
+      // 保存正文/摘要
+      if (isDirty) {
+        tasks.push(
+          saveChapter({
+            projectId: currentProjectId,
+            chapterId: currentChapterId,
+            title: currentTitle,
+            outline: currentOutline,
+            content: currentContent,
+          }).then(() => markAsSaved())
+        );
+      }
+
+      // 保存细纲
+      if (isChapterOutlineDirty) {
+        tasks.push(
+          upsertChapterOutline(currentProjectId, currentChapterNumber, {
+            content: currentChapterOutline,
+          }).then(() => markChapterOutlineSaved())
+        );
+      }
+
+      await Promise.all(tasks);
+
+      // 保存成功后切换章节
+      if (pendingChapterId && pendingChapterNumber !== null) {
+        doSwitchChapter(pendingChapterId, pendingChapterNumber);
+        setPendingChapterId(null);
+        setPendingChapterNumber(null);
+      }
+    } catch (error) {
+      console.error("保存失败:", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -206,11 +277,18 @@ export function ChapterList({ projectId }: ChapterListProps) {
         open={showConfirmDialog}
         onOpenChange={setShowConfirmDialog}
         title={isEntityDirty ? "设定有未保存的更改" : "章节有未保存的更改"}
-        description={isEntityDirty
-          ? "当前设定有未保存的更改，确定要放弃并切换章节吗？"
-          : "当前章节有未保存的更改，确定要放弃并切换章节吗？"
+        description={
+          isEntityDirty
+            ? "当前设定有未保存的更改，确定要放弃并切换章节吗？"
+            : isChapterDirty && isChapterOutlineDirty
+              ? "当前章节的正文、摘要和细纲有未保存的更改，是否保存后再切换？"
+              : isChapterOutlineDirty
+                ? "当前章节的细纲有未保存的更改，是否保存后再切换？"
+                : "当前章节的正文或摘要有未保存的更改，是否保存后再切换？"
         }
+        onSave={isEntityDirty ? undefined : handleSaveAndSwitch}
         onDiscard={handleConfirmDiscard}
+        isSaving={isSaving}
       />
       <div className="flex h-full flex-col min-h-0">
         {/* 新建章节按钮 */}

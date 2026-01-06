@@ -1,38 +1,39 @@
 "use client";
 
-import { useSelectedTextContext, useEditorContent } from "@/stores/writing-store";
+import {
+  useActiveContextSource,
+  type ContextSourceType,
+} from "@/stores/writing-store";
 import { cn } from "@/lib/utils";
-import { FileText, Type, X } from "lucide-react";
+import { FileText, BookOpen, AlignLeft, Layers, Map, X } from "lucide-react";
+import type { ComponentType } from "react";
 
 interface TextContextChipProps {
   className?: string;
 }
 
-export function TextContextChip({ className }: TextContextChipProps) {
-  const { selectedTextContext, setSelectedTextContext } = useSelectedTextContext();
-  const { content } = useEditorContent();
+// 图标映射
+const iconMap: Record<ContextSourceType, ComponentType<{ className?: string }>> = {
+  "editor-content": BookOpen,
+  "editor-outline": FileText,
+  "editor-summary": AlignLeft,
+  "entity-detail": Layers,
+  "outline-detail": Map,
+};
 
-  // 如果未启用，不显示
-  if (!selectedTextContext?.enabled) {
+export function TextContextChip({ className }: TextContextChipProps) {
+  const { activeContextSource, setActiveContextSource } = useActiveContextSource();
+
+  // 如果未启用或无上下文，不显示
+  if (!activeContextSource?.enabled) {
     return null;
   }
 
-  const hasSelectedText = selectedTextContext.text !== null;
-  const charCount = hasSelectedText
-    ? selectedTextContext.charCount
-    : content.length;
+  const Icon = iconMap[activeContextSource.type];
 
-  // 格式化行范围显示
-  const formatLineRange = () => {
-    if (!selectedTextContext.lineRange) return "";
-    const [from, to] = selectedTextContext.lineRange;
-    if (from === to) return `L${from}`;
-    return `L${from}-L${to}`;
-  };
-
-  const handleClose = () => {
-    setSelectedTextContext({
-      ...selectedTextContext,
+  const handleDisable = () => {
+    setActiveContextSource({
+      ...activeContextSource,
       enabled: false,
     });
   };
@@ -47,26 +48,17 @@ export function TextContextChip({ className }: TextContextChipProps) {
         className
       )}
     >
-      {hasSelectedText ? (
-        <>
-          <Type className="h-3 w-3 text-blue-500" />
-          <span className="text-blue-600 dark:text-blue-400">
-            {formatLineRange()} ({charCount}字)
-          </span>
-        </>
-      ) : (
-        <>
-          <FileText className="h-3 w-3 text-blue-500" />
-          <span className="text-blue-600 dark:text-blue-400">
-            本章内容 {charCount > 0 && `(${charCount}字)`}
-          </span>
-        </>
-      )}
+      <Icon className="h-3 w-3 text-blue-500" />
+      <span className="text-blue-600 dark:text-blue-400">
+        {activeContextSource.label}
+        {activeContextSource.charCount > 0 &&
+          ` (${activeContextSource.charCount}字)`}
+      </span>
 
       <button
         className="ml-0.5 hover:text-destructive transition-colors"
-        onClick={handleClose}
-        title="不包含文本上下文"
+        onClick={handleDisable}
+        title="不包含此上下文"
       >
         <X className="h-3 w-3" />
       </button>
@@ -75,23 +67,32 @@ export function TextContextChip({ className }: TextContextChipProps) {
 }
 
 /**
- * 启用文本上下文的按钮（当上下文被关闭时显示）
+ * 启用上下文的按钮（当上下文被关闭时显示）
  */
 export function EnableTextContextButton({ className }: { className?: string }) {
-  const { selectedTextContext, setSelectedTextContext } = useSelectedTextContext();
+  const { activeContextSource, setActiveContextSource } = useActiveContextSource();
 
   // 如果已启用，不显示
-  if (selectedTextContext?.enabled) {
+  if (activeContextSource?.enabled) {
     return null;
   }
 
   const handleEnable = () => {
-    setSelectedTextContext({
-      enabled: true,
-      text: null,
-      lineRange: null,
-      charCount: 0,
-    });
+    if (activeContextSource) {
+      // 重新启用当前上下文
+      setActiveContextSource({
+        ...activeContextSource,
+        enabled: true,
+      });
+    } else {
+      // 默认启用正文上下文
+      setActiveContextSource({
+        type: "editor-content",
+        label: "本章正文",
+        charCount: 0,
+        enabled: true,
+      });
+    }
   };
 
   return (
@@ -104,10 +105,10 @@ export function EnableTextContextButton({ className }: { className?: string }) {
         "transition-colors hover:bg-muted hover:text-foreground",
         className
       )}
-      title="包含本章内容作为上下文"
+      title="包含上下文"
     >
       <FileText className="h-3 w-3" />
-      <span>+ 本章内容</span>
+      <span>+ 上下文</span>
     </button>
   );
 }

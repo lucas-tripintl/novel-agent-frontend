@@ -38,6 +38,25 @@ export interface EditingOutline {
   data: NovelOutline | VolumeOutline;
 }
 
+/** AI 助手上下文来源类型 */
+export type ContextSourceType =
+  | "editor-content"    // 中栏：正文
+  | "editor-outline"    // 中栏：细纲
+  | "editor-summary"    // 中栏：摘要
+  | "entity-detail"     // 左栏：设定详情（点击查看）
+  | "outline-detail";   // 左栏：大纲详情（点击查看）
+
+/** AI 助手当前上下文来源 */
+export interface ActiveContextSource {
+  type: ContextSourceType;
+  /** 显示标签（如"本章正文"、"设定：张三"） */
+  label: string;
+  /** 内容字数 */
+  charCount: number;
+  /** 是否启用 */
+  enabled: boolean;
+}
+
 // 生成唯一 ID（兼容非 HTTPS 环境）
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -101,8 +120,12 @@ interface WritingState {
   activeToolCalls: ToolCallState[];
 
   // ============ 文本上下文 ============
-  /** 选中的文本上下文 */
+  /** 选中的文本上下文（用于编辑器内选中文本片段） */
   selectedTextContext: SelectedTextContext | null;
+
+  // ============ AI 助手上下文来源 ============
+  /** 当前 AI 助手附加的上下文来源（根据 Tab 切换/详情查看自动更新） */
+  activeContextSource: ActiveContextSource | null;
 
   // ============ 技能选择 ============
   /** 选中的技能 ID */
@@ -216,6 +239,10 @@ interface WritingState {
   /** 清空选中的文本上下文 */
   clearSelectedTextContext: () => void;
 
+  // ============ AI 助手上下文来源 Actions ============
+  /** 设置当前上下文来源 */
+  setActiveContextSource: (source: ActiveContextSource | null) => void;
+
   // ============ 技能选择 Actions ============
   /** 设置选中的技能 */
   setSelectedSkill: (
@@ -323,6 +350,13 @@ const initialState = {
     lineRange: null,
     charCount: 0,
   } as SelectedTextContext,
+  // AI 助手上下文来源（默认显示本章正文）
+  activeContextSource: {
+    type: "editor-content",
+    label: "本章正文",
+    charCount: 0,
+    enabled: true,
+  } as ActiveContextSource,
   // 技能选择
   selectedSkillId: null,
   selectedSkillInfo: null,
@@ -523,6 +557,9 @@ export const useWritingStore = create<WritingState>()(
             charCount: 0,
           },
         }),
+
+      // AI 助手上下文来源 Actions
+      setActiveContextSource: (source) => set({ activeContextSource: source }),
 
       // 技能选择 Actions
       setSelectedSkill: (skillId, info) =>
@@ -815,6 +852,16 @@ export function useSelectedTextContext() {
   );
 }
 
+/** 获取 AI 助手上下文来源 */
+export function useActiveContextSource() {
+  return useWritingStore(
+    useShallow((state) => ({
+      activeContextSource: state.activeContextSource,
+      setActiveContextSource: state.setActiveContextSource,
+    }))
+  );
+}
+
 /** 获取选中的技能 */
 export function useSelectedSkill() {
   return useWritingStore(
@@ -876,6 +923,25 @@ export function useChapterOutlineState() {
       setActiveEditorTab: state.setActiveEditorTab,
       setChapterOutline: state.setChapterOutline,
       loadChapterOutline: state.loadChapterOutline,
+      markChapterOutlineSaved: state.markChapterOutlineSaved,
+    }))
+  );
+}
+
+/** 获取章节保存状态（用于保存功能） */
+export function useChapterSaveState() {
+  return useWritingStore(
+    useShallow((state) => ({
+      projectId: state.projectId,
+      chapterId: state.chapterId,
+      chapterNumber: state.chapterNumber,
+      title: state.title,
+      outline: state.outline,
+      content: state.content,
+      chapterOutline: state.chapterOutline,
+      isDirty: state.isDirty,
+      isChapterOutlineDirty: state.isChapterOutlineDirty,
+      markAsSaved: state.markAsSaved,
       markChapterOutlineSaved: state.markChapterOutlineSaved,
     }))
   );

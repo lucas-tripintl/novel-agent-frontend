@@ -204,3 +204,27 @@ export async function getChapterContent(
 
   return response.json();
 }
+
+/**
+ * 生成章节摘要
+ */
+export async function generateChapterSummary(
+  content: string
+): Promise<{ summary: string }> {
+  const token = getStoredToken();
+
+  const response = await fetch(`${API_BASE_URL}/summaries/chapter`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ content }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`生成摘要失败: ${response.status}`);
+  }
+
+  return response.json();
+}
