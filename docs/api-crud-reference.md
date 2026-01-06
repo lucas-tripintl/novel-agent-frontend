@@ -104,13 +104,79 @@ PUT /projects/{project_id}/chapters/{chapter_number}/outline
 {
   "content": "## 本章目标\n萧炎展示三段斗之气...",
   "context_requirements": {
-    "character_ids": ["uuid1", "uuid2"],
-    "location_id": "uuid3"
+    "required_characters": [{"name": "萧炎", "role": "主视角"}],
+    "required_locations": ["萧家"],
+    "required_worldview": ["斗气等级"],
+    "foreshadowing_to_recall": []
   }
 }
 ```
 
-### 2.3 删除章节
+### 2.3 获取细纲列表
+
+```http
+GET /projects/{project_id}/chapters/outlines
+```
+
+**查询参数**:
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `chapter_start` | int | - | 章节号起始 (≥1) |
+| `chapter_end` | int | - | 章节号结束 (≥1) |
+
+**响应** `SuccessResponse<ChapterOutlineListRead[]>`:
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "chapter_number": 1,
+      "chapter_id": "uuid或null",
+      "content": "## 剧情设计\n...",
+      "context_requirements": {...},
+      "golden_finger_plan": {...},
+      "created_at": "2026-01-06T10:00:00Z",
+      "updated_at": "2026-01-06T10:30:00Z"
+    }
+  ]
+}
+```
+
+### 2.4 删除细纲
+
+```http
+DELETE /projects/{project_id}/chapters/{chapter_number}/outline
+```
+
+**说明**: 删除指定章节的细纲记录。返回 `204 No Content`。
+
+### 2.5 生成细纲 (异步)
+
+```http
+POST /projects/{project_id}/chapters/{chapter_number}/outline/generate
+```
+
+**说明**: 异步生成章节细纲。返回任务 ID，通过任务接口查询结果。
+
+**响应** (`202 Accepted`):
+
+```json
+{
+  "success": true,
+  "data": {
+    "task_id": "uuid",
+    "status": "queued",
+    "message": "章节 1 细纲生成任务已排队"
+  }
+}
+```
+
+**任务完成后**: 通过 `GET /tasks/{task_id}` 查询，结果中包含生成的细纲。
+
+### 2.6 删除章节
 
 ```http
 DELETE /projects/{project_id}/chapters/{chapter_number}
@@ -470,17 +536,18 @@ Authorization: Bearer <token>
 
 ## 快速参考
 
-| 资源 | PATCH | PUT | DELETE |
-|------|:-----:|:---:|:------:|
-| 项目 | `/projects/{id}` | - | `/projects/{id}` |
-| 章节 | `/chapters/{num}` | `/chapters/{num}/outline` | `/chapters/{num}` |
-| 实体 | `/entities/{id}` | - | `/entities/{id}` |
-| 金手指 | `/golden-fingers/{name}` | - | `/golden-fingers/{name}` |
-| 选题 | `/ideas/{id}` | - | `/ideas/{id}` (软删除) |
-| 总纲 | - | `/outlines/novel` | `/outlines/novel` |
-| 卷纲 | - | `/outlines/volumes/{num}` | `/outlines/volumes/{num}` |
-| 草稿 | - | - | `/drafts/{chapter}` |
-| 技能 | `/skills/{id}` | - | `/skills/{id}` |
-| 融合 | `/fusion/tasks/{id}` | - | `/fusion/tasks/{id}` |
+| 资源 | GET | POST | PUT | PATCH | DELETE |
+|------|:---:|:----:|:---:|:-----:|:------:|
+| 项目 | `/projects` | `/projects` | - | `/projects/{id}` | `/projects/{id}` |
+| 章节 | `/chapters` | `/chapters` | - | `/chapters/{num}` | `/chapters/{num}` |
+| 细纲 | `/chapters/outlines` | `/chapters/{num}/outline/generate` | `/chapters/{num}/outline` | - | `/chapters/{num}/outline` |
+| 实体 | `/entities` | `/entities` | - | `/entities/{id}` | `/entities/{id}` |
+| 金手指 | `/golden-fingers` | `/golden-fingers` | - | `/golden-fingers/{name}` | `/golden-fingers/{name}` |
+| 选题 | `/ideas` | `/ideas` | - | `/ideas/{id}` | `/ideas/{id}` (软删除) |
+| 总纲 | `/outlines/novel` | - | `/outlines/novel` | - | `/outlines/novel` |
+| 卷纲 | `/outlines/volumes/{num}` | - | `/outlines/volumes/{num}` | - | `/outlines/volumes/{num}` |
+| 草稿 | `/drafts` | - | - | - | `/drafts/{chapter}` |
+| 技能 | `/skills` | `/skills` | - | `/skills/{id}` | `/skills/{id}` |
+| 融合 | `/fusion/tasks` | `/fusion/tasks` | - | `/fusion/tasks/{id}` | `/fusion/tasks/{id}` |
 
 > 所有路径前缀为 `/api/v1`，章节相关路径需要加上 `/projects/{project_id}` 前缀。
