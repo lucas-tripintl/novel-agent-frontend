@@ -285,7 +285,7 @@ export function SimpleTiptapEditor({
       setIsEditing(true);
       // 聚焦编辑器
       setTimeout(() => {
-        editor?.commands.focus("end");
+        editor?.commands.focus();
       }, 0);
     }
   }, [disabled, readOnly, isEditing, editor]);
