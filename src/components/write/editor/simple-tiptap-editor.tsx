@@ -365,6 +365,7 @@ export function SimpleTiptapEditor({
           "[&_.is-editor-empty:first-child::before]:float-left",
           "[&_.is-editor-empty:first-child::before]:h-0",
           "[&_.is-editor-empty:first-child::before]:pointer-events-none",
+          "[&_.is-editor-empty:first-child::before]:whitespace-pre-wrap",
           editorClassName
         )}
       />

@@ -439,8 +439,21 @@
 }
 
 /* 多行模式：像 Textarea */
+.simple-tiptap-textarea {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.simple-tiptap-textarea > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 .simple-tiptap-textarea .ProseMirror {
   min-height: 80px;
+  flex: 1;
 }
 
 /* 只读模式：像 label，背景透明 */
@@ -484,6 +497,7 @@
   float: left;
   height: 0;
   pointer-events: none;
+  white-space: pre-wrap;
 }
 
 /* ============================================

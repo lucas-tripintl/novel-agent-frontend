@@ -255,58 +255,43 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
       </TabsContent>
 
       {/* 细纲 Tab */}
-      <TabsContent value="outline" className="flex-1 m-0 mt-0 min-h-0 p-4">
+      <TabsContent value="outline" className="flex-1 m-0 mt-0 min-h-0 p-4 flex flex-col">
         <SimpleTiptapEditor
           value={chapterOutline}
           onChange={setChapterOutline}
           targetType="novel-outline"
           mode="multi-line"
           markdown={true}
-          placeholder={`## 剧情设计
-承接上章：...
-本章目标：...
-关键事件：1. xxx 2. xxx 3. xxx
-章末钩子：...
-
-## 情绪与节奏
-情绪曲线：开篇xx → 中段xx → 高潮xx → 收尾xx
-
-## 冲突设计
-主冲突：...
-次冲突：...
-
-## 爽点与伏笔
-爽点设计：...
-埋设伏笔：...`}
-          className="min-h-[300px]"
+          placeholder="输入章节细纲：剧情设计、情绪节奏、冲突设计、爽点伏笔..."
+          className="flex-1 min-h-[300px]"
           enableInlineEdit={!!projectId}
           onQuickAction={handleOutlineQuickAction}
           onOpenCustomEdit={handleOutlineCustomEdit}
           onAcceptEdit={handleAcceptEdit}
           onRejectEdit={handleRejectEdit}
         />
-        <p className="mt-3 text-xs text-muted-foreground">
+        <p className="mt-3 text-xs text-muted-foreground shrink-0">
           细纲是写作前的规划文档，包含剧情设计、情绪节奏、冲突设计等。
-          支持 Markdown 格式。
+          支持 Markdown 格式。点击「生成细纲」可 AI 自动生成。
         </p>
       </TabsContent>
 
       {/* 摘要 Tab */}
-      <TabsContent value="summary" className="flex-1 m-0 mt-0 min-h-0 p-4">
+      <TabsContent value="summary" className="flex-1 m-0 mt-0 min-h-0 p-4 flex flex-col">
         <SimpleTiptapEditor
           value={outline}
           onChange={setOutline}
           targetType="outline"
           mode="multi-line"
           placeholder="本章主要内容概述...（建议100字以内）"
-          className="min-h-[150px]"
+          className="flex-1 min-h-[150px]"
           enableInlineEdit={!!projectId}
           onQuickAction={handleSummaryQuickAction}
           onOpenCustomEdit={handleSummaryCustomEdit}
           onAcceptEdit={handleAcceptEdit}
           onRejectEdit={handleRejectEdit}
         />
-        <p className="mt-3 text-xs text-muted-foreground">
+        <p className="mt-3 text-xs text-muted-foreground shrink-0">
           摘要是本章内容的简短描述，用于快速了解章节核心内容。
         </p>
       </TabsContent>
