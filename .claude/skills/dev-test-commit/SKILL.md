@@ -33,6 +33,7 @@ allowed-tools: Bash(pnpm:*), Bash(git:*), mcp__playwright__*
 - 检查是否已在运行：`pgrep -f "next dev"`
 - 如未运行，后台启动：`pnpm dev`（run_in_background: true）
 - 等待服务器就绪（http://192.168.0.77:3000）
+- 测试结束后需要关闭
 
 ### 4. Playwright 自动测试
 
@@ -44,6 +45,7 @@ allowed-tools: Bash(pnpm:*), Bash(git:*), mcp__playwright__*
     - 读取 .env.local 中的 AUTH_DATA（完整的认证 JSON）
     - mcp__playwright__browser_evaluate 注入到 localStorage:
       function: "() => { localStorage.setItem('novel-agent-auth', AUTH_DATA); location.reload(); }"
+    - 如果没有读取到.env.local, 可以使用 user@example.com / stringst 登入
 
 4.2 执行测试检查
     - mcp__playwright__browser_screenshot 截图查看页面状态
