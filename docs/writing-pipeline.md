@@ -8,6 +8,8 @@
 - [认证](#认证)
 - [大纲生成接口](#大纲生成接口)
 - [大纲查询接口](#大纲查询接口)
+- [大纲编辑接口](#大纲编辑接口)
+- [大纲删除接口](#大纲删除接口)
 - [写作流水线接口](#写作流水线接口)
 - [任务管理接口](#任务管理接口)
 - [项目任务接口](#项目任务接口)
@@ -384,6 +386,177 @@ GET /api/v1/projects/{project_id}/outlines/volumes/current?chapter_number=75
 #### 响应
 
 返回包含该章节的卷纲详情（格式同"获取指定卷纲"）。
+
+---
+
+## 大纲编辑接口
+
+支持手动编辑已生成的大纲内容。
+
+### 1. 更新总纲
+
+**PUT** `/api/v1/projects/{project_id}/outlines/novel`
+
+更新项目总纲，仅更新请求中非空的字段，其他字段保持不变。
+
+#### 请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `title` | string | ❌ | 书名（最长 500 字符） |
+| `genre` | string | ❌ | 类型（最长 100 字符） |
+| `target_words` | integer | ❌ | 目标字数（≥10000） |
+| `target_volumes` | integer | ❌ | 计划卷数（≥1） |
+| `core_theme` | string | ❌ | 核心主题 |
+| `core_conflict` | string | ❌ | 核心冲突 |
+| `ending_direction` | string | ❌ | 结局走向 |
+| `protagonist_arc` | string | ❌ | 主角成长弧线 |
+| `content` | string | ❌ | 完整大纲内容（Markdown） |
+| `key_plotlines` | string[] | ❌ | 主要剧情线名称列表 |
+
+#### 请求示例
+
+```json
+{
+  "title": "代码修仙录（修订版）",
+  "core_theme": "以编程思维破解天道，实现数字飞升",
+  "content": "## 修订后的总体框架\n\n..."
+}
+```
+
+#### 响应示例
+
+返回更新后的完整总纲（格式同"获取总纲"）。
+
+#### 错误响应（总纲不存在）
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "not_found",
+    "message": "总纲不存在",
+    "details": {"resource": "总纲", "id": "550e8400-..."}
+  }
+}
+```
+
+---
+
+### 2. 更新卷纲
+
+**PUT** `/api/v1/projects/{project_id}/outlines/volumes/{volume_number}`
+
+更新指定卷的卷纲，仅更新请求中非空的字段。
+
+#### 路径参数
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `volume_number` | integer | 卷号（≥1） |
+
+#### 请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `title` | string | ❌ | 卷名（最长 500 字符） |
+| `chapter_start` | integer | ❌ | 起始章节号（≥1） |
+| `chapter_end` | integer | ❌ | 结束章节号（≥1） |
+| `target_words` | integer | ❌ | 目标字数（≥10000） |
+| `volume_goal` | string | ❌ | 本卷核心目标 |
+| `main_conflict` | string | ❌ | 本卷主要冲突 |
+| `key_events` | string[] | ❌ | 关键事件列表 |
+| `ending_hook` | string | ❌ | 卷末钩子/悬念 |
+| `content` | string | ❌ | 完整卷纲内容（Markdown） |
+| `plotline_goals` | object | ❌ | 各剧情线目标，如 `{"主线": "完成觉醒"}` |
+
+#### 请求示例
+
+```json
+{
+  "title": "第一卷 代码觉醒（修订版）",
+  "key_events": [
+    "第5章：发现功法源代码能力",
+    "第15章：首次在比武中获胜",
+    "第30章：揭穿宗门叛徒",
+    "第50章：突破筑基期",
+    "第80章：离开宗门历练"
+  ],
+  "ending_hook": "主角收到神秘信件，得知父母失踪的惊天真相"
+}
+```
+
+#### 响应示例
+
+返回更新后的完整卷纲（格式同"获取指定卷纲"）。
+
+---
+
+## 大纲删除接口
+
+删除已生成的大纲，删除后需要重新生成才能使用。
+
+### 1. 删除总纲
+
+**DELETE** `/api/v1/projects/{project_id}/outlines/novel`
+
+删除项目总纲。
+
+#### 响应示例
+
+```json
+{
+  "message": "总纲已删除"
+}
+```
+
+#### 错误响应（总纲不存在）
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "not_found",
+    "message": "总纲不存在",
+    "details": {"resource": "总纲", "id": "550e8400-..."}
+  }
+}
+```
+
+---
+
+### 2. 删除卷纲
+
+**DELETE** `/api/v1/projects/{project_id}/outlines/volumes/{volume_number}`
+
+删除指定卷的卷纲。
+
+#### 路径参数
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `volume_number` | integer | 卷号（≥1） |
+
+#### 响应示例
+
+```json
+{
+  "message": "第1卷卷纲已删除"
+}
+```
+
+#### 错误响应（卷纲不存在）
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "not_found",
+    "message": "卷纲不存在",
+    "details": {"resource": "卷纲", "id": "第1卷"}
+  }
+}
+```
 
 ---
 
