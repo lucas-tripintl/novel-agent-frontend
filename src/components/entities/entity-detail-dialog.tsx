@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,17 +12,29 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Pencil, Save, X, Loader2, Trash2, BookOpen } from "lucide-react";
+import {
+  Pencil,
+  Save,
+  X,
+  Loader2,
+  Trash2,
+  BookOpen,
+  Clock,
+  Tag,
+  Layers,
+} from "lucide-react";
 import { formatTimeAgo } from "@/lib/utils/time";
 import { updateEntity, deleteEntity } from "@/lib/api/projects";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { entityLibraryKeys, ENTITY_LIBRARY_TYPE_OPTIONS } from "@/hooks/use-entities";
+import {
+  entityLibraryKeys,
+  ENTITY_LIBRARY_TYPE_OPTIONS,
+} from "@/hooks/use-entities";
 import { useEnumStore } from "@/stores/enum-store";
 import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
-import type { EntityRead } from "@/types/api";
+import type { EntityRead, EntityType } from "@/types/api";
+import { cn } from "@/lib/utils";
 
 interface EntityDetailDialogProps {
   entity: EntityRead | null;
@@ -43,7 +55,13 @@ function getTagLabel(
   if (/[\u4e00-\u9fa5]/.test(tag)) return tag;
 
   // 1. 尝试从枚举获取标签
-  const enums = ["CharacterRole", "CharacterImportance", "WorldviewCategory", "WorldBuildingFragmentCategory", "EntityType"];
+  const enums = [
+    "CharacterRole",
+    "CharacterImportance",
+    "WorldviewCategory",
+    "WorldBuildingFragmentCategory",
+    "EntityType",
+  ];
   for (const enumName of enums) {
     const label = getLabel(enumName, tag);
     if (label !== tag) return label;
@@ -71,8 +89,8 @@ function getTypeLabel(
   return option?.label ?? type;
 }
 
-// 属性标签映射
-const attributeLabels: Record<string, string> = {
+// 静态属性标签映射（作为 fallback）
+const staticAttributeLabels: Record<string, string> = {
   role: "角色类型",
   importance: "重要性",
   category: "类别",
@@ -82,7 +100,41 @@ const attributeLabels: Record<string, string> = {
   faction: "阵营",
   gf_type: "金手指类型",
   level: "等级",
+  first_appearance: "首次出现章节",
+  description: "描述",
+  background: "背景",
+  goals: "目标",
+  relationships: "关系",
+  appearance: "外貌",
+  skills: "技能",
+  weaknesses: "弱点",
+  strengths: "优势",
 };
+
+// 获取属性标签（支持从 character_attributes 枚举获取）
+function getAttributeLabel(
+  key: string,
+  entityType: EntityType,
+  getFieldValueLabel: (fieldName: string, value: string) => string
+): string {
+  // 如果是角色类型，尝试从 character_attributes 获取翻译
+  if (entityType === "character") {
+    const label = getFieldValueLabel("character_attributes", key);
+    if (label !== key) return label;
+  }
+
+  // fallback 到静态映射
+  if (staticAttributeLabels[key]) {
+    return staticAttributeLabels[key];
+  }
+
+  // 最后尝试格式化 key 本身
+  return key
+    .replace(/_/g, " ")
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (str) => str.toUpperCase())
+    .trim();
+}
 
 export function EntityDetailDialog({
   entity,
@@ -161,165 +213,244 @@ export function EntityDetailDialog({
     await deleteMutation.mutateAsync();
   }, [deleteMutation]);
 
-  if (!entity) return null;
-
   // 获取项目名称
-  const projectName = projectNameMap?.get(entity.project_id);
-
-  // 渲染属性值
-  const renderAttributeValue = (key: string, value: unknown): React.ReactNode => {
-    if (Array.isArray(value)) {
-      return value.map((v, i) => (
-        <Badge key={i} variant="outline" className="text-xs">
-          {getTagLabel(String(v), getLabel, getFieldValueLabel)}
-        </Badge>
-      ));
-    }
-    if (typeof value === "string") {
-      return (
-        <span className="text-sm">
-          {getTagLabel(value, getLabel, getFieldValueLabel)}
-        </span>
-      );
-    }
-    return <span className="text-sm">{String(value)}</span>;
-  };
+  const projectName = entity ? projectNameMap?.get(entity.project_id) : null;
 
   // 过滤要显示的属性
-  const displayAttributes = entity.attributes
-    ? Object.entries(entity.attributes).filter(
-        ([, value]) => value !== null && value !== undefined && value !== ""
-      )
-    : [];
+  const displayAttributes = useMemo(() => {
+    if (!entity?.attributes) return [];
+    return Object.entries(entity.attributes).filter(
+      ([key, value]) =>
+        value !== null &&
+        value !== undefined &&
+        value !== "" &&
+        key !== "description" // description 通常在 content 中
+    );
+  }, [entity?.attributes]);
+
+  // 渲染属性值
+  const renderAttributeValue = useCallback(
+    (key: string, value: unknown): React.ReactNode => {
+      if (Array.isArray(value)) {
+        if (value.length === 0) return null;
+        return (
+          <div className="flex flex-wrap gap-1">
+            {value.map((v, i) => (
+              <Badge
+                key={i}
+                variant="secondary"
+                className="text-xs font-normal"
+              >
+                {getTagLabel(String(v), getLabel, getFieldValueLabel)}
+              </Badge>
+            ))}
+          </div>
+        );
+      }
+      if (typeof value === "string") {
+        return (
+          <span className="text-sm text-foreground">
+            {getTagLabel(value, getLabel, getFieldValueLabel)}
+          </span>
+        );
+      }
+      return <span className="text-sm text-foreground">{String(value)}</span>;
+    },
+    [getLabel, getFieldValueLabel]
+  );
+
+  if (!entity) return null;
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
-          <DialogHeader className="shrink-0">
-            <div className="flex items-center justify-between gap-4 pr-8">
-              <div className="flex items-center gap-2 min-w-0">
-                <Badge variant="outline" className="shrink-0">
-                  {getTypeLabel(entity.entity_type, getLabel)}
-                </Badge>
-                {isEditing ? (
-                  <Input
-                    value={editedName}
-                    onChange={(e) => setEditedName(e.target.value)}
-                    className="font-semibold"
-                    placeholder="设定名称"
-                  />
-                ) : (
-                  <DialogTitle className="truncate">{entity.name}</DialogTitle>
-                )}
+        <DialogContent
+          className={cn(
+            "sm:max-w-2xl p-0 gap-0 overflow-hidden",
+            "max-h-[85vh] flex flex-col"
+          )}
+        >
+          {/* ===== 头部区域 ===== */}
+          <DialogHeader className="shrink-0 p-6 pb-4 space-y-3 border-b border-border/50">
+            {/* 类型徽章 */}
+            <div className="flex items-center gap-2 pr-8">
+              <Badge
+                variant="outline"
+                className="text-xs font-medium px-2.5 py-0.5"
+              >
+                {getTypeLabel(entity.entity_type, getLabel)}
+              </Badge>
+            </div>
+
+            {/* 标题 */}
+            {isEditing ? (
+              <Input
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+                className="text-lg font-semibold h-10"
+                placeholder="设定名称"
+                autoFocus
+              />
+            ) : (
+              <DialogTitle className="text-xl font-semibold leading-tight pr-8">
+                {entity.name}
+              </DialogTitle>
+            )}
+
+            {/* 来源项目 + 时间 */}
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              {projectName && (
+                <div className="flex items-center gap-1.5">
+                  <BookOpen className="h-3.5 w-3.5" />
+                  <span>{projectName}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" />
+                <span className="font-mono text-xs">
+                  {formatTimeAgo(entity.created_at)}
+                </span>
               </div>
-              <span className="text-xs text-muted-foreground font-mono shrink-0">
-                {formatTimeAgo(entity.created_at)}
-              </span>
             </div>
           </DialogHeader>
 
-          <Separator className="shrink-0" />
-
-          {/* 来源项目 */}
-          {projectName && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
-              <BookOpen className="h-4 w-4" />
-              <span>来源: {projectName}</span>
-            </div>
-          )}
-
-          {/* 属性区域 */}
-          {displayAttributes.length > 0 && (
-            <div className="space-y-2 shrink-0">
-              <Label className="text-xs text-muted-foreground">属性</Label>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                {displayAttributes.map(([key, value]) => (
-                  <div key={key} className="flex items-baseline gap-2">
-                    <span className="text-sm text-muted-foreground shrink-0 min-w-[4.5rem]">
-                      {attributeLabels[key] || key}:
-                    </span>
-                    <div className="flex flex-wrap items-baseline gap-1">
-                      {renderAttributeValue(key, value)}
+          {/* ===== 可滚动内容区域 ===== */}
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="p-6 space-y-5">
+              {/* 属性区域 */}
+              {displayAttributes.length > 0 && (
+                <section className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Layers className="h-4 w-4" />
+                    <span>属性</span>
+                  </div>
+                  <div className="rounded-lg border border-border/50 bg-muted/30 overflow-hidden">
+                    <div className="divide-y divide-border/30">
+                      {displayAttributes.map(([key, value]) => (
+                        <div
+                          key={key}
+                          className="grid grid-cols-[6rem_1fr] gap-3 px-4 py-2.5"
+                        >
+                          <span className="text-sm text-muted-foreground leading-6">
+                            {getAttributeLabel(
+                              key,
+                              entity.entity_type,
+                              getFieldValueLabel
+                            )}
+                          </span>
+                          <div className="min-w-0 leading-6">
+                            {renderAttributeValue(key, value)}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                </section>
+              )}
 
-          {/* 标签区域 */}
-          {entity.tags && entity.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 shrink-0">
-              {entity.tags.map((tag, idx) => (
-                <Badge key={idx} variant="secondary" className="text-xs">
-                  {getTagLabel(tag, getLabel, getFieldValueLabel)}
-                </Badge>
-              ))}
-            </div>
-          )}
+              {/* 标签区域 */}
+              {entity.tags && entity.tags.length > 0 && (
+                <section className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Tag className="h-4 w-4" />
+                    <span>标签</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {entity.tags.map((tag, idx) => (
+                      <Badge
+                        key={idx}
+                        variant="secondary"
+                        className="text-xs font-normal"
+                      >
+                        {getTagLabel(tag, getLabel, getFieldValueLabel)}
+                      </Badge>
+                    ))}
+                  </div>
+                </section>
+              )}
 
-          {/* 内容区域 - 可滚动 */}
-          <div className="flex-1 min-h-0 overflow-y-auto pr-2">
-            {isEditing ? (
-              <div className="space-y-2">
-                <Label htmlFor="content">内容</Label>
-                <Textarea
-                  id="content"
-                  value={editedContent}
-                  onChange={(e) => setEditedContent(e.target.value)}
-                  placeholder="输入设定内容"
-                  className="min-h-[300px] font-mono text-sm"
-                />
-              </div>
-            ) : (
-              <div className="prose prose-sm dark:prose-invert max-w-none break-words">
-                {entity.content ? (
-                  <MarkdownContent content={entity.content} />
+              {/* 内容区域 */}
+              <section className="space-y-3">
+                {isEditing ? (
+                  <>
+                    <label
+                      htmlFor="entity-content"
+                      className="text-sm font-medium text-muted-foreground"
+                    >
+                      内容
+                    </label>
+                    <Textarea
+                      id="entity-content"
+                      value={editedContent}
+                      onChange={(e) => setEditedContent(e.target.value)}
+                      placeholder="输入设定内容..."
+                      className="min-h-[240px] font-mono text-sm resize-none"
+                    />
+                  </>
                 ) : (
-                  <p className="text-muted-foreground italic">暂无内容</p>
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    {entity.content ? (
+                      <MarkdownContent content={entity.content} />
+                    ) : (
+                      <p className="text-muted-foreground italic text-sm">
+                        暂无内容
+                      </p>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
-          </div>
+              </section>
+            </div>
+          </ScrollArea>
 
-          <Separator className="shrink-0" />
-
-          <DialogFooter className="shrink-0">
+          {/* ===== 底部操作区域 ===== */}
+          <DialogFooter className="shrink-0 p-4 border-t border-border/50 bg-muted/20">
             {isEditing ? (
-              <>
+              <div className="flex gap-2 w-full sm:w-auto sm:justify-end">
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={handleCancelEdit}
                   disabled={updateMutation.isPending}
+                  className="flex-1 sm:flex-none"
                 >
-                  <X className="mr-2 h-4 w-4" />
+                  <X className="mr-1.5 h-4 w-4" />
                   取消
                 </Button>
-                <Button onClick={handleSave} disabled={updateMutation.isPending}>
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={updateMutation.isPending}
+                  className="flex-1 sm:flex-none"
+                >
                   {updateMutation.isPending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                   ) : (
-                    <Save className="mr-2 h-4 w-4" />
+                    <Save className="mr-1.5 h-4 w-4" />
                   )}
                   保存
                 </Button>
-              </>
+              </div>
             ) : (
-              <>
+              <div className="flex gap-2 w-full sm:w-auto sm:justify-end">
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={() => setShowDeleteDialog(true)}
-                  className="text-destructive hover:text-destructive"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-1 sm:flex-none"
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash2 className="mr-1.5 h-4 w-4" />
                   删除
                 </Button>
-                <Button variant="outline" onClick={handleStartEdit}>
-                  <Pencil className="mr-2 h-4 w-4" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleStartEdit}
+                  className="flex-1 sm:flex-none"
+                >
+                  <Pencil className="mr-1.5 h-4 w-4" />
                   编辑
                 </Button>
-              </>
+              </div>
             )}
           </DialogFooter>
         </DialogContent>
@@ -339,23 +470,31 @@ export function EntityDetailDialog({
 
 /**
  * 简单的 Markdown 渲染组件
- * 使用唯一计数器避免 key 冲突
+ * 支持标题、列表、粗体、斜体
  */
 function MarkdownContent({ content }: { content: string }) {
   const lines = content.split("\n");
   const elements: React.ReactNode[] = [];
   let listItems: string[] = [];
   let listType: "ul" | "ol" | null = null;
-  let listStartLine = 0; // 记录列表开始的行号
+  let listStartLine = 0;
 
   const flushList = () => {
     if (listItems.length > 0 && listType) {
       const ListTag = listType;
       const key = `list-${listStartLine}`;
       elements.push(
-        <ListTag key={key} className="my-2 pl-4">
+        <ListTag
+          key={key}
+          className={cn(
+            "my-2 space-y-1",
+            listType === "ul" ? "list-disc pl-5" : "list-decimal pl-5"
+          )}
+        >
           {listItems.map((item, idx) => (
-            <li key={idx}>{renderInline(item)}</li>
+            <li key={idx} className="text-sm leading-relaxed">
+              {renderInline(item)}
+            </li>
           ))}
         </ListTag>
       );
@@ -371,21 +510,30 @@ function MarkdownContent({ content }: { content: string }) {
     if (line.startsWith("### ")) {
       flushList();
       elements.push(
-        <h3 key={`h3-${i}`} className="text-base font-semibold mt-4 mb-2">
+        <h3
+          key={`h3-${i}`}
+          className="text-base font-semibold mt-4 mb-2 first:mt-0"
+        >
           {renderInline(line.slice(4))}
         </h3>
       );
     } else if (line.startsWith("## ")) {
       flushList();
       elements.push(
-        <h2 key={`h2-${i}`} className="text-lg font-semibold mt-4 mb-2">
+        <h2
+          key={`h2-${i}`}
+          className="text-lg font-semibold mt-5 mb-2 first:mt-0"
+        >
           {renderInline(line.slice(3))}
         </h2>
       );
     } else if (line.startsWith("# ")) {
       flushList();
       elements.push(
-        <h1 key={`h1-${i}`} className="text-xl font-bold mt-4 mb-2">
+        <h1
+          key={`h1-${i}`}
+          className="text-xl font-bold mt-5 mb-2 first:mt-0"
+        >
           {renderInline(line.slice(2))}
         </h1>
       );
@@ -416,7 +564,7 @@ function MarkdownContent({ content }: { content: string }) {
     else {
       flushList();
       elements.push(
-        <p key={`p-${i}`} className="my-2 break-words">
+        <p key={`p-${i}`} className="text-sm leading-relaxed my-2 first:mt-0">
           {renderInline(line)}
         </p>
       );
@@ -425,7 +573,7 @@ function MarkdownContent({ content }: { content: string }) {
 
   flushList();
 
-  return <>{elements}</>;
+  return <div className="space-y-1">{elements}</div>;
 }
 
 /**
