@@ -133,7 +133,7 @@ export function EditorPane({ projectId }: EditorPaneProps) {
 
       {/* 流式写作指示器 */}
       {isStreaming && (
-        <div className="flex items-center gap-2 px-6 py-2 bg-primary/5 border-b border-primary/20">
+        <div className="flex items-center gap-2 px-6 py-2 bg-primary/5 border-b border-primary/20 shrink-0">
           <Sparkles className="h-4 w-4 text-primary animate-pulse" />
           <span className="text-sm text-primary">AI 正在创作中...</span>
           <div className="flex-1" />
@@ -150,7 +150,7 @@ export function EditorPane({ projectId }: EditorPaneProps) {
       )}
 
       <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0">
-        <div className="max-w-3xl mx-auto px-6 py-6">
+        <div className="w-full px-6 py-6">
           {/* 章节标题栏 */}
           <ChapterTitleBar chapterNumber={chapterNumber || 1} />
 
