@@ -165,7 +165,7 @@ export default function FusionCreatePage() {
               <Blend className="h-6 w-6 text-primary" />
               创建融合任务
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 text-sm">
               选择要融合的元素，配置融合参数
             </p>
           </div>

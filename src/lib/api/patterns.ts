@@ -10,7 +10,7 @@
  */
 
 import { apiClient } from "./client";
-import type { PaginatedResponse, EntityType } from "@/types/api";
+import type { PaginatedResponse, EntityType, SuccessResponse } from "@/types/api";
 import type { PatternRead } from "@/types/pattern";
 
 /**
@@ -72,6 +72,17 @@ export interface PatternUpdateData {
 export async function updatePattern(
   patternId: string,
   data: PatternUpdateData
-) {
-  return apiClient.patch<PatternRead>(`/patterns/${patternId}`, data);
+): Promise<PatternRead> {
+  const response = await apiClient.patch<SuccessResponse<PatternRead>>(
+    `/patterns/${patternId}`,
+    data
+  );
+  return response.data;
+}
+
+/**
+ * 删除抽象模式
+ */
+export async function deletePattern(patternId: string) {
+  return apiClient.delete<void>(`/patterns/${patternId}`);
 }

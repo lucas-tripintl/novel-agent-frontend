@@ -1,10 +1,11 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,9 +27,10 @@ import {
   Eye,
   PenLine,
   Settings,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ProjectStatusBadge } from "@/components/common/status-badge";
 import { projectTypeLabels, type ProjectType } from "@/types/project";
 import { useProjects, useDeleteProject } from "@/hooks/use-projects";
@@ -67,9 +69,7 @@ function EmptyState() {
   return (
     <Card className="bg-card/30 border-dashed border-2 border-border/50">
       <CardContent className="flex flex-col items-center justify-center py-16">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
-          <BookOpen className="h-8 w-8 text-primary" />
-        </div>
+        <BookOpen className="h-12 w-12 text-muted-foreground/50 mb-4" />
         <h3 className="text-lg font-semibold mb-2">还没有项目</h3>
         <p className="text-muted-foreground text-center max-w-sm mb-6">
           上传你的第一本小说，开始智能拆书之旅
@@ -90,9 +90,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <Card className="bg-card/30 border-destructive/30">
       <CardContent className="flex flex-col items-center justify-center py-16">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10 mb-4">
-          <AlertCircle className="h-8 w-8 text-destructive" />
-        </div>
+        <AlertCircle className="h-12 w-12 text-destructive/50 mb-4" />
         <h3 className="text-lg font-semibold mb-2">加载失败</h3>
         <p className="text-muted-foreground text-center max-w-sm mb-6">
           无法获取项目列表，请检查网络连接后重试
@@ -122,14 +120,8 @@ function ProjectCard({
       : 0;
 
   return (
-    <Card className="bg-card/50 border-border/50 backdrop-blur-sm hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 group overflow-hidden relative">
-      {/* 顶部装饰线 - 科技感 */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-      {/* 背景网格纹理 */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:20px_20px] opacity-0 group-hover:opacity-100 transition-opacity" />
-
-      <CardContent className="p-4 relative">
+    <Card className="bg-card/50 border-border/50 backdrop-blur-sm hover:border-primary/30 hover:shadow-md transition-all duration-300 group overflow-hidden flex flex-col">
+      <CardContent className="p-4 flex-1 flex flex-col">
         {/* 头部：标题 + 操作菜单 */}
         <div className="flex items-start justify-between gap-2 mb-3">
           <h3 className="font-semibold text-base leading-tight group-hover:text-primary transition-colors line-clamp-2">
@@ -222,14 +214,23 @@ function ProjectCard({
 }
 
 export function DashboardContent() {
-  const { data, isLoading, isError, refetch } = useProjects({ limit: 20 });
+  const { data, isLoading, isError, refetch } = useProjects({ limit: 50 });
   const deleteProjectMutation = useDeleteProject();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<ProjectList | null>(null);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<ProjectList | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const projects = data?.items ?? [];
+
+  // 前端搜索过滤
+  const filteredProjects = useMemo(() => {
+    const items = data?.items ?? [];
+    if (!searchQuery.trim()) return items;
+    const query = searchQuery.toLowerCase();
+    return items.filter((p) => p.name.toLowerCase().includes(query));
+  }, [data?.items, searchQuery]);
 
   const handleDeleteClick = (projectId: string) => {
     const project = projects.find((p) => p.id === projectId);
@@ -258,7 +259,7 @@ export function DashboardContent() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">作品中心</h1>
-          <p className="text-muted-foreground mt-1">管理你的作品</p>
+          <p className="text-muted-foreground mt-1 text-sm">管理你的作品</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" asChild>
@@ -276,39 +277,28 @@ export function DashboardContent() {
         </div>
       </div>
 
-      {/* 统计卡片 */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-card/50 border-border/50 backdrop-blur-sm hover:border-primary/30 transition-colors">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              作品数
-            </CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-mono">
-              {isLoading ? (
-                <Skeleton className="h-8 w-12" />
-              ) : (
-                data?.total ?? 0
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      {/* 搜索栏 */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="搜索作品名称..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 bg-background/50"
+          />
+        </div>
+        {data && (
+          <span className="text-sm text-muted-foreground font-mono">
+            共 {filteredProjects.length} 部作品
+          </span>
+        )}
       </div>
 
-      {/* 作品列表 */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-muted-foreground" />
-            作品列表
-          </h2>
-        </div>
-
-        {isLoading ? (
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
+      {/* 作品网格 */}
+      {isLoading ? (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
               <ProjectCardSkeleton key={i} />
             ))}
           </div>
@@ -316,9 +306,26 @@ export function DashboardContent() {
           <ErrorState onRetry={() => refetch()} />
         ) : projects.length === 0 ? (
           <EmptyState />
+        ) : filteredProjects.length === 0 ? (
+          <Card className="bg-card/30 border-dashed border-2 border-border/50">
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">没有找到匹配的作品</h3>
+              <p className="text-muted-foreground text-center max-w-sm">
+                尝试使用不同的关键词搜索
+              </p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => setSearchQuery("")}
+              >
+                清除搜索
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {projects.map((project) => (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {filteredProjects.map((project) => (
               <ProjectCard
                 key={project.id}
                 project={project}
@@ -328,7 +335,6 @@ export function DashboardContent() {
             ))}
           </div>
         )}
-      </div>
 
       {/* 删除确认对话框 */}
       <ConfirmDeleteDialog

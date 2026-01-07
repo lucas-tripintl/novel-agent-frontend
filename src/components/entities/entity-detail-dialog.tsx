@@ -13,68 +13,125 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Pencil, Save, X, Loader2, Trash2 } from "lucide-react";
-import { getPatternTypeLabel } from "@/types/pattern";
+import { Pencil, Save, X, Loader2, Trash2, BookOpen } from "lucide-react";
 import { formatTimeAgo } from "@/lib/utils/time";
-import { updatePattern, deletePattern } from "@/lib/api/patterns";
+import { updateEntity, deleteEntity } from "@/lib/api/projects";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { patternKeys } from "@/hooks/use-patterns";
+import { entityLibraryKeys, ENTITY_LIBRARY_TYPE_OPTIONS } from "@/hooks/use-entities";
+import { useEnumStore } from "@/stores/enum-store";
 import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
-import type { PatternRead } from "@/types/pattern";
+import type { EntityRead } from "@/types/api";
 
-interface PatternDetailDialogProps {
-  pattern: PatternRead | null;
+interface EntityDetailDialogProps {
+  entity: EntityRead | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave?: (updatedPattern: PatternRead) => void;
+  onSave?: (updatedEntity: EntityRead) => void;
   onDelete?: () => void;
+  projectNameMap?: Map<string, string>;
 }
 
-export function PatternDetailDialog({
-  pattern,
+// 标签本地化函数
+function getTagLabel(
+  tag: string,
+  getLabel: (enumName: string, value: string) => string,
+  getFieldValueLabel: (fieldName: string, value: string) => string
+): string {
+  // 如果已经是中文，直接返回
+  if (/[\u4e00-\u9fa5]/.test(tag)) return tag;
+
+  // 1. 尝试从枚举获取标签
+  const enums = ["CharacterRole", "CharacterImportance", "WorldviewCategory", "EntityType"];
+  for (const enumName of enums) {
+    const label = getLabel(enumName, tag);
+    if (label !== tag) return label;
+  }
+
+  // 2. 尝试从 field_values 获取标签
+  const fieldNames = ["golden_finger_type", "importance", "gf_type"];
+  for (const fieldName of fieldNames) {
+    const label = getFieldValueLabel(fieldName, tag);
+    if (label !== tag) return label;
+  }
+
+  return tag;
+}
+
+// 获取实体类型标签
+function getTypeLabel(
+  type: string,
+  getLabel: (enumName: string, value: string) => string
+): string {
+  const enumLabel = getLabel("EntityType", type);
+  if (enumLabel !== type) return enumLabel;
+  // fallback 到静态配置
+  const option = ENTITY_LIBRARY_TYPE_OPTIONS.find((o) => o.value === type);
+  return option?.label ?? type;
+}
+
+// 属性标签映射
+const attributeLabels: Record<string, string> = {
+  role: "角色类型",
+  importance: "重要性",
+  category: "类别",
+  personality: "性格特点",
+  abilities: "能力",
+  power_level: "力量等级",
+  faction: "阵营",
+  gf_type: "金手指类型",
+  level: "等级",
+};
+
+export function EntityDetailDialog({
+  entity,
   open,
   onOpenChange,
   onSave,
   onDelete,
-}: PatternDetailDialogProps) {
+  projectNameMap,
+}: EntityDetailDialogProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState("");
   const [editedContent, setEditedContent] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const queryClient = useQueryClient();
 
-  // 当 pattern 改变时，重置编辑状态
+  // 枚举本地化
+  const getLabel = useEnumStore((state) => state.getLabel);
+  const getFieldValueLabel = useEnumStore((state) => state.getFieldValueLabel);
+
+  // 当 entity 改变时，重置编辑状态
   useEffect(() => {
-    if (pattern) {
-      setEditedName(pattern.name);
-      setEditedContent(pattern.content || "");
+    if (entity) {
+      setEditedName(entity.name);
+      setEditedContent(entity.content || "");
       setIsEditing(false);
     }
-  }, [pattern]);
+  }, [entity]);
 
   // 更新 mutation
   const updateMutation = useMutation({
     mutationFn: async (data: { name: string; content: string }) => {
-      if (!pattern) throw new Error("No pattern selected");
-      return updatePattern(pattern.id, data);
+      if (!entity) throw new Error("No entity selected");
+      return updateEntity(entity.project_id, entity.id, data);
     },
-    onSuccess: (updatedPattern) => {
-      // 使缓存失效
-      queryClient.invalidateQueries({ queryKey: patternKeys.all });
+    onSuccess: (updatedEntity) => {
+      queryClient.invalidateQueries({ queryKey: entityLibraryKeys.all });
       setIsEditing(false);
-      onSave?.(updatedPattern);
+      onSave?.(updatedEntity);
     },
   });
 
   // 删除 mutation
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      if (!pattern) throw new Error("No pattern selected");
-      return deletePattern(pattern.id);
+      if (!entity) throw new Error("No entity selected");
+      return deleteEntity(entity.project_id, entity.id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: patternKeys.all });
+      queryClient.invalidateQueries({ queryKey: entityLibraryKeys.all });
       setShowDeleteDialog(false);
       onOpenChange(false);
       onDelete?.();
@@ -86,12 +143,12 @@ export function PatternDetailDialog({
   }, []);
 
   const handleCancelEdit = useCallback(() => {
-    if (pattern) {
-      setEditedName(pattern.name);
-      setEditedContent(pattern.content || "");
+    if (entity) {
+      setEditedName(entity.name);
+      setEditedContent(entity.content || "");
     }
     setIsEditing(false);
-  }, [pattern]);
+  }, [entity]);
 
   const handleSave = useCallback(() => {
     updateMutation.mutate({
@@ -104,7 +161,36 @@ export function PatternDetailDialog({
     await deleteMutation.mutateAsync();
   }, [deleteMutation]);
 
-  if (!pattern) return null;
+  if (!entity) return null;
+
+  // 获取项目名称
+  const projectName = projectNameMap?.get(entity.project_id);
+
+  // 渲染属性值
+  const renderAttributeValue = (key: string, value: unknown): React.ReactNode => {
+    if (Array.isArray(value)) {
+      return value.map((v, i) => (
+        <Badge key={i} variant="outline" className="text-xs">
+          {getTagLabel(String(v), getLabel, getFieldValueLabel)}
+        </Badge>
+      ));
+    }
+    if (typeof value === "string") {
+      return (
+        <span className="text-sm">
+          {getTagLabel(value, getLabel, getFieldValueLabel)}
+        </span>
+      );
+    }
+    return <span className="text-sm">{String(value)}</span>;
+  };
+
+  // 过滤要显示的属性
+  const displayAttributes = entity.attributes
+    ? Object.entries(entity.attributes).filter(
+        ([, value]) => value !== null && value !== undefined && value !== ""
+      )
+    : [];
 
   return (
     <>
@@ -114,33 +200,60 @@ export function PatternDetailDialog({
             <div className="flex items-center justify-between gap-4 pr-8">
               <div className="flex items-center gap-2 min-w-0">
                 <Badge variant="outline" className="shrink-0">
-                  {getPatternTypeLabel(pattern.entity_type)}
+                  {getTypeLabel(entity.entity_type, getLabel)}
                 </Badge>
                 {isEditing ? (
                   <Input
                     value={editedName}
                     onChange={(e) => setEditedName(e.target.value)}
                     className="font-semibold"
-                    placeholder="模式名称"
+                    placeholder="设定名称"
                   />
                 ) : (
-                  <DialogTitle className="truncate">{pattern.name}</DialogTitle>
+                  <DialogTitle className="truncate">{entity.name}</DialogTitle>
                 )}
               </div>
               <span className="text-xs text-muted-foreground font-mono shrink-0">
-                {formatTimeAgo(pattern.created_at)}
+                {formatTimeAgo(entity.created_at)}
               </span>
             </div>
           </DialogHeader>
 
           <Separator className="shrink-0" />
 
+          {/* 来源项目 */}
+          {projectName && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
+              <BookOpen className="h-4 w-4" />
+              <span>来源: {projectName}</span>
+            </div>
+          )}
+
+          {/* 属性区域 */}
+          {displayAttributes.length > 0 && (
+            <div className="space-y-2 shrink-0">
+              <Label className="text-xs text-muted-foreground">属性</Label>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                {displayAttributes.map(([key, value]) => (
+                  <div key={key} className="flex items-baseline gap-2">
+                    <span className="text-sm text-muted-foreground shrink-0 min-w-[4.5rem]">
+                      {attributeLabels[key] || key}:
+                    </span>
+                    <div className="flex flex-wrap items-baseline gap-1">
+                      {renderAttributeValue(key, value)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* 标签区域 */}
-          {pattern.tags && pattern.tags.length > 0 && (
+          {entity.tags && entity.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 shrink-0">
-              {pattern.tags.map((tag, idx) => (
+              {entity.tags.map((tag, idx) => (
                 <Badge key={idx} variant="secondary" className="text-xs">
-                  {tag}
+                  {getTagLabel(tag, getLabel, getFieldValueLabel)}
                 </Badge>
               ))}
             </div>
@@ -155,14 +268,14 @@ export function PatternDetailDialog({
                   id="content"
                   value={editedContent}
                   onChange={(e) => setEditedContent(e.target.value)}
-                  placeholder="输入模式内容（支持 Markdown 格式）"
+                  placeholder="输入设定内容"
                   className="min-h-[300px] font-mono text-sm"
                 />
               </div>
             ) : (
               <div className="prose prose-sm dark:prose-invert max-w-none break-words">
-                {pattern.content ? (
-                  <MarkdownContent content={pattern.content} />
+                {entity.content ? (
+                  <MarkdownContent content={entity.content} />
                 ) : (
                   <p className="text-muted-foreground italic">暂无内容</p>
                 )}
@@ -216,7 +329,7 @@ export function PatternDetailDialog({
       <ConfirmDeleteDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        targetName={`模式「${pattern.name}」`}
+        targetName={`设定「${entity.name}」`}
         onConfirm={handleDelete}
         isPending={deleteMutation.isPending}
       />
@@ -233,7 +346,7 @@ function MarkdownContent({ content }: { content: string }) {
   const elements: React.ReactNode[] = [];
   let listItems: string[] = [];
   let listType: "ul" | "ol" | null = null;
-  let listStartLine = 0;
+  let listStartLine = 0; // 记录列表开始的行号
 
   const flushList = () => {
     if (listItems.length > 0 && listType) {

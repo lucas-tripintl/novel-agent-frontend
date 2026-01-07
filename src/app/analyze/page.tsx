@@ -91,7 +91,7 @@ export default function AnalyzePage() {
             <Zap className="h-6 w-6 text-primary" />
             设定提取
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-sm">
             上传小说文件，智能提取设定与角色
           </p>
         </div>

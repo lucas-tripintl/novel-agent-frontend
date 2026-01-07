@@ -10,7 +10,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Sparkles, AlertCircle, X } from "lucide-react";
 import { formatTimeAgo } from "@/lib/utils/time";
 
-// 假设模式提取的任务类型
+// 假设元素提取的任务类型
 const PATTERN_EXTRACT_JOB_TYPE = "extract_patterns";
 
 interface TaskMeta {
@@ -29,7 +29,7 @@ export function ProcessingList() {
         },
     });
 
-    // 过滤出模式提取任务
+    // 过滤出元素提取任务
     const extractTasks = tasks.filter(task =>
         task.job_type === PATTERN_EXTRACT_JOB_TYPE ||
         task.job_type.includes("pattern")
@@ -59,10 +59,13 @@ export function ProcessingList() {
 
     if (extractTasks.length === 0) {
         return (
-            <Card className="bg-card/30 border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-12">
+            <Card className="bg-card/30 border-dashed border-2 border-border/50">
+                <CardContent className="flex flex-col items-center justify-center py-16">
                     <Sparkles className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground">当前没有正在进行的提取任务</p>
+                    <h3 className="text-lg font-semibold mb-2">暂无进行中的任务</h3>
+                    <p className="text-muted-foreground text-center max-w-sm">
+                        新建提取任务后，将在此处显示进度
+                    </p>
                 </CardContent>
             </Card>
         );
@@ -74,13 +77,13 @@ export function ProcessingList() {
                 const meta = task.meta as TaskMeta | undefined;
 
                 return (
-                    <Card key={task.id} className="bg-card/50">
+                    <Card key={task.id} className="bg-card/50 border-border/50 hover:border-primary/30 hover:shadow-md transition-all">
                         <CardContent className="p-4 space-y-3">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Sparkles className="h-5 w-5 text-primary animate-pulse" />
                                     <span className="font-medium">
-                                        {meta?.project_name || "模式提取任务"}
+                                        {meta?.project_name || "元素提取任务"}
                                     </span>
                                     <Badge variant="secondary" className="bg-primary/20 text-primary">
                                         {task.status === "running" ? "提取中" : "排队中"}

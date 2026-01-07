@@ -173,7 +173,7 @@ export default function FusionDetailPage() {
                 <ChevronLeft className="h-4 w-4" />
               </Link>
             </Button>
-            <h1 className="text-2xl font-bold">融合任务</h1>
+            <h1 className="text-2xl font-bold tracking-tight">融合任务</h1>
           </div>
           <Card className="bg-destructive/10 border-destructive/30">
             <CardContent className="flex items-center gap-4 py-6">
@@ -312,136 +312,150 @@ export default function FusionDetailPage() {
           </Card>
         )}
 
-        {/* 方案对比 - 完成状态或已选择状态（兼容旧数据） */}
-        {(task.status === "completed" || task.status === "selected") && candidates.length > 0 && (
-          <div className="space-y-6">
-            <h2 className="text-lg font-semibold">选择你喜欢的方案</h2>
-
-            {/* 对比说明 */}
-            {task.comparison_summary && (
-              <Card className="bg-muted/30">
-                <CardContent className="p-4">
-                  <p className="text-sm text-muted-foreground">{task.comparison_summary}</p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* 方案卡片 */}
-            <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-              {candidates.map((candidate, index) => (
-                <Card
-                  key={candidate.id}
-                  className="bg-card/50 transition-all border-border/50 hover:border-primary/30 flex flex-col"
-                >
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">方案 {index + 1}</CardTitle>
-                      <Badge variant="outline" className="font-mono">
-                        原创度 {candidate.originality_score}
-                      </Badge>
-                    </div>
-                    <p className="text-xl font-semibold text-primary">
-                      {candidate.name}
-                    </p>
-                  </CardHeader>
-                  <CardContent className="flex-1 flex flex-col">
-                    <div className="space-y-4 flex-1">
-                      <p className="text-sm text-muted-foreground line-clamp-3">
-                        {candidate.summary}
-                      </p>
-
-                      {/* 独特亮点 */}
-                      {candidate.unique_hooks && candidate.unique_hooks.length > 0 && (
-                        <div className="space-y-2">
-                          <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Lightbulb className="h-3 w-3" />
-                            独特亮点
-                          </Label>
-                          <ul className="text-xs text-muted-foreground space-y-1">
-                            {candidate.unique_hooks.slice(0, 2).map((h, i) => (
-                              <li key={i} className="line-clamp-1">• {h}</li>
-                            ))}
-                            {candidate.unique_hooks.length > 2 && (
-                              <li className="text-primary">+{candidate.unique_hooks.length - 2} 更多...</li>
-                            )}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* 风险提示 */}
-                      {candidate.risks && candidate.risks.length > 0 && (
-                        <div className="space-y-2">
-                          <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                            <AlertTriangle className="h-3 w-3" />
-                            风险提示
-                          </Label>
-                          <div className="flex flex-wrap gap-1">
-                            {candidate.risks.slice(0, 2).map((r, i) => (
-                              <Badge
-                                key={i}
-                                variant="outline"
-                                className="text-xs text-amber-500 border-amber-500/30 line-clamp-1 max-w-full"
-                              >
-                                {r.length > 20 ? r.slice(0, 20) + "..." : r}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 操作按钮 - 固定在底部 */}
-                    <div className="flex gap-2 pt-4 mt-auto">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDetailCandidate(candidate);
-                        }}
-                      >
-                        <Eye className="mr-1 h-4 w-4" />
-                        查看详情
-                      </Button>
-                      <Button
-                        className="flex-1 glow-green"
-                        size="sm"
-                        onClick={() => handleOpenBuildDialog(candidate)}
-                      >
-                        <Plus className="mr-1 h-4 w-4" />
-                        创建项目
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+        {/* 已完成状态 - 成功提示条 */}
+        {task.status === "done" && task.result_project_id && (
+          <div className="flex items-center gap-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 shrink-0">
+              <Check className="h-5 w-5 text-primary" />
             </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-foreground">融合已完成</p>
+              <p className="text-sm text-muted-foreground">已成功创建新项目</p>
+            </div>
+            <Button asChild className="glow-green shrink-0">
+              <Link href={`/projects/${task.result_project_id}`}>
+                查看项目
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Link>
+            </Button>
           </div>
         )}
 
+        {/* 方案对比 - 完成状态、已选择状态、done 状态都显示候选方案 */}
+        {(task.status === "completed" || task.status === "selected" || task.status === "done") && candidates.length > 0 && (
+          <div className="space-y-6">
+            <h2 className="text-lg font-semibold">
+              {task.status === "done" ? "融合方案" : "选择你喜欢的方案"}
+            </h2>
 
-        {/* 已完成状态 */}
-        {task.status === "done" && (
-          <Card className="bg-card/50 border-primary/30">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
-                <Check className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">融合已完成</h3>
-              <p className="text-muted-foreground text-center max-w-sm mb-6">
-                已成功创建新项目，你可以前往项目详情页查看
-              </p>
-              {task.result_project_id && (
-                <Button asChild className="glow-green">
-                  <Link href={`/projects/${task.result_project_id}`}>
-                    查看项目
-                    <ChevronRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+            {/* 方案卡片 */}
+            <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+              {candidates.map((candidate, index) => {
+                const isSelected = task.status === "done" && task.selected_candidate_index === index;
+                return (
+                  <Card
+                    key={candidate.id}
+                    className={cn(
+                      "bg-card/50 transition-all flex flex-col relative",
+                      isSelected
+                        ? "border-primary/50 ring-2 ring-primary/20"
+                        : "border-border/50 hover:border-primary/30"
+                    )}
+                  >
+                    {/* 选中标记 */}
+                    {isSelected && (
+                      <div className="absolute -top-2 -right-2 z-10">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary shadow-lg">
+                          <Check className="h-3.5 w-3.5 text-primary-foreground" />
+                        </div>
+                      </div>
+                    )}
+
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-lg">方案 {index + 1}</CardTitle>
+                          {isSelected && (
+                            <Badge variant="default" className="text-xs">
+                              已选中
+                            </Badge>
+                          )}
+                        </div>
+                        <Badge variant="outline" className="font-mono">
+                          原创度 {candidate.originality_score}
+                        </Badge>
+                      </div>
+                      <p className="text-xl font-semibold text-primary">
+                        {candidate.name}
+                      </p>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col">
+                      <div className="space-y-4 flex-1">
+                        <p className="text-sm text-muted-foreground line-clamp-3">
+                          {candidate.summary}
+                        </p>
+
+                        {/* 独特亮点 */}
+                        {candidate.unique_hooks && candidate.unique_hooks.length > 0 && (
+                          <div className="space-y-2">
+                            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Lightbulb className="h-3 w-3" />
+                              独特亮点
+                            </Label>
+                            <ul className="text-xs text-muted-foreground space-y-1">
+                              {candidate.unique_hooks.slice(0, 2).map((h, i) => (
+                                <li key={i} className="line-clamp-1">• {h}</li>
+                              ))}
+                              {candidate.unique_hooks.length > 2 && (
+                                <li className="text-primary">+{candidate.unique_hooks.length - 2} 更多...</li>
+                              )}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* 风险提示 */}
+                        {candidate.risks && candidate.risks.length > 0 && (
+                          <div className="space-y-2">
+                            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              风险提示
+                            </Label>
+                            <div className="flex flex-wrap gap-1">
+                              {candidate.risks.slice(0, 2).map((r, i) => (
+                                <Badge
+                                  key={i}
+                                  variant="outline"
+                                  className="text-xs text-amber-500 border-amber-500/30 line-clamp-1 max-w-full"
+                                >
+                                  {r.length > 20 ? r.slice(0, 20) + "..." : r}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 操作按钮 - 固定在底部 */}
+                      <div className="flex gap-2 pt-4 mt-auto">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={task.status === "done" ? "flex-1" : ""}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDetailCandidate(candidate);
+                          }}
+                        >
+                          <Eye className="mr-1 h-4 w-4" />
+                          查看详情
+                        </Button>
+                        {task.status !== "done" && (
+                          <Button
+                            className="flex-1 glow-green"
+                            size="sm"
+                            onClick={() => handleOpenBuildDialog(candidate)}
+                          >
+                            <Plus className="mr-1 h-4 w-4" />
+                            创建项目
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
 

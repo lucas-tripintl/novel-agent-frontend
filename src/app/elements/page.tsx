@@ -152,7 +152,7 @@ export default function ElementsPage() {
                 元素库
               </h1>
               <p className="text-muted-foreground mt-1 text-sm">
-                从已分析作品中提取的抽象模式，可用于融合创作
+                已提取的元素
               </p>
             </div>
           </div>
@@ -282,7 +282,8 @@ export default function ElementsPage() {
                       {patterns.map((pattern) => (
                         <Card
                           key={pattern.id}
-                          className="bg-card/50 border-border/50 hover:border-primary/30 hover:shadow-md transition-all duration-200 group flex flex-col"
+                          className="bg-card/50 border-border/50 hover:border-primary/30 hover:shadow-md transition-all duration-200 group cursor-pointer flex flex-col"
+                          onClick={() => handleViewPattern(pattern)}
                         >
                           <CardHeader className="pb-3">
                             <div className="flex items-center justify-between">
@@ -329,12 +330,21 @@ export default function ElementsPage() {
                                 variant="outline"
                                 size="sm"
                                 className="flex-1"
-                                onClick={() => handleViewPattern(pattern)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleViewPattern(pattern);
+                                }}
                               >
                                 <Eye className="mr-2 h-4 w-4" />
                                 查看
                               </Button>
-                              <Button variant="outline" size="sm" className="flex-1" asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                asChild
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <Link href={`/fusion/create?elements=${pattern.id}`}>
                                   <Blend className="mr-2 h-4 w-4" />
                                   融合
@@ -410,8 +420,12 @@ export default function ElementsPage() {
         onOpenChange={(open) => {
           if (!open) handleCloseDetail();
         }}
-        onSave={() => {
+        onSave={(updatedPattern) => {
+          setSelectedPattern(updatedPattern);
           refetch();
+        }}
+        onDelete={() => {
+          setSelectedPattern(null);
         }}
       />
     </MainLayout>

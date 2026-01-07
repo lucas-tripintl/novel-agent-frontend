@@ -62,7 +62,7 @@ const mainNavItems = [
 
 const creationNavItems = [
   {
-    title: "模式提取",
+    title: "元素提取",
     icon: Sparkles,
     href: "/elements/extract",
   },

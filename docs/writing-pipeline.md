@@ -1184,7 +1184,7 @@ SSE 流，遵循 AG-UI 协议：
 | `explore_idea` | 点子探索（待实现） | `/pipelines/explore-idea` | - |
 | `analysis` | 章节分析 | `/projects/{id}/analyze` | - |
 | `fusion_pipeline` | 融合流水线 | `/fusion/tasks/{id}/run` | - |
-| `extract_patterns` | 模式提取 | `/projects/{id}/extract-patterns` | - |
+| `extract_patterns` | 元素提取 | `/projects/{id}/extract-patterns` | - |
 
 ---
 

@@ -46,7 +46,7 @@ export function CreateStep({ onSuccess }: CreateStepProps) {
     };
 
     return (
-        <Card className="max-w-2xl mx-auto">
+        <Card className="max-w-2xl mx-auto bg-card/50 border-border/50">
             <CardHeader>
                 <CardTitle>新建提取任务</CardTitle>
                 <CardDescription>

@@ -174,6 +174,28 @@ interface EntityRead {
 - 等宽字体: `font-mono` (用于数据/代码展示)
 - 自定义颜色: `neon-green`, `neon-purple`, `neon-cyan`
 
+### 页面标题样式
+
+**H1 大标题**（页面主标题）:
+```tsx
+<h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+  <Icon className="h-6 w-6 text-primary" />
+  页面标题
+</h1>
+```
+- 必须包含 `tracking-tight`
+- 如有图标，使用 `flex items-center gap-2`
+- 图标尺寸: `h-6 w-6 text-primary`
+
+**页面副标题**（标题下方描述文字）:
+```tsx
+<p className="text-muted-foreground mt-1 text-sm">
+  页面描述文字
+</p>
+```
+- 必须包含 `text-sm`
+- 使用 `mt-1` 与标题保持间距
+
 ## 添加 shadcn/ui 组件
 
 ```bash
@@ -206,6 +228,212 @@ pnpm dlx shadcn@latest add <component-name>
 - 一致的交互模式：同类操作同样入口
 - 渐进式披露：先简单，展开更多
 - 即时反馈：loading skeleton、toast 通知
+
+---
+
+## 设计规范
+
+> 参考标杆页面: `/entities`, `/skills` (左侧分类导航 + 右侧滚动内容)
+
+### 页面布局
+
+**标准列表页布局** (适用于设定库、技法库等带分类筛选的页面):
+
+```tsx
+<div className="flex flex-col h-full overflow-hidden">
+  {/* 标题区 - 固定 */}
+  <div className="shrink-0 pb-4 border-b border-border/40">
+    <h1>页面标题</h1>
+    {/* 筛选栏：项目筛选、搜索框、统计 */}
+  </div>
+
+  {/* 主内容区：左侧导航 + 右侧卡片 */}
+  <div className="flex flex-1 min-h-0 pt-4 gap-6">
+    {/* 左侧分类导航 - 固定不滚动 */}
+    <nav className="shrink-0 w-40">
+      <div className="space-y-1">
+        {/* 分类按钮 */}
+      </div>
+    </nav>
+
+    {/* 右侧内容区 - 独立滚动 */}
+    <div className="flex-1 min-w-0">
+      <ScrollArea className="h-full">
+        <div className="pr-4">
+          {/* 卡片网格 */}
+        </div>
+      </ScrollArea>
+    </div>
+  </div>
+</div>
+```
+
+**简单列表页布局** (适用于作品中心、融合任务等无分类导航的页面):
+
+```tsx
+<div className="space-y-8">
+  {/* 标题 + 操作按钮 */}
+  <div className="flex items-center justify-between">...</div>
+
+  {/* 搜索栏 */}
+  <div className="flex items-center gap-4">...</div>
+
+  {/* 卡片网格 */}
+  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">...</div>
+</div>
+```
+
+### 侧边分类导航
+
+```tsx
+const categoryIcons: Record<string, React.ReactNode> = {
+  all: <LayoutGrid className="h-4 w-4" />,
+  category_a: <IconA className="h-4 w-4" />,
+  // ...
+};
+
+<button
+  className={cn(
+    "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+    "hover:bg-accent/50",
+    isActive
+      ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
+      : "text-muted-foreground hover:text-foreground border border-transparent"
+  )}
+>
+  <span className={cn(
+    "transition-colors",
+    isActive ? "text-primary" : "text-muted-foreground/70"
+  )}>
+    {Icon}
+  </span>
+  <span className="truncate">{label}</span>
+</button>
+```
+
+### 卡片样式
+
+**标准卡片**:
+```tsx
+<Card className="bg-card/50 border-border/50 hover:border-primary/30 hover:shadow-md transition-all duration-200 group flex flex-col">
+  <CardHeader className="pb-3">
+    {/* 顶部：徽章 + 时间 */}
+  </CardHeader>
+  <CardContent className="flex flex-col flex-1 space-y-3">
+    {/* 内容 */}
+
+    {/* 底部按钮 - 固定在底部 */}
+    <div className="flex gap-2 mt-auto pt-2">
+      <Button variant="outline" size="sm" className="flex-1">
+        <Eye className="mr-2 h-4 w-4" />
+        查看
+      </Button>
+    </div>
+  </CardContent>
+</Card>
+```
+
+**关键类名**:
+- 卡片容器: `bg-card/50 border-border/50 hover:border-primary/30 hover:shadow-md`
+- 底部按钮: `variant="outline" size="sm" className="flex-1"`
+- 底部按钮容器: `flex gap-2 mt-auto pt-2`
+
+### 网格布局
+
+```tsx
+// 标准三列网格
+<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+```
+
+**不要**使用 4 列或更多列，保持信息密度适中。
+
+### 空状态
+
+```tsx
+<Card className="bg-card/30 border-dashed border-2 border-border/50">
+  <CardContent className="flex flex-col items-center justify-center py-16">
+    {/* 图标 - 直接使用，不要加圆形背景 */}
+    <IconName className="h-12 w-12 text-muted-foreground/50 mb-4" />
+    <h3 className="text-lg font-semibold mb-2">标题</h3>
+    <p className="text-muted-foreground text-center max-w-sm">描述文字</p>
+    <Button variant="outline" className="mt-4">操作按钮</Button>
+  </CardContent>
+</Card>
+```
+
+**关键点**:
+- 图标: `h-12 w-12 text-muted-foreground/50` (不要加圆形背景)
+- 卡片: `border-dashed border-2`
+
+### 搜索功能
+
+使用前端过滤（适用于数据量 < 100 条的场景）:
+
+```tsx
+const [searchQuery, setSearchQuery] = useState("");
+
+const filteredItems = useMemo(() => {
+  const items = data?.items ?? [];
+  if (!searchQuery.trim()) return items;
+  const query = searchQuery.toLowerCase();
+  return items.filter((item) => item.name.toLowerCase().includes(query));
+}, [data?.items, searchQuery]);
+
+// 搜索框
+<div className="relative flex-1 max-w-sm">
+  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+  <Input
+    placeholder="搜索..."
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    className="pl-9 bg-background/50"
+  />
+</div>
+```
+
+### 无限滚动
+
+使用 IntersectionObserver 监听底部 sentinel:
+
+```tsx
+const scrollRef = useRef<HTMLDivElement>(null);
+const sentinelRef = useRef<HTMLDivElement>(null);
+
+useEffect(() => {
+  const sentinel = sentinelRef.current;
+  if (!sentinel) return;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+    {
+      root: scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]"),
+      rootMargin: "100px",
+      threshold: 0,
+    }
+  );
+
+  observer.observe(sentinel);
+  return () => observer.disconnect();
+}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+```
+
+### 分类切换时重置滚动
+
+```tsx
+const handleCategoryChange = useCallback((category: string) => {
+  setCategory(category);
+  if (scrollRef.current) {
+    const viewport = scrollRef.current.querySelector("[data-radix-scroll-area-viewport]");
+    if (viewport) {
+      viewport.scrollTop = 0;
+    }
+  }
+}, []);
+```
 
 ---
 
@@ -242,15 +470,14 @@ pnpm add @tsparticles/react  # 粒子背景（首页空状态点缀）
 
 | 组件 | 用途 |
 |------|------|
-| Card + CardHeader | 作品卡片，封面/标题/进度 |
-| Badge | 状态标签（分析中/已完成/草稿）|
-| Progress | 分析进度条 |
-| DropdownMenu | 卡片操作菜单（编辑/删除/导出）|
-| Dialog | 新建作品弹窗 |
+| Card | 作品卡片 (标准卡片样式) |
+| Badge | 状态标签（分析中/已完成）+ 类型标签 |
+| Progress | 分析进度条（仅分析中显示）|
+| DropdownMenu | 卡片操作菜单（编辑/删除）|
+| Input + Search | 搜索框（前端过滤）|
 | Skeleton | 加载占位 |
-| EmptyState (自定义) | 空状态引导，可加粒子背景 |
 
-**布局**：响应式网格 `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
+**布局**：简单列表页布局 + 三列网格 `md:grid-cols-2 xl:grid-cols-3`
 
 #### 设定提取 `/analyze`
 > 上传小说、配置分析参数、查看分析进度
@@ -370,8 +597,17 @@ pnpm dlx shadcn@latest add accordion alert collapsible \
 ```
 
 ### 需要自定义
-- `NovelFilter` - 小说多选筛选器（设定集通用）
-- `EmptyState` - 空状态组件
+- `NovelFilter` - 小说筛选器（设定集通用）
 - `Timeline` - 时间轴
 - `Steps` - 步骤指示器
-- `StatCard` - 统计数字卡片（带数字跳动动效）
+
+---
+
+## 已实现页面一览
+
+| 页面 | 路径 | 布局类型 | 特性 |
+|------|------|----------|------|
+| 作品中心 | `/` | 简单列表页 | 搜索、三列网格 |
+| 设定库 | `/entities` | 标准列表页 | 侧边分类导航、无限滚动 |
+| 技法库 | `/skills` | 标准列表页 | 侧边分类导航、阶段/可见性筛选 |
+| 元素融合 | `/fusion` | 简单列表页 | 搜索、三列网格 |

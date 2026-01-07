@@ -47,6 +47,12 @@ function hasActiveTasks(tasks: TaskRead[]): boolean {
   return tasks.some((task) => task.status === "queued" || task.status === "running");
 }
 
+/** 任务追踪状态，用于检测状态变化 */
+interface TaskTrackingState {
+  status: TaskStatus;
+  chapterReady?: boolean;
+}
+
 // ============ 查询 Hooks ============
 
 /** 任务类型与需要刷新的数据映射 */
@@ -73,8 +79,8 @@ export function useTasks(
   const { status, enabled = true } = options ?? {};
   const queryClient = useQueryClient();
 
-  // 记录上一次的任务状态，用于检测状态变化
-  const prevTaskStatesRef = useRef<Map<string, TaskStatus>>(new Map());
+  // 记录上一次的任务状态，用于检测状态变化（包括 chapter_ready）
+  const prevTaskStatesRef = useRef<Map<string, TaskTrackingState>>(new Map());
 
   const query = useQuery({
     queryKey: taskKeys.list({ project_id: projectId ?? undefined, status }),
@@ -101,19 +107,53 @@ export function useTasks(
     if (!tasks || !projectId) return;
 
     const prevStates = prevTaskStatesRef.current;
-    const newStates = new Map<string, TaskStatus>();
+    const newStates = new Map<string, TaskTrackingState>();
 
     for (const task of tasks) {
-      newStates.set(task.id, task.status);
-      const prevStatus = prevStates.get(task.id);
+      const prevState = prevStates.get(task.id);
+      const currentChapterReady = task.meta?.chapter_ready === true;
 
-      // 检测任务完成：
-      // 1. 从 running/queued 变为 completed（状态变化）
-      // 2. 首次出现就是 completed（任务完成很快的情况）
+      // 更新状态记录
+      newStates.set(task.id, {
+        status: task.status,
+        chapterReady: currentChapterReady,
+      });
+
+      // 新增：检测 chapter_ready 首次变为 true（write_chapter 任务专用）
+      // 这允许在任务完成前就展示章节内容
+      const isChapterReadyNow =
+        task.job_type === "write_chapter" &&
+        currentChapterReady &&
+        prevState?.chapterReady !== true;
+
+      // 原有：检测 completed
       const isNewlyCompleted =
         task.status === "completed" &&
-        prevStatus !== "completed";
+        prevState?.status !== "completed";
 
+      // write_chapter 任务：chapter_ready 时就刷新章节 + 切换 Tab
+      if (isChapterReadyNow) {
+        console.log("[useTasks] 章节已就绪，提前刷新:", {
+          taskId: task.id,
+          chapterNumber: task.meta?.chapter_number,
+          stage: task.meta?.stage,
+        });
+        // 刷新章节缓存
+        queryClient.invalidateQueries({ queryKey: ["chapters", projectId] });
+        const chapterNumber = task.meta?.chapter_number as number | undefined;
+        if (chapterNumber) {
+          queryClient.invalidateQueries({
+            queryKey: ["chapter", projectId, chapterNumber],
+          });
+        }
+        // 切换 Tab 到正文
+        const { setActiveEditorTab, chapterNumber: currentChapterNumber } = useWritingStore.getState();
+        if (chapterNumber === currentChapterNumber) {
+          setActiveEditorTab("content");
+        }
+      }
+
+      // 任务完成时的刷新逻辑
       if (isNewlyCompleted) {
         // 根据任务类型刷新相关数据
         const refreshTypes = TASK_TYPE_REFRESH_MAP[task.job_type];
@@ -156,10 +196,10 @@ export function useTasks(
             });
           }
         }
-        if (refreshTypes?.includes("chapters")) {
-          // 刷新章节列表缓存
+        // write_chapter 的章节刷新已在 chapter_ready 阶段处理，但如果没有 chapter_ready 则在此刷新（向后兼容）
+        if (refreshTypes?.includes("chapters") && task.job_type !== "write_chapter") {
+          // 非 write_chapter 任务的章节刷新
           queryClient.invalidateQueries({ queryKey: ["chapters", projectId] });
-          // 精确刷新指定章节的详情
           const chapterNumber = task.meta?.chapter_number as number | undefined;
           if (chapterNumber) {
             queryClient.invalidateQueries({
@@ -167,15 +207,28 @@ export function useTasks(
             });
           }
         }
+        // 向后兼容：如果 write_chapter 完成但没有触发过 chapter_ready，也刷新章节
+        if (task.job_type === "write_chapter" && !prevState?.chapterReady) {
+          queryClient.invalidateQueries({ queryKey: ["chapters", projectId] });
+          const chapterNumber = task.meta?.chapter_number as number | undefined;
+          if (chapterNumber) {
+            queryClient.invalidateQueries({
+              queryKey: ["chapter", projectId, chapterNumber],
+            });
+          }
+          // 切换 Tab
+          const { setActiveEditorTab, chapterNumber: currentChapterNumber } = useWritingStore.getState();
+          if (chapterNumber === currentChapterNumber) {
+            setActiveEditorTab("content");
+          }
+        }
 
-        // 任务完成后自动切换 Tab
+        // 其他任务完成后自动切换 Tab
         const { setActiveEditorTab, chapterNumber: currentChapterNumber } = useWritingStore.getState();
         const taskChapterNumber = task.meta?.chapter_number as number | undefined;
         if (taskChapterNumber === currentChapterNumber) {
           if (task.job_type === "generate_chapter_outline") {
             setActiveEditorTab("outline");
-          } else if (task.job_type === "write_chapter") {
-            setActiveEditorTab("content");
           }
         }
       }

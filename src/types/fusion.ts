@@ -103,16 +103,31 @@ export interface FusionTaskRead {
   completed_at: string | null;
 }
 
+/** 来源模式简要信息 */
+export interface SourcePatternBrief {
+  id: string;
+  name: string;
+  entity_type: string;
+}
+
 /** 融合任务列表项（API 返回） */
 export interface FusionTaskList {
   id: string;
   fusion_mode: FusionMode;
   status: FusionStatus;
-  source_pattern_count: number;
+  /** @deprecated 使用 source_patterns.length 代替 */
+  source_pattern_count?: number;
   source_project_count?: number;
+  /** 来源模式详情列表 */
+  source_patterns?: SourcePatternBrief[];
   candidate_count: number;
   selected_candidate_index: number | null;
   created_at: string;
+}
+
+/** 融合任务列表项（带来源模式详情，用于组件类型约束） */
+export interface FusionTaskListWithPatterns extends Omit<FusionTaskList, 'source_patterns'> {
+  source_patterns: SourcePatternBrief[];
 }
 
 // ============ 元素选择相关类型 ============

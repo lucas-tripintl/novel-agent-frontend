@@ -222,11 +222,11 @@ export default function ProjectDetailPage() {
             </Button>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold">{project.name}</h1>
+                <h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
                 <Badge variant="secondary">{projectTypeLabels[project.type]}</Badge>
                 <ProjectStatusBadge status={project.status} />
               </div>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-muted-foreground mt-1 text-sm">
                 {project.total_chapters} 章 · {stats.character} 角色 · {stats.worldview} 世界观设定
               </p>
             </div>

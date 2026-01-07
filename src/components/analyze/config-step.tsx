@@ -123,7 +123,7 @@ export function ConfigStep({
     new Set(["golden_opening"])
   );
 
-  // 自动模式提取
+  // 自动元素提取
   const [autoExtractPatterns, setAutoExtractPatterns] = useState(false);
 
   // 切换分析类型
@@ -380,7 +380,7 @@ export function ConfigStep({
                   }`}
               />
               <div className="flex-1">
-                <span className="font-medium">自动模式提取</span>
+                <span className="font-medium">自动元素提取</span>
                 <span className="text-sm text-muted-foreground ml-2">
                   分析完成后自动提取抽象模式（力量体系、剧情模式、角色原型等）
                 </span>

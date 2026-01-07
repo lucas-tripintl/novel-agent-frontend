@@ -38,6 +38,7 @@ import { formatTimeAgo } from "@/lib/utils/time";
 import { NovelFilter } from "@/components/common/novel-filter";
 import { cn } from "@/lib/utils";
 import { useEnumStore } from "@/stores/enum-store";
+import { EntityDetailDialog } from "@/components/entities/entity-detail-dialog";
 
 // 分类图标映射
 const categoryIcons: Record<string, React.ReactNode> = {
@@ -60,6 +61,7 @@ export default function EntitiesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedEntity, setSelectedEntity] = useState<EntityRead | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   // 滚动容器和 sentinel 引用
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -78,7 +80,7 @@ export default function EntitiesPage() {
 
   const handleViewEntity = useCallback((entity: EntityRead) => {
     setSelectedEntity(entity);
-    // TODO: 打开详情对话框
+    setDialogOpen(true);
   }, []);
 
   // 切换分类时重置滚动位置
@@ -420,6 +422,16 @@ export default function EntitiesPage() {
           </div>
         </div>
       </div>
+
+      {/* 设定详情对话框 */}
+      <EntityDetailDialog
+        entity={selectedEntity}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSave={(updatedEntity) => setSelectedEntity(updatedEntity)}
+        onDelete={() => setSelectedEntity(null)}
+        projectNameMap={projectNameMap}
+      />
     </MainLayout>
   );
 }

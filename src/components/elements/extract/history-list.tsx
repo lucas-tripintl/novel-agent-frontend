@@ -11,7 +11,7 @@ import { formatTimeAgo } from "@/lib/utils/time";
 import Link from "next/link";
 import { elementTypeLabels } from "@/types/element";
 
-// 假设模式提取的任务类型
+// 假设元素提取的任务类型
 const PATTERN_EXTRACT_JOB_TYPE = "extract_patterns";
 
 interface TaskMeta {
@@ -30,7 +30,7 @@ export function HistoryList() {
                 status: "completed",
                 limit: 20
             });
-            // 过滤出模式提取任务
+            // 过滤出元素提取任务
             // 实际应该由后端过滤，这里先前端过滤
             const filtered = result.items.filter(task =>
                 task.job_type === PATTERN_EXTRACT_JOB_TYPE ||
@@ -57,10 +57,13 @@ export function HistoryList() {
 
     if (error) {
         return (
-            <Card className="bg-card/30 border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-12">
+            <Card className="bg-card/30 border-dashed border-2 border-border/50">
+                <CardContent className="flex flex-col items-center justify-center py-16">
                     <AlertCircle className="h-12 w-12 text-destructive/50 mb-4" />
-                    <p className="text-muted-foreground">加载历史记录失败</p>
+                    <h3 className="text-lg font-semibold mb-2">加载失败</h3>
+                    <p className="text-muted-foreground text-center max-w-sm">
+                        无法加载历史记录，请稍后重试
+                    </p>
                 </CardContent>
             </Card>
         );
@@ -70,10 +73,13 @@ export function HistoryList() {
 
     if (tasks.length === 0) {
         return (
-            <Card className="bg-card/30 border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-12">
+            <Card className="bg-card/30 border-dashed border-2 border-border/50">
+                <CardContent className="flex flex-col items-center justify-center py-16">
                     <FileText className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground">暂无提取历史</p>
+                    <h3 className="text-lg font-semibold mb-2">暂无提取历史</h3>
+                    <p className="text-muted-foreground text-center max-w-sm">
+                        完成的提取任务将在此处显示
+                    </p>
                 </CardContent>
             </Card>
         );
@@ -84,14 +90,14 @@ export function HistoryList() {
             {tasks.map((task) => {
                 const meta = task.meta as TaskMeta | undefined;
                 return (
-                    <Card key={task.id} className="bg-card/50 hover:bg-card/70 transition-colors">
+                    <Card key={task.id} className="bg-card/50 border-border/50 hover:border-primary/30 hover:shadow-md transition-all">
                         <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2">
                                         <CheckCircle2 className="h-5 w-5 text-green-500" />
                                         <span className="font-medium">
-                                            {meta?.project_name || "模式提取任务"}
+                                            {meta?.project_name || "元素提取任务"}
                                         </span>
                                         <Badge variant="secondary" className="bg-green-500/10 text-green-500 hover:bg-green-500/20">
                                             已完成

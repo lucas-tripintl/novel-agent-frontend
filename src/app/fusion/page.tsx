@@ -1,40 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
 import { FusionTaskEditSheet } from "@/components/fusion/fusion-task-edit-sheet";
-import {
-  Blend,
-  Plus,
-  ChevronRight,
-  AlertCircle,
-  MoreHorizontal,
-  Settings,
-  Trash2,
-} from "lucide-react";
+import { FusionTaskCard } from "@/components/fusion/fusion-task-card";
+import { Blend, Plus, AlertCircle, Search } from "lucide-react";
 import Link from "next/link";
-import { FusionStatusBadge } from "@/components/common/status-badge";
 import { useFusionTasks, useFusionModes, useDeleteFusionTask } from "@/hooks/use-fusion";
-import { formatTimeAgo } from "@/lib/utils/time";
-import type { FusionTaskList } from "@/types/fusion";
+import type { FusionTaskListWithPatterns } from "@/types/fusion";
 
 export default function FusionPage() {
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [taskToDelete, setTaskToDelete] = useState<FusionTaskList | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<FusionTaskListWithPatterns | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const {
     data: tasksData,
@@ -42,20 +27,31 @@ export default function FusionPage() {
     isError,
     error,
     refetch,
-    isFetching,
-  } = useFusionTasks({ limit: 20 });
+  } = useFusionTasks({ limit: 50 });
 
   const { data: modesData } = useFusionModes();
   const deleteTaskMutation = useDeleteFusionTask();
 
   const tasks = tasksData?.items ?? [];
 
+  // 前端搜索过滤（按任务 ID 或融合模式搜索）
+  const filteredTasks = useMemo(() => {
+    const items = tasksData?.items ?? [];
+    if (!searchQuery.trim()) return items;
+    const query = searchQuery.toLowerCase();
+    return items.filter(
+      (t) =>
+        t.id.toLowerCase().includes(query) ||
+        t.fusion_mode.toLowerCase().includes(query)
+    );
+  }, [tasksData?.items, searchQuery]);
+
   const handleEditClick = (taskId: string) => {
     setTaskToEdit(taskId);
     setEditSheetOpen(true);
   };
 
-  const handleDeleteClick = (task: FusionTaskList) => {
+  const handleDeleteClick = (task: FusionTaskListWithPatterns) => {
     setTaskToDelete(task);
     setDeleteDialogOpen(true);
   };
@@ -84,7 +80,7 @@ export default function FusionPage() {
               <Blend className="h-6 w-6 text-primary" />
               元素融合
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 text-sm">
               将多本书的元素融合，创造全新设定
             </p>
           </div>
@@ -96,6 +92,24 @@ export default function FusionPage() {
               </Link>
             </Button>
           </div>
+        </div>
+
+        {/* 搜索栏 */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="搜索任务ID或融合模式..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 bg-background/50"
+            />
+          </div>
+          {tasksData && (
+            <span className="text-sm text-muted-foreground font-mono">
+              共 {filteredTasks.length} 个任务
+            </span>
+          )}
         </div>
 
         {/* 加载状态 */}
@@ -141,93 +155,48 @@ export default function FusionPage() {
         )}
 
         {/* 任务列表 */}
-        {!isLoading && !isError && tasks.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {tasks.map((task) => (
-              <Card
+        {!isLoading && !isError && tasks.length > 0 && filteredTasks.length > 0 && (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {filteredTasks.map((task) => (
+              <FusionTaskCard
                 key={task.id}
-                className="bg-card/50 border-border/50 hover:border-primary/30 transition-all group"
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs text-muted-foreground">
-                      #{task.id.slice(0, 8)}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <FusionStatusBadge status={task.status} />
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditClick(task.id)}>
-                            <Settings className="mr-2 h-4 w-4" />
-                            编辑
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => handleDeleteClick(task)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            删除
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {/* 源项目数量 */}
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      {(task.source_pattern_count || task.source_project_count || 0)} 个源
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {formatTimeAgo(task.created_at)}
-                    </span>
-                  </div>
-
-                  {/* 融合模式 */}
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {getModeName(task.fusion_mode)}
-                    </Badge>
-                    {task.candidate_count > 0 && (
-                      <span className="text-xs text-muted-foreground">
-                        {task.candidate_count} 个方案
-                      </span>
-                    )}
-                  </div>
-
-                  {/* 操作 */}
-                  <div className="flex justify-end">
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/fusion/${task.id}`}>
-                        查看详情
-                        <ChevronRight className="ml-1 h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                task={{
+                  ...task,
+                  source_patterns: task.source_patterns ?? [],
+                }}
+                modeName={getModeName(task.fusion_mode)}
+                onEdit={handleEditClick}
+                onDelete={handleDeleteClick}
+              />
             ))}
           </div>
         )}
 
+        {/* 搜索无结果 */}
+        {!isLoading && !isError && tasks.length > 0 && filteredTasks.length === 0 && (
+          <Card className="bg-card/30 border-dashed border-2 border-border/50">
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">没有找到匹配的任务</h3>
+              <p className="text-muted-foreground text-center max-w-sm">
+                尝试使用不同的关键词搜索
+              </p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => setSearchQuery("")}
+              >
+                清除搜索
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* 空状态 */}
         {!isLoading && !isError && tasks.length === 0 && (
-          <Card className="bg-card/30 border-dashed border-2">
+          <Card className="bg-card/30 border-dashed border-2 border-border/50">
             <CardContent className="flex flex-col items-center justify-center py-16">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
-                <Blend className="h-8 w-8 text-primary" />
-              </div>
+              <Blend className="h-12 w-12 text-muted-foreground/50 mb-4" />
               <h3 className="text-lg font-semibold mb-2">还没有融合任务</h3>
               <p className="text-muted-foreground text-center max-w-sm mb-6">
                 选择多本已分析的书籍，创造全新的世界观和设定
