@@ -205,20 +205,30 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
   }, [displayMessages.length, streamingContent]);
 
   // 每次进入项目时自动创建新会话（不再复用旧会话）
+  // 使用本地状态跟踪初始化，避免依赖 createSession 对象导致的竞态条件
+  const [isInitializing, setIsInitializing] = useState(false);
   const hasInitializedRef = useRef(false);
+
   useEffect(() => {
     // 只在首次进入且没有当前会话时创建新会话
-    if (!hasInitializedRef.current && !currentSessionId && !createSession.isPending) {
+    if (!hasInitializedRef.current && !currentSessionId && !isInitializing) {
       hasInitializedRef.current = true;
+      setIsInitializing(true);
+
       createSession.mutateAsync({ model_id: selectedModelId ?? undefined })
         .then((newSession) => {
           setCurrentChatSession(newSession.id);
         })
         .catch((error) => {
           console.error("自动创建会话失败:", error);
+          // 重置标志以允许重试
+          hasInitializedRef.current = false;
+        })
+        .finally(() => {
+          setIsInitializing(false);
         });
     }
-  }, [currentSessionId, createSession, setCurrentChatSession, selectedModelId]);
+  }, [currentSessionId, isInitializing, selectedModelId, setCurrentChatSession, createSession]);
 
   const handleSend = useCallback(async () => {
     if (!inputValue.trim() || isStreaming) return;
@@ -318,9 +328,17 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
     }
   };
 
+  // 跟踪手动创建新会话的状态
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+
+  // 按钮是否应该禁用（正在初始化、正在手动创建会话、或正在流式输出）
+  // 注意：不使用 createSession.isPending，因为它在某些情况下不会正确重置
+  const isSessionBusy = isInitializing || isCreatingSession || isStreaming;
+
   // 创建新对话
   const handleCreateNewSession = useCallback(async () => {
-    if (createSession.isPending || isStreaming) return;
+    if (isCreatingSession || isStreaming) return;
+    setIsCreatingSession(true);
     try {
       const newSession = await createSession.mutateAsync({
         model_id: selectedModelId ?? undefined,
@@ -329,8 +347,10 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
       setLocalMessages([]);
     } catch (error) {
       console.error("创建新对话失败:", error);
+    } finally {
+      setIsCreatingSession(false);
     }
-  }, [createSession, isStreaming, selectedModelId, setCurrentChatSession]);
+  }, [createSession, isCreatingSession, isStreaming, selectedModelId, setCurrentChatSession]);
 
   return (
     <div className="flex h-full flex-col border-l border-border/50 bg-card/30 min-h-0">
@@ -368,9 +388,9 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
             className="h-7 w-7"
             title="新建对话"
             onClick={handleCreateNewSession}
-            disabled={createSession.isPending || isStreaming}
+            disabled={isSessionBusy}
           >
-            {createSession.isPending ? (
+            {isSessionBusy ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
             ) : (
               <Plus className="h-3.5 w-3.5 text-muted-foreground" />
@@ -448,9 +468,9 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
                 !inputValue.trim() && "opacity-50"
               )}
               onClick={handleSend}
-              disabled={!inputValue.trim()}
+              disabled={!inputValue.trim() || isInitializing}
             >
-              {createSession.isPending ? (
+              {isInitializing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Send className="h-4 w-4" />

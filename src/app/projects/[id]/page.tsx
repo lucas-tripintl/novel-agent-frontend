@@ -35,10 +35,8 @@ import {
   Loader2,
   Network,
   PenLine,
-  MapPin,
   Shield,
   Sparkles,
-  Package,
   Eye,
   Wand2,
   ArrowRight,
@@ -71,11 +69,9 @@ const categoryConfig: {
   href: string;
 }[] = [
   { type: "character", label: "人物角色", icon: Users, color: "text-blue-500", href: "/characters" },
-  { type: "location", label: "地理区域", icon: MapPin, color: "text-green-500", href: "/worldview" },
   { type: "worldview", label: "世界观", icon: Earth, color: "text-cyan-500", href: "/worldview" },
   { type: "faction", label: "势力组织", icon: Shield, color: "text-orange-500", href: "/worldview" },
   { type: "power_system", label: "力量体系", icon: Sparkles, color: "text-purple-500", href: "/worldview" },
-  { type: "item", label: "物品道具", icon: Package, color: "text-amber-500", href: "/worldview" },
   { type: "skill", label: "技能功法", icon: Zap, color: "text-red-500", href: "/worldview" },
   { type: "plotline", label: "剧情线", icon: FileText, color: "text-indigo-500", href: "/storylines" },
   { type: "foreshadowing", label: "伏笔悬念", icon: Eye, color: "text-pink-500", href: "/storylines" },

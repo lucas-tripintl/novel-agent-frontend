@@ -611,3 +611,46 @@ pnpm dlx shadcn@latest add accordion alert collapsible \
 | 设定库 | `/entities` | 标准列表页 | 侧边分类导航、无限滚动 |
 | 技法库 | `/skills` | 标准列表页 | 侧边分类导航、阶段/可见性筛选 |
 | 元素融合 | `/fusion` | 简单列表页 | 搜索、三列网格 |
+
+---
+
+## 已知问题及解决方案
+
+### React Query useMutation isPending 状态不同步
+
+**问题描述**: 在 `useEffect` 中调用 `useMutation` 的 `mutateAsync()` 时，API 请求成功返回后，`isPending` 状态可能不会正确从 `true` 重置为 `false`，导致依赖此状态的 UI（如按钮 disabled 状态）无法正确更新。
+
+**表现症状**:
+- API 请求返回成功（如 `[201] Created`）
+- `finally()` 回调中读取到 `isPending: false`
+- 但组件渲染时仍然读取到 `isPending: true`
+
+**根本原因**: React Query 状态更新与组件渲染的竞态条件，尤其在 `useEffect` 依赖数组包含 mutation 对象时。
+
+**解决方案**: 使用本地 `useState` 配合 `finally()` 来管理异步操作状态，而不是依赖 `mutation.isPending`。
+
+```tsx
+// ❌ 有问题的写法
+const mutation = useMutation({ ... });
+const isLoading = mutation.isPending; // 可能不会正确更新
+
+// ✅ 正确的写法
+const [isLoading, setIsLoading] = useState(false);
+const mutation = useMutation({ ... });
+
+const handleAction = async () => {
+  setIsLoading(true);
+  try {
+    await mutation.mutateAsync(data);
+  } finally {
+    setIsLoading(false);
+  }
+};
+```
+
+**受影响的文件**: `src/components/write/panes/assistant-pane.tsx`
+
+**相关状态变量**:
+- `isInitializing` - 跟踪自动初始化会话
+- `isCreatingSession` - 跟踪手动创建新会话
+- `isSessionBusy` - 组合状态，用于按钮 disabled/loading

@@ -43,7 +43,7 @@ function getTagLabel(
   if (/[\u4e00-\u9fa5]/.test(tag)) return tag;
 
   // 1. 尝试从枚举获取标签
-  const enums = ["CharacterRole", "CharacterImportance", "WorldviewCategory", "EntityType"];
+  const enums = ["CharacterRole", "CharacterImportance", "WorldviewCategory", "WorldBuildingFragmentCategory", "EntityType"];
   for (const enumName of enums) {
     const label = getLabel(enumName, tag);
     if (label !== tag) return label;

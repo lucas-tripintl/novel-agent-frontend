@@ -209,11 +209,9 @@ export function useEntitiesOverview(
 
   const allEntityTypes: EntityType[] = [
     "character",
-    "location",
     "worldview",
     "faction",
     "power_system",
-    "item",
     "skill",
     "plotline",
     "foreshadowing",
