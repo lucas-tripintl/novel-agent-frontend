@@ -25,16 +25,11 @@ import {
   Blend,
   BookOpen,
   Database,
-  FileText,
   FolderOpen,
-  Layers,
   Library,
   LogOut,
-  Network,
   Sparkles,
-  Users,
   Zap,
-  Earth,
   Wand2,
 } from "lucide-react";
 import Link from "next/link";
@@ -58,42 +53,14 @@ const mainNavItems = [
     icon: Wand2,
     href: "/skills",
   },
-];
-
-const analysisNavItems = [
-  {
-    title: "设定总览",
-    icon: Layers,
-    href: "/settings",
-  },
-  {
-    title: "世界观",
-    icon: Earth,
-    href: "/worldview",
-  },
-  {
-    title: "人物图谱",
-    icon: Users,
-    href: "/characters",
-  },
-  {
-    title: "剧情大纲",
-    icon: FileText,
-    href: "/storylines",
-  },
-  {
-    title: "关系网络",
-    icon: Network,
-    href: "/relations",
-  },
-];
-
-const creationNavItems = [
   {
     title: "设定库",
     icon: Database,
     href: "/entities",
   },
+];
+
+const creationNavItems = [
   {
     title: "模式提取",
     icon: Sparkles,
@@ -175,31 +142,6 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
-                    tooltip={item.title}
-                    className="transition-colors hover:bg-accent/50"
-                  >
-                    <Link href={item.href}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground">
-            设定集
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {analysisNavItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === item.href}
                     tooltip={item.title}
                     className="transition-colors hover:bg-accent/50"
                   >

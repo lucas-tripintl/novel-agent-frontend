@@ -2,7 +2,7 @@
 
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { listEntities, listGoldenFingers, getStyle, getEntity } from "@/lib/api/projects";
-import { listEntitiesCrossProject, type CrossProjectEntitiesParams } from "@/lib/api/entities";
+import { listEntitiesCrossProject } from "@/lib/api/entities";
 import type { EntityType, EntityRead } from "@/types/api";
 
 // Query keys
@@ -193,97 +193,6 @@ export function useMultiTypeEntities(
   });
 
   return { entitiesByType, isLoading, error };
-}
-
-// ============ 跨项目 API 新版 Hooks ============
-
-/**
- * 跨项目实体查询 - 使用新的 /api/v1/entities 接口
- *
- * 相比 useMultiProjectEntities，只需要一次 API 请求
- */
-export function useCrossProjectEntities(
-  projectIds: string[],
-  options?: {
-    entity_type?: EntityType;
-    keyword?: string;
-    limit?: number;
-    skip?: number;
-    enabled?: boolean;
-  }
-) {
-  const { entity_type, keyword, limit = 100, skip = 0, enabled = true } = options ?? {};
-
-  return useQuery({
-    queryKey: [
-      "entities",
-      "cross-project",
-      projectIds.sort().join(","),
-      { entity_type, keyword, limit, skip },
-    ],
-    queryFn: () =>
-      listEntitiesCrossProject({
-        project_ids: projectIds,
-        entity_type,
-        keyword,
-        limit,
-        skip,
-      }),
-    enabled: enabled && projectIds.length > 0,
-  });
-}
-
-/**
- * 跨项目多类型实体查询 - 使用新的 /api/v1/entities 接口
- *
- * 用于世界观等需要多种类型的页面
- */
-export function useCrossProjectMultiTypeEntities(
-  projectIds: string[],
-  entityTypes: EntityType[],
-  options?: {
-    keyword?: string;
-    limit?: number;
-    enabled?: boolean;
-  }
-) {
-  const { keyword, limit = 100, enabled = true } = options ?? {};
-
-  // 为每种类型创建一个查询
-  const queries = entityTypes.map((entityType) => ({
-    queryKey: [
-      "entities",
-      "cross-project",
-      projectIds.sort().join(","),
-      { entity_type: entityType, keyword, limit },
-    ],
-    queryFn: () =>
-      listEntitiesCrossProject({
-        project_ids: projectIds,
-        entity_type: entityType,
-        keyword,
-        limit,
-      }),
-    enabled: enabled && projectIds.length > 0,
-  }));
-
-  const results = useQueries({ queries });
-
-  const isLoading = results.some((r) => r.isLoading);
-  const error = results.find((r) => r.error)?.error;
-
-  // 按类型分组
-  const entitiesByType: Record<EntityType, EntityRead[]> = {} as Record<EntityType, EntityRead[]>;
-  entityTypes.forEach((type, index) => {
-    entitiesByType[type] = results[index].data?.items ?? [];
-  });
-
-  const totalByType: Record<EntityType, number> = {} as Record<EntityType, number>;
-  entityTypes.forEach((type, index) => {
-    totalByType[type] = results[index].data?.total ?? 0;
-  });
-
-  return { entitiesByType, totalByType, isLoading, error };
 }
 
 /**
