@@ -24,6 +24,10 @@ import type {
   QuickActionsConfig,
   QuickAction,
 } from "@/types/inline-edit";
+import type {
+  OutlineGenerationStatus,
+  DecisionPoint,
+} from "@/types/interactive-outline";
 import {
   initialInlineEditContext,
   defaultQuickActionsConfig,
@@ -169,6 +173,16 @@ interface WritingState {
   /** 快捷操作配置 */
   quickActionsConfig: QuickActionsConfig;
 
+  // ============ 交互式细纲生成 ============
+  /** 细纲生成状态 */
+  outlineGenerationStatus: OutlineGenerationStatus;
+  /** 流式生成的细纲内容 */
+  streamingOutline: string;
+  /** 当前决策点 */
+  currentDecisionPoint: DecisionPoint | null;
+  /** 草稿 ID */
+  outlineDraftId: string | null;
+
   // ============ Actions ============
   /** 设置当前项目和章节 */
   setContext: (projectId: string | null, chapterId: string | null, chapterNumber?: number | null) => void;
@@ -308,6 +322,20 @@ interface WritingState {
   /** 移除快捷操作 */
   removeQuickAction: (id: string) => void;
 
+  // ============ 交互式细纲生成 Actions ============
+  /** 设置细纲生成状态 */
+  setOutlineGenerationStatus: (status: OutlineGenerationStatus) => void;
+  /** 设置流式细纲内容 */
+  setStreamingOutline: (content: string) => void;
+  /** 追加流式细纲内容 */
+  appendStreamingOutline: (delta: string) => void;
+  /** 设置当前决策点 */
+  setCurrentDecisionPoint: (point: DecisionPoint | null) => void;
+  /** 设置草稿 ID */
+  setOutlineDraftId: (id: string | null) => void;
+  /** 重置交互式生成状态 */
+  resetOutlineGeneration: () => void;
+
   /** 重置状态 */
   reset: () => void;
 }
@@ -374,6 +402,11 @@ const initialState = {
   // 内联编辑
   inlineEdit: initialInlineEditContext,
   quickActionsConfig: defaultQuickActionsConfig,
+  // 交互式细纲生成
+  outlineGenerationStatus: "idle" as OutlineGenerationStatus,
+  streamingOutline: "",
+  currentDecisionPoint: null,
+  outlineDraftId: null,
 };
 
 export const useWritingStore = create<WritingState>()(
@@ -704,6 +737,32 @@ export const useWritingStore = create<WritingState>()(
           },
         })),
 
+      // ============ 交互式细纲生成 Actions 实现 ============
+      setOutlineGenerationStatus: (status) =>
+        set({ outlineGenerationStatus: status }),
+
+      setStreamingOutline: (content) =>
+        set({ streamingOutline: content }),
+
+      appendStreamingOutline: (delta) =>
+        set((state) => ({
+          streamingOutline: state.streamingOutline + delta,
+        })),
+
+      setCurrentDecisionPoint: (point) =>
+        set({ currentDecisionPoint: point }),
+
+      setOutlineDraftId: (id) =>
+        set({ outlineDraftId: id }),
+
+      resetOutlineGeneration: () =>
+        set({
+          outlineGenerationStatus: "idle" as OutlineGenerationStatus,
+          streamingOutline: "",
+          currentDecisionPoint: null,
+          outlineDraftId: null,
+        }),
+
       reset: () => set(initialState),
     }),
     {
@@ -943,6 +1002,27 @@ export function useChapterSaveState() {
       isChapterOutlineDirty: state.isChapterOutlineDirty,
       markAsSaved: state.markAsSaved,
       markChapterOutlineSaved: state.markChapterOutlineSaved,
+    }))
+  );
+}
+
+/** 获取交互式细纲生成状态 */
+export function useInteractiveOutlineState() {
+  return useWritingStore(
+    useShallow((state) => ({
+      outlineGenerationStatus: state.outlineGenerationStatus,
+      streamingOutline: state.streamingOutline,
+      currentDecisionPoint: state.currentDecisionPoint,
+      outlineDraftId: state.outlineDraftId,
+      setOutlineGenerationStatus: state.setOutlineGenerationStatus,
+      setStreamingOutline: state.setStreamingOutline,
+      appendStreamingOutline: state.appendStreamingOutline,
+      setCurrentDecisionPoint: state.setCurrentDecisionPoint,
+      setOutlineDraftId: state.setOutlineDraftId,
+      resetOutlineGeneration: state.resetOutlineGeneration,
+      // 关联的 actions
+      setActiveEditorTab: state.setActiveEditorTab,
+      loadChapterOutline: state.loadChapterOutline,
     }))
   );
 }

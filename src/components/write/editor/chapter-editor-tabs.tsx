@@ -5,6 +5,7 @@ import {
   useWritingStore,
   useChapterOutlineState,
   useStreamingState,
+  useInteractiveOutlineState,
 } from "@/stores/writing-store";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,9 @@ import { useInlineEdit } from "@/hooks/use-inline-edit";
 import { useGenerateChapterOutline } from "@/hooks/use-chapter-outline";
 import { useGenerateChapterSummary } from "@/hooks/use-generate-summary";
 import { useTasks } from "@/hooks/use-tasks";
-import { Sparkles, FileText, BookOpen, AlignLeft, Loader2 } from "lucide-react";
+import { useInteractiveOutline } from "@/hooks/use-interactive-outline";
+import { DecisionPointDialog } from "../decision-point-dialog";
+import { Sparkles, FileText, BookOpen, AlignLeft, Loader2, Square } from "lucide-react";
 import type { QuickAction } from "@/types/inline-edit";
 
 interface ChapterEditorTabsProps {
@@ -38,6 +41,22 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
   } = useChapterOutlineState();
 
   const { isStreaming } = useStreamingState();
+
+  // 交互式细纲生成状态
+  const {
+    streamingOutline,
+    currentDecisionPoint,
+  } = useInteractiveOutlineState();
+
+  // 交互式细纲生成 hook
+  const {
+    selectOption,
+    skipDecision,
+    submitCustomInput,
+    stopGeneration,
+    isGenerating: isInteractiveGenerating,
+    isWaitingDecision,
+  } = useInteractiveOutline(projectId, chapterNumber);
 
   // 获取当前项目的任务列表
   const { data: tasksData } = useTasks(projectId);
@@ -280,12 +299,73 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
 
       {/* 细纲 Tab */}
       <TabsContent value="outline" className="flex-1 m-0 mt-0 min-h-0 p-4 flex flex-col">
-        {isOutlineGenerating ? (
+        {/* 交互式生成中 */}
+        {isInteractiveGenerating || isWaitingDecision ? (
+          <div className="flex-1 flex flex-col">
+            {/* 顶部状态栏 */}
+            <div className="flex items-center justify-between mb-3 shrink-0">
+              <div className="flex items-center gap-2">
+                {isWaitingDecision ? (
+                  <>
+                    <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="text-sm text-amber-600 font-medium">
+                      等待决策...
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">
+                      正在生成细纲...
+                    </span>
+                  </>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1.5 text-xs text-destructive hover:text-destructive"
+                onClick={stopGeneration}
+              >
+                <Square className="h-3 w-3" />
+                停止
+              </Button>
+            </div>
+
+            {/* 流式内容展示 */}
+            <SimpleTiptapEditor
+              value={streamingOutline || ""}
+              onChange={() => {}}
+              targetType="novel-outline"
+              mode="multi-line"
+              markdown={true}
+              placeholder="AI 正在创作细纲..."
+              className="flex-1 min-h-[300px]"
+              enableInlineEdit={false}
+            />
+
+            {/* 决策点对话框 */}
+            <DecisionPointDialog
+              decision={currentDecisionPoint}
+              open={isWaitingDecision && !!currentDecisionPoint}
+              onSubmit={async (decision) => {
+                if (decision.custom_input) {
+                  await submitCustomInput(decision.custom_input);
+                } else if (decision.chosen_option_id) {
+                  await selectOption(decision.chosen_option_id);
+                }
+              }}
+              onSkip={skipDecision}
+            />
+          </div>
+        ) : isOutlineGenerating ? (
+          /* 任务队列生成中（兼容旧方式） */
           <div className="flex-1 flex flex-col items-center justify-center gap-4 min-h-[300px]">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">正在生成细纲...</p>
           </div>
         ) : (
+          /* 正常编辑模式 */
           <SimpleTiptapEditor
             value={chapterOutline}
             onChange={setChapterOutline}

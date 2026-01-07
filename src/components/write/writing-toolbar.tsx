@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import type { ProjectRead } from "@/types/api";
 import { useWritingStore, useStreamingState } from "@/stores/writing-store";
-import { writingModes, type WritingMode } from "@/types/writing";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -13,11 +12,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
-  Sparkles,
-  Film,
   Play,
   Square,
   FileSearch,
@@ -26,10 +22,12 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Wand2,
+  FileText,
 } from "lucide-react";
 import { EditorSettings } from "./editor/editor-settings";
 import { WriteChapterDialog } from "./write-chapter-dialog";
 import { GenerateEntityDialog } from "./generate-entity-dialog";
+import { GenerateOutlineDialog } from "./generate-outline-dialog";
 
 interface WritingToolbarProps {
   project: ProjectRead;
@@ -38,10 +36,9 @@ interface WritingToolbarProps {
 export function WritingToolbar({ project }: WritingToolbarProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+  const [outlineDialogOpen, setOutlineDialogOpen] = useState(false);
 
   const {
-    mode,
-    setMode,
     chapterNumber,
     isLeftPaneCollapsed,
     isRightPaneCollapsed,
@@ -96,37 +93,6 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
 
       <Separator orientation="vertical" className="h-6" />
 
-      {/* 写作模式切换 */}
-      <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-        {writingModes.map((modeConfig) => {
-          const isActive = mode === modeConfig.id;
-          const Icon = modeConfig.id === "auto" ? Sparkles : Film;
-          return (
-            <Tooltip key={modeConfig.id}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  size="sm"
-                  className={cn(
-                    "gap-1.5 transition-all",
-                    isActive && "bg-background shadow-sm glow-primary"
-                  )}
-                  onClick={() => setMode(modeConfig.id as WritingMode)}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  <span className="text-xs">{modeConfig.name}</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                {modeConfig.description}
-              </TooltipContent>
-            </Tooltip>
-          );
-        })}
-      </div>
-
-      <Separator orientation="vertical" className="h-6" />
-
       {/* 操作按钮 */}
       <div className="flex items-center gap-2">
         {isStreaming ? (
@@ -140,14 +106,34 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
             <span>停止</span>
           </Button>
         ) : (
-          <Button
-            size="sm"
-            className="gap-1.5 glow-primary"
-            onClick={() => setDialogOpen(true)}
-          >
-            <Play className="h-3.5 w-3.5" />
-            <span>开始书写</span>
-          </Button>
+          <>
+            {/* 生成细纲按钮 */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => setOutlineDialogOpen(true)}
+                  disabled={!chapterNumber}
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  <span>生成细纲</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>配置并生成本章细纲</TooltipContent>
+            </Tooltip>
+
+            {/* 生成正文按钮 */}
+            <Button
+              size="sm"
+              className="gap-1.5 glow-primary"
+              onClick={() => setDialogOpen(true)}
+            >
+              <Play className="h-3.5 w-3.5" />
+              <span>生成正文</span>
+            </Button>
+          </>
         )}
 
         <Tooltip>
@@ -253,6 +239,14 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
         projectId={project.id}
         open={generateDialogOpen}
         onOpenChange={setGenerateDialogOpen}
+      />
+
+      {/* 生成细纲对话框 */}
+      <GenerateOutlineDialog
+        projectId={project.id}
+        chapterNumber={chapterNumber}
+        open={outlineDialogOpen}
+        onOpenChange={setOutlineDialogOpen}
       />
     </header>
   );
