@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/collapsible";
 import { ConfirmLeaveDialog } from "../confirm-leave-dialog";
 import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
+import { CharacterAttributesEditor } from "@/components/common/character-attributes-editor";
 import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -449,22 +450,33 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
             </div>
 
             {/* 属性编辑区 */}
-            {Object.keys(attributes).length > 0 && (
-              <div className="px-6 py-4 border-b border-border/30 space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">属性</span>
-                  <Badge variant="outline" className="ml-auto font-mono text-[10px]">
-                    {Object.keys(attributes).length} 项
-                  </Badge>
-                </div>
-                <AttributesEditor
-                  entityType={entity.entity_type}
+            {entity.entity_type === "character" ? (
+              // 角色类型：使用专用的角色属性编辑器（支持添加/删除属性）
+              <div className="px-6 py-4 border-b border-border/30">
+                <CharacterAttributesEditor
                   attributes={attributes}
                   onChange={setAttributes}
-                  getLabel={getLabel}
-                  getFieldValueLabel={getFieldValueLabel}
                 />
               </div>
+            ) : (
+              // 其他类型：使用通用属性编辑器（仅在有属性时显示）
+              Object.keys(attributes).length > 0 && (
+                <div className="px-6 py-4 border-b border-border/30 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">属性</span>
+                    <Badge variant="outline" className="ml-auto font-mono text-[10px]">
+                      {Object.keys(attributes).length} 项
+                    </Badge>
+                  </div>
+                  <AttributesEditor
+                    entityType={entity.entity_type}
+                    attributes={attributes}
+                    onChange={setAttributes}
+                    getLabel={getLabel}
+                    getFieldValueLabel={getFieldValueLabel}
+                  />
+                </div>
+              )
             )}
 
             {/* 内容编辑区 */}

@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Pencil,
   Save,
@@ -33,6 +32,7 @@ import {
 } from "@/hooks/use-entities";
 import { useEnumStore } from "@/stores/enum-store";
 import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
+import { CharacterAttributesEditor } from "@/components/common/character-attributes-editor";
 import type { EntityRead, EntityType } from "@/types/api";
 import { cn } from "@/lib/utils";
 
@@ -147,6 +147,7 @@ export function EntityDetailDialog({
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState("");
   const [editedContent, setEditedContent] = useState("");
+  const [editedAttributes, setEditedAttributes] = useState<Record<string, unknown>>({});
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const queryClient = useQueryClient();
 
@@ -159,13 +160,14 @@ export function EntityDetailDialog({
     if (entity) {
       setEditedName(entity.name);
       setEditedContent(entity.content || "");
+      setEditedAttributes(entity.attributes || {});
       setIsEditing(false);
     }
   }, [entity]);
 
   // 更新 mutation
   const updateMutation = useMutation({
-    mutationFn: async (data: { name: string; content: string }) => {
+    mutationFn: async (data: { name: string; content: string; attributes?: Record<string, unknown> }) => {
       if (!entity) throw new Error("No entity selected");
       return updateEntity(entity.project_id, entity.id, data);
     },
@@ -198,16 +200,22 @@ export function EntityDetailDialog({
     if (entity) {
       setEditedName(entity.name);
       setEditedContent(entity.content || "");
+      setEditedAttributes(entity.attributes || {});
     }
     setIsEditing(false);
   }, [entity]);
 
   const handleSave = useCallback(() => {
-    updateMutation.mutate({
+    // 对于角色类型，同时保存属性
+    const data: { name: string; content: string; attributes?: Record<string, unknown> } = {
       name: editedName,
       content: editedContent,
-    });
-  }, [editedName, editedContent, updateMutation]);
+    };
+    if (entity?.entity_type === "character") {
+      data.attributes = editedAttributes;
+    }
+    updateMutation.mutate(data);
+  }, [editedName, editedContent, editedAttributes, entity?.entity_type, updateMutation]);
 
   const handleDelete = useCallback(async () => {
     await deleteMutation.mutateAsync();
@@ -315,37 +323,50 @@ export function EntityDetailDialog({
           </DialogHeader>
 
           {/* ===== 可滚动内容区域 ===== */}
-          <ScrollArea className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="p-6 space-y-5">
               {/* 属性区域 */}
-              {displayAttributes.length > 0 && (
+              {entity.entity_type === "character" ? (
+                // 角色类型：使用专用的角色属性编辑器
                 <section className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    <Layers className="h-4 w-4" />
-                    <span>属性</span>
-                  </div>
-                  <div className="rounded-lg border border-border/50 bg-muted/30 overflow-hidden">
-                    <div className="divide-y divide-border/30">
-                      {displayAttributes.map(([key, value]) => (
-                        <div
-                          key={key}
-                          className="grid grid-cols-[6rem_1fr] gap-3 px-4 py-2.5"
-                        >
-                          <span className="text-sm text-muted-foreground leading-6">
-                            {getAttributeLabel(
-                              key,
-                              entity.entity_type,
-                              getFieldValueLabel
-                            )}
-                          </span>
-                          <div className="min-w-0 leading-6">
-                            {renderAttributeValue(key, value)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <CharacterAttributesEditor
+                    attributes={editedAttributes}
+                    onChange={setEditedAttributes}
+                    readOnly={!isEditing}
+                    compact
+                  />
                 </section>
+              ) : (
+                // 其他类型：只读展示属性
+                displayAttributes.length > 0 && (
+                  <section className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <Layers className="h-4 w-4" />
+                      <span>属性</span>
+                    </div>
+                    <div className="rounded-lg border border-border/50 bg-muted/30 overflow-hidden">
+                      <div className="divide-y divide-border/30">
+                        {displayAttributes.map(([key, value]) => (
+                          <div
+                            key={key}
+                            className="grid grid-cols-[6rem_1fr] gap-3 px-4 py-2.5"
+                          >
+                            <span className="text-sm text-muted-foreground leading-6">
+                              {getAttributeLabel(
+                                key,
+                                entity.entity_type,
+                                getFieldValueLabel
+                              )}
+                            </span>
+                            <div className="min-w-0 leading-6">
+                              {renderAttributeValue(key, value)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </section>
+                )
               )}
 
               {/* 标签区域 */}
@@ -400,7 +421,7 @@ export function EntityDetailDialog({
                 )}
               </section>
             </div>
-          </ScrollArea>
+          </div>
 
           {/* ===== 底部操作区域 ===== */}
           <DialogFooter className="shrink-0 p-4 border-t border-border/50 bg-muted/20">

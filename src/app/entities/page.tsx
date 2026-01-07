@@ -65,6 +65,38 @@ export default function EntitiesPage() {
 
   // 枚举本地化
   const getLabel = useEnumStore((state) => state.getLabel);
+  const getFieldValueLabel = useEnumStore((state) => state.getFieldValueLabel);
+
+  // 标签本地化函数
+  const localizeTag = useCallback(
+    (tag: string): string => {
+      // 如果已经是中文，直接返回
+      if (/[\u4e00-\u9fa5]/.test(tag)) return tag;
+
+      // 尝试从枚举获取标签
+      const enums = [
+        "CharacterRole",
+        "CharacterImportance",
+        "WorldviewCategory",
+        "WorldBuildingFragmentCategory",
+        "EntityType",
+      ];
+      for (const enumName of enums) {
+        const label = getLabel(enumName, tag);
+        if (label !== tag) return label;
+      }
+
+      // 尝试从 field_values 获取标签
+      const fieldNames = ["golden_finger_type", "importance", "gf_type"];
+      for (const fieldName of fieldNames) {
+        const label = getFieldValueLabel(fieldName, tag);
+        if (label !== tag) return label;
+      }
+
+      return tag;
+    },
+    [getLabel, getFieldValueLabel]
+  );
 
   // 获取项目列表（用于显示项目名称）
   const { data: projectsData } = useProjects({ limit: 100 });
@@ -317,7 +349,7 @@ export default function EntitiesPage() {
                               {entity.content || "暂无描述"}
                             </p>
 
-                            {/* 来源项目 + 标签 */}
+                            {/* 来源项目 + 分类 */}
                             <div className="flex flex-wrap gap-1.5">
                               {/* 项目名称 */}
                               {projectNameMap.get(entity.project_id) && (
@@ -325,21 +357,16 @@ export default function EntitiesPage() {
                                   {projectNameMap.get(entity.project_id)}
                                 </Badge>
                               )}
-                              {/* 标签 */}
-                              {entity.tags?.slice(0, 2).map((tag, idx) => (
-                                <Badge
-                                  key={idx}
-                                  variant="outline"
-                                  className="text-xs"
-                                >
-                                  {tag}
-                                </Badge>
-                              ))}
-                              {entity.tags && entity.tags.length > 2 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{entity.tags.length - 2}
-                                </Badge>
-                              )}
+                              {/* 世界观分类 */}
+                              {entity.entity_type === "worldview" &&
+                                entity.attributes?.category && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs bg-primary/5 border-primary/20"
+                                  >
+                                    {localizeTag(entity.attributes.category as string)}
+                                  </Badge>
+                                )}
                             </div>
 
                             {/* 操作按钮 - 固定在底部 */}
