@@ -27,8 +27,10 @@ import {
   Save,
   AlertCircle,
   CheckCircle2,
+  XCircle,
   Plus,
   Trash2,
+  Loader2,
 } from "lucide-react";
 
 function getFontClass(fontFamily: EditorFontFamily): string {
@@ -264,7 +266,7 @@ function NovelOutlineEditor({
         </div>
 
         {/* 状态和保存 */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {saveStatus === "success" && (
             <Badge variant="outline" className="text-green-500 border-green-500/50">
               <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -273,6 +275,7 @@ function NovelOutlineEditor({
           )}
           {saveStatus === "error" && (
             <Badge variant="outline" className="text-red-500 border-red-500/50">
+              <XCircle className="h-3 w-3 mr-1" />
               保存失败
             </Badge>
           )}
@@ -286,9 +289,19 @@ function NovelOutlineEditor({
             size="sm"
             onClick={handleSave}
             disabled={!isDirty || saveStatus === "saving"}
+            className="gap-1.5"
           >
-            <Save className="h-4 w-4 mr-1" />
-            {saveStatus === "saving" ? "保存中..." : "保存"}
+            {saveStatus === "saving" ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                保存中...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                保存
+              </>
+            )}
           </Button>
         </div>
 
@@ -640,7 +653,7 @@ function VolumeOutlineEditor({
         </div>
 
         {/* 状态和保存 */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {saveStatus === "success" && (
             <Badge variant="outline" className="text-green-500 border-green-500/50">
               <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -649,6 +662,7 @@ function VolumeOutlineEditor({
           )}
           {saveStatus === "error" && (
             <Badge variant="outline" className="text-red-500 border-red-500/50">
+              <XCircle className="h-3 w-3 mr-1" />
               保存失败
             </Badge>
           )}
@@ -662,9 +676,19 @@ function VolumeOutlineEditor({
             size="sm"
             onClick={handleSave}
             disabled={!isDirty || saveStatus === "saving"}
+            className="gap-1.5"
           >
-            <Save className="h-4 w-4 mr-1" />
-            {saveStatus === "saving" ? "保存中..." : "保存"}
+            {saveStatus === "saving" ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                保存中...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                保存
+              </>
+            )}
           </Button>
         </div>
 

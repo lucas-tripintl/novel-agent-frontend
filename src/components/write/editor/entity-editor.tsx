@@ -31,7 +31,6 @@ import {
   ChevronRight,
   Plus,
   Trash2,
-  AlertCircle,
   User,
   Globe,
   Zap,
@@ -45,9 +44,12 @@ import {
   Workflow,
   Users,
   Circle,
+  Edit3,
+  Save,
+  AlertCircle,
   CheckCircle2,
   XCircle,
-  Edit3,
+  Loader2,
 } from "lucide-react";
 
 function getFontClass(fontFamily: EditorFontFamily): string {
@@ -141,10 +143,22 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
   const [tags, setTags] = useState<string[]>(entity.tags || []);
   const [newTag, setNewTag] = useState("");
   const [attributes, setAttributes] = useState<Record<string, unknown>>(entity.attributes || {});
-  const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [shouldCloseAfterSave, setShouldCloseAfterSave] = useState(false);
+
+  // 计算本地脏状态（检测 name/tags/attributes 变化）
+  const isLocalDirty = useMemo(() => {
+    return (
+      name !== entity.name ||
+      JSON.stringify(tags) !== JSON.stringify(entity.tags || []) ||
+      JSON.stringify(attributes) !== JSON.stringify(entity.attributes || {})
+    );
+  }, [name, entity.name, tags, entity.tags, attributes, entity.attributes]);
+
+  // 综合脏状态：content 变化 (store) + 本地字段变化
+  const hasUnsavedChanges = isEntityDirty || isLocalDirty;
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
@@ -228,9 +242,22 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
 
 
 
+  // 处理保存
+  const handleSave = useCallback(async () => {
+    setSaveStatus("saving");
+    try {
+      await updateMutation.mutateAsync();
+      setSaveStatus("success");
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    } catch {
+      setSaveStatus("error");
+      setTimeout(() => setSaveStatus("idle"), 3000);
+    }
+  }, [updateMutation]);
+
   // 处理返回
   const handleBack = () => {
-    if (isEntityDirty) {
+    if (hasUnsavedChanges) {
       setShowConfirmDialog(true);
     } else {
       closeEntityEditor();
@@ -238,9 +265,16 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
   };
 
   // 保存后关闭
-  const handleSaveAndClose = () => {
+  const handleSaveAndClose = async () => {
     setShouldCloseAfterSave(true);
-    updateMutation.mutate();
+    setSaveStatus("saving");
+    try {
+      await updateMutation.mutateAsync();
+    } catch {
+      setSaveStatus("error");
+      setShouldCloseAfterSave(false);
+      setTimeout(() => setSaveStatus("idle"), 3000);
+    }
   };
 
   // 放弃更改并关闭
@@ -377,7 +411,8 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
             <p className="text-xs text-muted-foreground">{catConfig.label}</p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
+            {/* 保存状态提示 */}
             {saveStatus === "success" && (
               <Badge variant="outline" className="text-green-500 border-green-500/50">
                 <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -390,12 +425,33 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
                 保存失败
               </Badge>
             )}
-            {saveStatus === "idle" && isEntityDirty && (
+            {saveStatus === "idle" && hasUnsavedChanges && (
               <Badge variant="outline" className="text-orange-500 border-orange-500/50">
                 <AlertCircle className="h-3 w-3 mr-1" />
                 未保存
               </Badge>
             )}
+
+            {/* 保存按钮 */}
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={!hasUnsavedChanges || saveStatus === "saving"}
+              className="gap-1.5"
+            >
+              {saveStatus === "saving" ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  保存中...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  保存
+                </>
+              )}
+            </Button>
+
             {/* 删除按钮 */}
             <Button
               variant="ghost"

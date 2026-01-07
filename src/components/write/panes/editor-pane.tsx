@@ -12,7 +12,9 @@ import {
 import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 import { useChapter } from "@/hooks/use-projects";
 import { useChapterOutline } from "@/hooks/use-chapter-outline";
+import { useChapterSave } from "@/hooks/use-chapter-save";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { EditorStatusBar } from "../editor/editor-status-bar";
 import { ChapterTitleBar } from "../editor/chapter-title-bar";
 import { ChapterEditorTabs } from "../editor/chapter-editor-tabs";
 import { EntityEditor } from "../editor/entity-editor";
@@ -24,13 +26,16 @@ interface EditorPaneProps {
 }
 
 export function EditorPane({ projectId }: EditorPaneProps) {
-  const { chapterId, chapterNumber, loadDraft } = useWritingStore();
+  const { chapterId, chapterNumber, title, loadDraft } = useWritingStore();
   const { isStreaming } = useStreamingState();
   const { editingEntity } = useEntityEditing();
   const { editingOutline } = useOutlineEditing();
   const { loadChapterOutline, isChapterOutlineDirty } = useChapterOutlineState();
   const { isDirty } = useEditorContent();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // 章节保存 hook
+  const chapterSave = useChapterSave(projectId);
 
   // 浏览器关闭/刷新时提示未保存更改
   const hasUnsavedChanges = isDirty || isChapterOutlineDirty;
@@ -115,6 +120,17 @@ export function EditorPane({ projectId }: EditorPaneProps) {
 
   return (
     <div className="flex h-full flex-col bg-background min-h-0">
+      {/* 章节状态栏 */}
+      <EditorStatusBar
+        title={`第 ${chapterNumber || 1} 章`}
+        subtitle={title || "未命名章节"}
+        icon={<FileText className="h-5 w-5 text-primary" />}
+        isDirty={chapterSave.isDirty}
+        saveStatus={chapterSave.saveStatus}
+        onSave={chapterSave.save}
+        disabled={isStreaming}
+      />
+
       {/* 流式写作指示器 */}
       {isStreaming && (
         <div className="flex items-center gap-2 px-6 py-2 bg-primary/5 border-b border-primary/20">

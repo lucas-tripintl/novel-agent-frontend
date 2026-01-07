@@ -49,7 +49,6 @@ src/
 
 - `ink` (默认): 墨韵白，宣纸质感，水墨灰调
 - `cyberpunk`: 科技黑，深色科技风，荧光绿 + 电光紫
-- `bamboo`: 竹青绿，护眼舒适，竹青绿 + 金秋橙
 
 主题变量定义在 `globals.css` 中，使用 CSS 自定义属性。主题状态由 `useThemeStore` (Zustand) 管理并持久化到 localStorage (key: `novel-agent-theme`)。
 
