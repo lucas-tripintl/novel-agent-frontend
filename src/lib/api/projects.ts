@@ -249,6 +249,24 @@ export async function deleteEntity(projectId: string, entityId: string) {
   return apiClient.delete(`/projects/${projectId}/entities/${entityId}`);
 }
 
+export interface EntityCreateData {
+  entity_type: EntityType;
+  name: string;
+  content: string;
+  tags?: string[];
+  attributes?: Record<string, unknown>;
+}
+
+export async function createEntity(
+  projectId: string,
+  data: EntityCreateData
+) {
+  return apiClient.post<EntityRead>(
+    `/projects/${projectId}/entities`,
+    data
+  );
+}
+
 // ============ 金手指 ============
 
 export async function listGoldenFingers(

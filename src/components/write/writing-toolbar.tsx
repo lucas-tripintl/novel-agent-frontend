@@ -25,9 +25,11 @@ import {
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
+  Wand2,
 } from "lucide-react";
 import { EditorSettings } from "./editor/editor-settings";
 import { WriteChapterDialog } from "./write-chapter-dialog";
+import { GenerateEntityDialog } from "./generate-entity-dialog";
 
 interface WritingToolbarProps {
   project: ProjectRead;
@@ -35,6 +37,7 @@ interface WritingToolbarProps {
 
 export function WritingToolbar({ project }: WritingToolbarProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
 
   const {
     mode,
@@ -162,6 +165,22 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
           </TooltipTrigger>
           <TooltipContent>让 AI 审阅当前内容并给出建议</TooltipContent>
         </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setGenerateDialogOpen(true)}
+              disabled={isStreaming}
+            >
+              <Wand2 className="h-3.5 w-3.5" />
+              <span>生成设定</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>生成角色、世界观等设定</TooltipContent>
+        </Tooltip>
       </div>
 
       {/* 右侧：状态 + 面板控制 */}
@@ -227,6 +246,13 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
         chapterNumber={chapterNumber}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+      />
+
+      {/* 生成设定对话框 */}
+      <GenerateEntityDialog
+        projectId={project.id}
+        open={generateDialogOpen}
+        onOpenChange={setGenerateDialogOpen}
       />
     </header>
   );
