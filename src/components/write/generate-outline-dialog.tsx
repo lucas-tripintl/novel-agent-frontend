@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,28 +13,19 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
   FileText,
-  ChevronDown,
+  ChevronRight,
   X,
-  Users,
-  Globe,
-  Layers,
   Sparkles,
   Zap,
   Play,
 } from "lucide-react";
-import { useEntities } from "@/hooks/use-analysis-results";
-import { useSkills } from "@/hooks/use-skills";
 import { useInteractiveOutline } from "@/hooks/use-interactive-outline";
+import { EntityBrowserDialog } from "@/components/browser/entity-browser-dialog";
+import { SkillBrowserDialog } from "@/components/browser/skill-browser-dialog";
 import type { EntityRead } from "@/types/api";
 import type { SkillBrief } from "@/types/skills";
 import {
@@ -51,17 +42,6 @@ interface GenerateOutlineDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// 参考设定的实体类型
-const REFERENCE_ENTITY_TYPES: {
-  type: string;
-  label: string;
-  icon: React.ReactNode;
-}[] = [
-  { type: "character", label: "角色", icon: <Users className="h-3.5 w-3.5" /> },
-  { type: "worldview", label: "世界观", icon: <Globe className="h-3.5 w-3.5" /> },
-  { type: "plotline", label: "剧情线", icon: <Layers className="h-3.5 w-3.5" /> },
-];
-
 export function GenerateOutlineDialog({
   projectId,
   chapterNumber,
@@ -74,44 +54,16 @@ export function GenerateOutlineDialog({
   const [guidance, setGuidance] = useState("");
   const [selectedEntities, setSelectedEntities] = useState<EntityRead[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<SkillBrief[]>([]);
-  const [referenceOpen, setReferenceOpen] = useState(false);
-  const [skillsOpen, setSkillsOpen] = useState(false);
+
+  // 浏览器对话框状态
+  const [entityBrowserOpen, setEntityBrowserOpen] = useState(false);
+  const [skillBrowserOpen, setSkillBrowserOpen] = useState(false);
 
   // 交互式生成 Hook
   const { startGeneration, isGenerating } = useInteractiveOutline(
     projectId,
     chapterNumber
   );
-
-  // 获取各类型实体（用于参考设定选择）
-  const { data: charactersData } = useEntities(projectId, "character", {
-    limit: 50,
-  });
-  const { data: worldviewData } = useEntities(projectId, "worldview", {
-    limit: 50,
-  });
-  const { data: plotlineData } = useEntities(projectId, "plotline", {
-    limit: 50,
-  });
-
-  // 获取适用于细纲阶段的技能列表
-  const { data: skillsData } = useSkills({ stage: "chapter_outline", limit: 50 });
-
-  const entitiesByType = useMemo(
-    () => ({
-      character: charactersData?.items ?? [],
-      worldview: worldviewData?.items ?? [],
-      plotline: plotlineData?.items ?? [],
-    }),
-    [charactersData, worldviewData, plotlineData]
-  );
-
-  const totalEntities = Object.values(entitiesByType).reduce(
-    (sum, arr) => sum + arr.length,
-    0
-  );
-
-  const skills = skillsData?.items ?? [];
 
   // 重置表单
   const resetForm = () => {
@@ -120,8 +72,8 @@ export function GenerateOutlineDialog({
     setGuidance("");
     setSelectedEntities([]);
     setSelectedSkills([]);
-    setReferenceOpen(false);
-    setSkillsOpen(false);
+    setEntityBrowserOpen(false);
+    setSkillBrowserOpen(false);
   };
 
   // 处理对话框打开/关闭
@@ -152,31 +104,9 @@ export function GenerateOutlineDialog({
     handleOpenChange(false);
   };
 
-  // 切换参考设定选择
-  const toggleEntity = (entity: EntityRead) => {
-    setSelectedEntities((prev) => {
-      const exists = prev.some((e) => e.id === entity.id);
-      if (exists) {
-        return prev.filter((e) => e.id !== entity.id);
-      }
-      return [...prev, entity];
-    });
-  };
-
   // 移除参考设定
   const removeEntity = (entityId: string) => {
     setSelectedEntities((prev) => prev.filter((e) => e.id !== entityId));
-  };
-
-  // 切换技能选择
-  const toggleSkill = (skill: SkillBrief) => {
-    setSelectedSkills((prev) => {
-      const exists = prev.some((s) => s.id === skill.id);
-      if (exists) {
-        return prev.filter((s) => s.id !== skill.id);
-      }
-      return [...prev, skill];
-    });
   };
 
   // 移除技能
@@ -292,165 +222,96 @@ export function GenerateOutlineDialog({
               </div>
 
               {/* 参考设定（选填） */}
-              {totalEntities > 0 && (
-                <Collapsible open={referenceOpen} onOpenChange={setReferenceOpen}>
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-between px-3 h-9 text-sm"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4" />
-                        参考设定（选填）
-                        {selectedEntities.length > 0 && (
-                          <Badge variant="secondary" className="text-xs">
-                            已选 {selectedEntities.length}
-                          </Badge>
-                        )}
-                      </span>
-                      <ChevronDown
-                        className={`h-4 w-4 transition-transform ${
-                          referenceOpen ? "rotate-180" : ""
-                        }`}
-                      />
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-2">
-                    {/* 已选设定 */}
+              <div className="space-y-2">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-between px-3 h-9 text-sm border border-border/50 hover:border-primary/30"
+                  onClick={() => setEntityBrowserOpen(true)}
+                >
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    参考设定（选填）
                     {selectedEntities.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-3 p-2 bg-muted/50 rounded-md">
-                        {selectedEntities.map((entity) => (
-                          <Badge
-                            key={entity.id}
-                            variant="secondary"
-                            className="gap-1 pr-1"
-                          >
-                            {entity.name}
-                            <button
-                              onClick={() => removeEntity(entity.id)}
-                              className="ml-0.5 hover:bg-muted rounded"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        已选 {selectedEntities.length}
+                      </Badge>
                     )}
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Button>
 
-                    {/* 设定列表 */}
-                    <div className="space-y-3 max-h-[150px] overflow-y-auto">
-                      {REFERENCE_ENTITY_TYPES.map(({ type, label, icon }) => {
-                        const entities =
-                          entitiesByType[type as keyof typeof entitiesByType] ??
-                          [];
-                        if (entities.length === 0) return null;
-
-                        return (
-                          <div key={type} className="space-y-1.5">
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                              {icon}
-                              {label}
-                            </div>
-                            <div className="grid grid-cols-2 gap-1">
-                              {entities.slice(0, 8).map((entity) => (
-                                <label
-                                  key={entity.id}
-                                  className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/50 cursor-pointer text-sm"
-                                >
-                                  <Checkbox
-                                    checked={selectedEntities.some(
-                                      (e) => e.id === entity.id
-                                    )}
-                                    onCheckedChange={() => toggleEntity(entity)}
-                                  />
-                                  <span className="truncate">{entity.name}</span>
-                                </label>
-                              ))}
-                            </div>
-                            {entities.length > 8 && (
-                              <p className="text-xs text-muted-foreground pl-2">
-                                还有 {entities.length - 8} 个...
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
+                {/* 已选设定预览 */}
+                {selectedEntities.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 p-2 bg-muted/50 rounded-md">
+                    {selectedEntities.slice(0, 5).map((entity) => (
+                      <Badge
+                        key={entity.id}
+                        variant="secondary"
+                        className="gap-1 pr-1 text-xs"
+                      >
+                        {entity.name}
+                        <button
+                          onClick={() => removeEntity(entity.id)}
+                          className="ml-0.5 hover:bg-muted rounded"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                    {selectedEntities.length > 5 && (
+                      <span className="text-xs text-muted-foreground">
+                        +{selectedEntities.length - 5} 个
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* 使用技能（选填） */}
-              {skills.length > 0 && (
-                <Collapsible open={skillsOpen} onOpenChange={setSkillsOpen}>
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-between px-3 h-9 text-sm"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Zap className="h-4 w-4" />
-                        使用技能（选填）
-                        {selectedSkills.length > 0 && (
-                          <Badge variant="secondary" className="text-xs">
-                            已选 {selectedSkills.length}
-                          </Badge>
-                        )}
-                      </span>
-                      <ChevronDown
-                        className={`h-4 w-4 transition-transform ${
-                          skillsOpen ? "rotate-180" : ""
-                        }`}
-                      />
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-2">
-                    {/* 已选技能 */}
+              <div className="space-y-2">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-between px-3 h-9 text-sm border border-border/50 hover:border-primary/30"
+                  onClick={() => setSkillBrowserOpen(true)}
+                >
+                  <span className="flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    使用技能（选填）
                     {selectedSkills.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-3 p-2 bg-muted/50 rounded-md">
-                        {selectedSkills.map((skill) => (
-                          <Badge
-                            key={skill.id}
-                            variant="secondary"
-                            className="gap-1 pr-1"
-                          >
-                            {skill.name}
-                            <button
-                              onClick={() => removeSkill(skill.id)}
-                              className="ml-0.5 hover:bg-muted rounded"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        已选 {selectedSkills.length}
+                      </Badge>
                     )}
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Button>
 
-                    {/* 技能列表 */}
-                    <div className="grid grid-cols-2 gap-1 max-h-[120px] overflow-y-auto">
-                      {skills.slice(0, 10).map((skill) => (
-                        <label
-                          key={skill.id}
-                          className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/50 cursor-pointer text-sm"
+                {/* 已选技能预览 */}
+                {selectedSkills.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 p-2 bg-muted/50 rounded-md">
+                    {selectedSkills.slice(0, 5).map((skill) => (
+                      <Badge
+                        key={skill.id}
+                        variant="secondary"
+                        className="gap-1 pr-1 text-xs"
+                      >
+                        {skill.name}
+                        <button
+                          onClick={() => removeSkill(skill.id)}
+                          className="ml-0.5 hover:bg-muted rounded"
                         >
-                          <Checkbox
-                            checked={selectedSkills.some(
-                              (s) => s.id === skill.id
-                            )}
-                            onCheckedChange={() => toggleSkill(skill)}
-                          />
-                          <span className="truncate">{skill.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {skills.length > 10 && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        还有 {skills.length - 10} 个技能...
-                      </p>
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                    {selectedSkills.length > 5 && (
+                      <span className="text-xs text-muted-foreground">
+                        +{selectedSkills.length - 5} 个
+                      </span>
                     )}
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
+                  </div>
+                )}
+              </div>
             </div>
           </ScrollArea>
         </div>
@@ -469,6 +330,31 @@ export function GenerateOutlineDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* 设定浏览器对话框 */}
+      <EntityBrowserDialog
+        projectId={projectId}
+        open={entityBrowserOpen}
+        onOpenChange={setEntityBrowserOpen}
+        initialSelected={selectedEntities}
+        allowedTypes={["character", "worldview", "plotline"]}
+        selectionMode="multiple"
+        onConfirm={setSelectedEntities}
+        title="选择参考设定"
+        description="选择用于生成细纲的参考设定"
+      />
+
+      {/* 技能浏览器对话框 */}
+      <SkillBrowserDialog
+        open={skillBrowserOpen}
+        onOpenChange={setSkillBrowserOpen}
+        initialSelected={selectedSkills}
+        stageFilter="chapter_outline"
+        selectionMode="multiple"
+        onConfirm={setSelectedSkills}
+        title="选择技能"
+        description="选择用于细纲生成的写作技能"
+      />
     </Dialog>
   );
 }
