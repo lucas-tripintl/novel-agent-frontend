@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,8 +29,8 @@ import {
 } from "lucide-react";
 import {
   useSkills,
-  getSkillCategoryLabel,
-  getSkillStageLabel,
+  getSkillCategoryKey,
+  getSkillStageKey,
   SKILL_CATEGORY_OPTIONS,
   SKILL_SORT_OPTIONS,
 } from "@/hooks/use-skills";
@@ -70,6 +71,7 @@ export function SelectSkillDialog({
   selectedSkillId,
   onSelect,
 }: SelectSkillDialogProps) {
+  const t = useTranslations("skills");
   const [pendingSkill, setPendingSkill] = useState<SkillBrief | null>(null);
 
   // 搜索和筛选状态
@@ -156,7 +158,7 @@ export function SelectSkillDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-3xl h-[550px] flex flex-col p-0 overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/50 shrink-0">
-          <DialogTitle>选择写作技能</DialogTitle>
+          <DialogTitle>{t("selectWritingSkill")}</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 flex min-h-0 overflow-hidden">
@@ -176,7 +178,7 @@ export function SelectSkillDialog({
                       : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                   )}
                 >
-                  {option.label}
+                  {t(option.labelKey)}
                 </button>
               ))}
             </nav>
@@ -189,7 +191,7 @@ export function SelectSkillDialog({
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="搜索技能名称或描述..."
+                  placeholder={t("searchPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   className="pl-9"
@@ -207,7 +209,7 @@ export function SelectSkillDialog({
                 <SelectContent>
                   {SKILL_SORT_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                      {t(option.labelKey)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -217,7 +219,7 @@ export function SelectSkillDialog({
                 size="icon"
                 className="h-9 w-9 shrink-0"
                 onClick={toggleSortOrder}
-                title={sortOrder === "desc" ? "降序" : "升序"}
+                title={sortOrder === "desc" ? t("descending") : t("ascending")}
               >
                 {sortOrder === "desc" ? (
                   <ArrowDown className="h-4 w-4" />
@@ -240,8 +242,8 @@ export function SelectSkillDialog({
                   <Wand2 className="h-10 w-10 text-muted-foreground/50 mb-3" />
                   <p className="text-sm text-muted-foreground">
                     {searchQuery || categoryFilter !== "all"
-                      ? "没有找到匹配的技能"
-                      : "暂无可用技能"}
+                      ? t("noMatchingSkills")
+                      : t("noAvailableSkills")}
                   </p>
                   {(searchQuery || categoryFilter !== "all") && (
                     <Button
@@ -253,7 +255,7 @@ export function SelectSkillDialog({
                         setCategoryFilter("all");
                       }}
                     >
-                      清除筛选
+                      {t("clearFilters")}
                     </Button>
                   )}
                 </div>
@@ -286,7 +288,7 @@ export function SelectSkillDialog({
                                   className="text-[10px] px-1.5 py-0"
                                 >
                                   <Lock className="h-2.5 w-2.5 mr-0.5" />
-                                  系统
+                                  {t("system")}
                                 </Badge>
                               )}
                               {isSelected(skill) && (
@@ -294,17 +296,17 @@ export function SelectSkillDialog({
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                              {skill.description || "暂无描述"}
+                              {skill.description || t("noDescription")}
                             </p>
                             <div className="flex items-center gap-2 mt-2">
                               <Badge variant="outline" className="text-xs">
-                                {getSkillCategoryLabel(skill.category)}
+                                {t(getSkillCategoryKey(skill.category))}
                               </Badge>
                               <span className="text-xs text-muted-foreground">
-                                适用:{" "}
+                                {t("applicableTo")}:{" "}
                                 {skill.applicable_stages
                                   .slice(0, 2)
-                                  .map((s) => getSkillStageLabel(s))
+                                  .map((s) => t(getSkillStageKey(s)))
                                   .join(", ")}
                                 {skill.applicable_stages.length > 2 &&
                                   ` +${skill.applicable_stages.length - 2}`}
@@ -323,7 +325,7 @@ export function SelectSkillDialog({
             {totalPages > 1 && (
               <div className="flex items-center justify-between pt-3 mt-3 border-t border-border/50 shrink-0">
                 <span className="text-xs text-muted-foreground">
-                  共 {totalItems} 个技能
+                  {t("totalSkills", { count: totalItems })}
                 </span>
                 <div className="flex items-center gap-2">
                   <Button
@@ -357,17 +359,17 @@ export function SelectSkillDialog({
           <div>
             {selectedSkillId && (
               <Button variant="ghost" size="sm" onClick={handleClear}>
-                取消选择
+                {t("clearSelection")}
               </Button>
             )}
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => handleOpenChange(false)}>
-              取消
+              {t("cancel")}
             </Button>
             <Button onClick={handleConfirm} disabled={!pendingSkill}>
               <Check className="mr-2 h-4 w-4" />
-              确认
+              {t("confirm")}
             </Button>
           </div>
         </DialogFooter>

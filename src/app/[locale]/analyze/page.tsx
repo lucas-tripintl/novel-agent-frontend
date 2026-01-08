@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Badge } from "@/components/ui/badge";
@@ -18,16 +19,17 @@ import type { ProjectImportResponse } from "@/types/api";
 import { analyzeProject } from "@/lib/api/projects";
 import { useActiveTasks } from "@/hooks/use-task-polling";
 
-// 导入向导步骤
-const importSteps = [
-  { id: 1, title: "上传文件" },
-  { id: 2, title: "分析配置" },
-];
-
 type AnalyzeStep = "upload" | "config";
 
 export default function AnalyzePage() {
+  const t = useTranslations("analyze");
   const queryClient = useQueryClient();
+
+  // 导入向导步骤
+  const importSteps = [
+    { id: 1, title: t("steps.upload") },
+    { id: 2, title: t("steps.config") },
+  ];
 
   // 流程状态
   const [currentStep, setCurrentStep] = useState<AnalyzeStep>("upload");
@@ -89,26 +91,26 @@ export default function AnalyzePage() {
         <div className="shrink-0 mb-6">
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <Zap className="h-6 w-6 text-primary" />
-            设定提取
+            {t("title")}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            上传小说文件，智能提取设定与角色
+            {t("description")}
           </p>
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <TabsList className="bg-card/50 border border-border/50 shrink-0 mb-6">
-            <TabsTrigger value="upload">上传</TabsTrigger>
+            <TabsTrigger value="upload">{t("tabs.upload")}</TabsTrigger>
             <TabsTrigger value="analyzing">
-              分析中
+              {t("tabs.analyzing")}
               {activeTasks.length > 0 && (
                 <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 justify-center text-xs">
                   {activeTasks.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="history">历史</TabsTrigger>
+            <TabsTrigger value="history">{t("tabs.history")}</TabsTrigger>
           </TabsList>
 
           {/* 上传 Tab */}

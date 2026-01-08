@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useLayoutEffect, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -45,7 +46,7 @@ import {
   useSkills,
   SKILL_CATEGORY_OPTIONS,
   SKILL_SORT_OPTIONS,
-  getSkillCategoryLabel,
+  getSkillCategoryKey,
 } from "@/hooks/use-skills";
 import type {
   SkillBrief,
@@ -94,9 +95,11 @@ export function SkillBrowserDialog({
   stageFilter,
   selectionMode = "multiple",
   onConfirm,
-  title = "选择技能",
-  description = "浏览并选择需要的写作技能",
+  title,
+  description,
 }: SkillBrowserDialogProps) {
+  const t = useTranslations("skills");
+  const tCommon = useTranslations("common");
   // 内部状态
   const [selectedItems, setSelectedItems] = useState<SkillBrief[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<SkillCategory | "all">("all");
@@ -222,7 +225,7 @@ export function SkillBrowserDialog({
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="搜索技能..."
+                placeholder={t("searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-9 h-9 bg-background/50"
@@ -260,7 +263,7 @@ export function SkillBrowserDialog({
                     >
                       {Icon}
                     </span>
-                    <span className="truncate">{option.label}</span>
+                    <span className="truncate">{t(option.labelKey)}</span>
                   </button>
                 );
               })}
@@ -272,7 +275,7 @@ export function SkillBrowserDialog({
             {/* 统计和排序 */}
             <div className="px-4 py-2 border-b border-border/30 shrink-0 flex items-center justify-between">
               <span className="text-xs text-muted-foreground">
-                {total > 0 ? `共 ${total} 个技能` : "暂无技能"}
+                {total > 0 ? t("totalSkills", { count: total }) : t("noSkills")}
               </span>
               <div className="flex items-center gap-1">
                 <Select
@@ -286,7 +289,7 @@ export function SkillBrowserDialog({
                   <SelectContent>
                     {SKILL_SORT_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        {t(option.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -296,7 +299,7 @@ export function SkillBrowserDialog({
                   size="icon"
                   className="h-7 w-7"
                   onClick={toggleSortOrder}
-                  title={sortOrder === "desc" ? "降序" : "升序"}
+                  title={sortOrder === "desc" ? t("descending") : t("ascending")}
                 >
                   {sortOrder === "desc" ? (
                     <ArrowDown className="h-3.5 w-3.5" />
@@ -364,18 +367,18 @@ export function SkillBrowserDialog({
                                     className="text-[10px] px-1.5 py-0 shrink-0"
                                   >
                                     <Lock className="h-2.5 w-2.5 mr-0.5" />
-                                    系统
+                                    {t("system")}
                                   </Badge>
                                 )}
                               </div>
                               <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                {skill.description || "暂无描述"}
+                                {skill.description || t("noDescription")}
                               </p>
 
                               {/* 分类标签 */}
                               <div className="flex items-center gap-2 mt-2">
                                 <Badge variant="outline" className="text-[10px]">
-                                  {getSkillCategoryLabel(skill.category)}
+                                  {t(getSkillCategoryKey(skill.category))}
                                 </Badge>
                               </div>
                             </div>
@@ -399,8 +402,8 @@ export function SkillBrowserDialog({
                     <Wand2 className="h-10 w-10 text-muted-foreground/50 mb-3" />
                     <p className="text-sm text-muted-foreground">
                       {searchQuery || categoryFilter !== "all"
-                        ? "没有找到匹配的技能"
-                        : "暂无技能数据"}
+                        ? t("noMatchingSkills")
+                        : t("noSkills")}
                     </p>
                     {(searchQuery || categoryFilter !== "all") && (
                       <Button
@@ -412,7 +415,7 @@ export function SkillBrowserDialog({
                           setCategoryFilter("all");
                         }}
                       >
-                        清除筛选
+                        {t("clearFilters")}
                       </Button>
                     )}
                   </div>
@@ -424,7 +427,7 @@ export function SkillBrowserDialog({
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-4 py-3 border-t border-border/30 shrink-0">
                 <span className="text-xs text-muted-foreground">
-                  第 {currentPage + 1} / {totalPages} 页
+                  {currentPage + 1} / {totalPages}
                 </span>
                 <div className="flex items-center gap-2">
                   <Button
@@ -456,7 +459,7 @@ export function SkillBrowserDialog({
           <div className="px-6 py-3 border-t border-border/50 bg-muted/30 shrink-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm text-muted-foreground shrink-0">
-                已选 {selectedItems.length} 项:
+                {t("selected", { count: selectedItems.length })}:
               </span>
               <div className="flex flex-wrap gap-1.5 flex-1">
                 {selectedItems.slice(0, 8).map((item) => (
@@ -479,7 +482,7 @@ export function SkillBrowserDialog({
                 ))}
                 {selectedItems.length > 8 && (
                   <span className="text-xs text-muted-foreground">
-                    +{selectedItems.length - 8} 个
+                    +{selectedItems.length - 8}
                   </span>
                 )}
               </div>
@@ -490,10 +493,10 @@ export function SkillBrowserDialog({
         {/* 底部操作 */}
         <DialogFooter className="px-6 py-4 border-t border-border/50 shrink-0">
           <Button variant="outline" onClick={handleCancel}>
-            取消
+            {t("cancel")}
           </Button>
           <Button onClick={handleConfirm}>
-            确认 ({selectedItems.length})
+            {t("confirm")} ({selectedItems.length})
           </Button>
         </DialogFooter>
       </DialogContent>

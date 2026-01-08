@@ -192,69 +192,68 @@ export function useReorderProjectSkills(projectId: string) {
 
 // ============ 辅助常量 ============
 
-/** 技能分类选项 */
+/** 技能分类选项 - value 和对应的翻译键 */
 export const SKILL_CATEGORY_OPTIONS = [
-  { value: "all", label: "全部分类" },
-  { value: "platform_style", label: "平台风格" },
-  { value: "rhythm", label: "节奏控制" },
-  { value: "technique", label: "写作技巧" },
-  { value: "anti_ai", label: "去AI味" },
-  { value: "other", label: "其他" },
+  { value: "all", labelKey: "categories.all" },
+  { value: "platform_style", labelKey: "categories.platformStyle" },
+  { value: "rhythm", labelKey: "categories.rhythm" },
+  { value: "technique", labelKey: "categories.technique" },
+  { value: "anti_ai", labelKey: "categories.antiAi" },
+  { value: "other", labelKey: "categories.other" },
 ] as const;
 
-/** 适用阶段选项 */
+/** 适用阶段选项 - value 和对应的翻译键 */
 export const SKILL_STAGE_OPTIONS = [
-  { value: "all", label: "全部阶段" },
-  { value: "outline", label: "大纲规划" },
-  { value: "chapter_outline", label: "章节细纲" },
-  { value: "writing", label: "首次写作" },
-  { value: "rewriting", label: "改写润色" },
-  { value: "review", label: "一致性审核" },
+  { value: "all", labelKey: "stages.all" },
+  { value: "outline", labelKey: "stages.outline" },
+  { value: "chapter_outline", labelKey: "stages.chapterOutline" },
+  { value: "writing", labelKey: "stages.writing" },
+  { value: "rewriting", labelKey: "stages.rewriting" },
+  { value: "review", labelKey: "stages.review" },
 ] as const;
 
-/** 技能来源选项 */
+/** 技能来源选项 - value 和对应的翻译键 */
 export const SKILL_VISIBILITY_OPTIONS = [
-  { value: "all", label: "全部来源" },
-  { value: "system", label: "系统预置" },
-  { value: "team", label: "用户自建" },
+  { value: "all", labelKey: "visibility.all" },
+  { value: "system", labelKey: "visibility.system" },
+  { value: "team", labelKey: "visibility.team" },
 ] as const;
 
-/** 技能排序选项 */
+/** 技能排序选项 - value 和对应的翻译键 */
 export const SKILL_SORT_OPTIONS = [
-  { value: "updated_at", label: "更新时间" },
-  { value: "created_at", label: "创建时间" },
-  { value: "downloads", label: "下载量" },
-  { value: "rating", label: "评分" },
-  { value: "name", label: "名称" },
+  { value: "updated_at", labelKey: "sort.updatedAt" },
+  { value: "created_at", labelKey: "sort.createdAt" },
+  { value: "downloads", labelKey: "sort.downloads" },
+  { value: "rating", labelKey: "sort.rating" },
+  { value: "name", labelKey: "sort.name" },
 ] as const;
 
-/** 排序方向选项 */
+/** 排序方向选项 - value 和对应的翻译键 */
 export const SORT_ORDER_OPTIONS = [
-  { value: "desc", label: "降序" },
-  { value: "asc", label: "升序" },
+  { value: "desc", labelKey: "sortOrder.desc" },
+  { value: "asc", labelKey: "sortOrder.asc" },
 ] as const;
 
-/** 获取分类标签 */
-export function getSkillCategoryLabel(category: string): string {
+/** 获取分类翻译键 */
+export function getSkillCategoryKey(category: string): string {
   const option = SKILL_CATEGORY_OPTIONS.find((o) => o.value === category);
-  return option?.label ?? category;
+  return option?.labelKey ?? `categories.${category}`;
 }
 
-/** 获取阶段标签 */
-export function getSkillStageLabel(stage: string): string {
+/** 获取阶段翻译键 */
+export function getSkillStageKey(stage: string): string {
   const option = SKILL_STAGE_OPTIONS.find((o) => o.value === stage);
-  return option?.label ?? stage;
+  return option?.labelKey ?? `stages.${stage}`;
 }
 
-/** 获取来源标签 */
-export function getSkillVisibilityLabel(visibility: string): string {
-  if (visibility === "system") return "系统";
-  if (visibility === "team") return "自建";
-  return visibility;
+/** 获取来源翻译键 */
+export function getSkillVisibilityKey(visibility: string): string {
+  const option = SKILL_VISIBILITY_OPTIONS.find((o) => o.value === visibility);
+  return option?.labelKey ?? `visibility.${visibility}`;
 }
 
-/** 获取排序字段标签 */
-export function getSkillSortLabel(sortBy: string): string {
+/** 获取排序字段翻译键 */
+export function getSkillSortKey(sortBy: string): string {
   const option = SKILL_SORT_OPTIONS.find((o) => o.value === sortBy);
-  return option?.label ?? sortBy;
+  return option?.labelKey ?? `sort.${sortBy}`;
 }

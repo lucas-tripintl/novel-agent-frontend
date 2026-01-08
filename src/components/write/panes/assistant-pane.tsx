@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import {
   useWritingMode,
   useContextEntities,
@@ -57,6 +58,7 @@ interface AssistantPaneProps {
 }
 
 export function AssistantPane({ projectId }: AssistantPaneProps) {
+  const t = useTranslations("write");
   const [inputValue, setInputValue] = useState("");
   const [localMessages, setLocalMessages] = useState<ChatMessageType[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -358,7 +360,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
         <div className="flex items-center gap-2">
           <Bot className="h-4 w-4 text-primary" />
-          <span className="font-semibold text-sm">AI 助手</span>
+          <span className="font-semibold text-sm">{t("aiAssistant")}</span>
           <Badge
             variant="outline"
             className={cn(
@@ -369,12 +371,12 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
             {mode === "auto" ? (
               <>
                 <Sparkles className="h-2.5 w-2.5" />
-                全自动
+                {t("autoMode")}
               </>
             ) : (
               <>
                 <Film className="h-2.5 w-2.5" />
-                导演
+                {t("directorMode")}
               </>
             )}
           </Badge>
@@ -386,7 +388,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
             variant="ghost"
             size="icon"
             className="h-7 w-7"
-            title="新建对话"
+            title={t("newConversation")}
             onClick={handleCreateNewSession}
             disabled={isSessionBusy}
           >
@@ -421,9 +423,9 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
                 <Bot className="h-6 w-6 text-primary" />
               </div>
-              <p className="text-sm font-medium">开始与 AI 对话</p>
+              <p className="text-sm font-medium">{t("startConversation")}</p>
               <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
-                询问创作建议、讨论情节发展，或让 AI 帮你续写内容
+                {t("conversationHint")}
               </p>
             </div>
           ) : (
@@ -443,7 +445,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="输入消息..."
+            placeholder={t("inputPlaceholder")}
             disabled={isStreaming}
             className={cn(
               "min-h-[60px] max-h-[120px] resize-none pr-12",
@@ -456,7 +458,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
               variant="destructive"
               className="absolute right-2 bottom-2 h-8 w-8"
               onClick={cancelMessage}
-              title="停止生成"
+              title={t("stopGenerate")}
             >
               <StopCircle className="h-4 w-4" />
             </Button>
@@ -479,7 +481,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
           )}
         </div>
         <p className="mt-2 text-[10px] text-muted-foreground text-center">
-          按 Enter 发送，Shift + Enter 换行
+          {t("sendHint")}
         </p>
       </div>
     </div>

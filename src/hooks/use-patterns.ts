@@ -68,14 +68,45 @@ export function usePattern(patternId: string, options?: { enabled?: boolean }) {
 
 /**
  * 模式类型筛选选项（仅保留 7 种核心 PATTERN 类型）
+ * 使用 labelKey 指向翻译键，在组件中通过 t(option.labelKey) 获取本地化文本
  */
-export const PATTERN_TYPE_OPTIONS: { value: EntityType | "all"; label: string }[] = [
-  { value: "all", label: "全部" },
-  { value: "power_system", label: "力量体系" },
-  { value: "plot_pattern", label: "剧情模式" },
-  { value: "character_archetype", label: "角色原型" },
-  { value: "conflict_pattern", label: "冲突模式" },
-  { value: "relationship_dynamic", label: "关系动态" },
-  { value: "conflict_escalation", label: "冲突升级" },
-  { value: "cheat_evolution", label: "金手指演化" },
-];
+export const PATTERN_TYPE_OPTIONS = [
+  { value: "all", labelKey: "types.all" },
+  { value: "power_system", labelKey: "types.powerSystem" },
+  { value: "plot_pattern", labelKey: "types.plotPattern" },
+  { value: "character_archetype", labelKey: "types.characterArchetype" },
+  { value: "conflict_pattern", labelKey: "types.conflictPattern" },
+  { value: "relationship_dynamic", labelKey: "types.relationshipDynamic" },
+  { value: "conflict_escalation", labelKey: "types.conflictEscalation" },
+  { value: "cheat_evolution", labelKey: "types.cheatEvolution" },
+] as const;
+
+/**
+ * 获取模式类型翻译键
+ */
+export function getPatternTypeKey(type: string): string {
+  const typeKeyMap: Record<string, string> = {
+    power_system: "types.powerSystem",
+    plot_pattern: "types.plotPattern",
+    character_archetype: "types.characterArchetype",
+    worldview: "types.worldview",
+    conflict_pattern: "types.conflictPattern",
+    narrative_rhythm: "types.narrativeRhythm",
+    chapter_structure: "types.chapterStructure",
+    relationship_dynamic: "types.relationshipDynamic",
+    conflict_escalation: "types.conflictEscalation",
+    cheat_evolution: "types.cheatEvolution",
+    cool_point_pattern: "types.coolPointPattern",
+    writing_technique: "types.writingTechnique",
+    golden_opening_report: "types.goldenOpeningReport",
+    character: "types.character",
+    location: "types.location",
+    faction: "types.faction",
+    item: "types.item",
+    skill: "types.skill",
+    plotline: "types.plotline",
+    golden_finger: "types.goldenFinger",
+    foreshadowing: "types.foreshadowing",
+  };
+  return typeKeyMap[type] ?? `types.${type}`;
+}

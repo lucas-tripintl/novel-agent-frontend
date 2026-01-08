@@ -20,6 +20,7 @@ import { useProjects, projectToNovel } from "@/hooks/use-projects";
 import { useProjectSelectionStore } from "@/stores/project-selection-store";
 import { BookOpen, Check, ChevronsUpDown, AlertCircle } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 interface NovelFilterProps {
   /** 受控模式：外部传入选中的 ID */
@@ -40,6 +41,7 @@ export function NovelFilter({
   autoSelectFirst = false,
   useGlobalStore = true,
 }: NovelFilterProps) {
+  const t = useTranslations("common");
   const [open, setOpen] = useState(false);
   const { data, isLoading, error } = useProjects();
 
@@ -89,7 +91,7 @@ export function NovelFilter({
     return (
       <div className={cn("flex items-center gap-2 text-destructive", className)}>
         <AlertCircle className="h-4 w-4" />
-        <span className="text-sm">加载项目失败</span>
+        <span className="text-sm">{t("loadProjectsFailed")}</span>
       </div>
     );
   }
@@ -117,7 +119,7 @@ export function NovelFilter({
           ) : (
             <div className="flex items-center gap-2 text-muted-foreground">
               <BookOpen className="h-4 w-4" />
-              <span>选择小说</span>
+              <span>{t("selectNovel")}</span>
             </div>
           )}
           <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50 ml-auto" />
@@ -128,10 +130,10 @@ export function NovelFilter({
         align="start"
       >
         <Command>
-          <CommandInput placeholder="搜索小说..." className="h-9" />
+          <CommandInput placeholder={t("searchNovelPlaceholder")} className="h-9" />
           <CommandList>
             <CommandEmpty>
-              {novels.length === 0 ? "暂无项目，请先导入小说" : "未找到小说"}
+              {novels.length === 0 ? t("noProjects") : t("noNovelsFound")}
             </CommandEmpty>
             <CommandGroup>
               <CommandItem
@@ -143,7 +145,7 @@ export function NovelFilter({
                 className="cursor-pointer font-medium text-primary"
               >
                 <BookOpen className="mr-2 h-4 w-4" />
-                全部作品
+                {t("allNovels")}
                 <Check
                   className={cn(
                     "ml-auto h-4 w-4 shrink-0",

@@ -41,14 +41,15 @@ import {
   Palette,
 } from "lucide-react";
 import { useState, useMemo, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
 import {
   useSkills,
   SKILL_CATEGORY_OPTIONS,
   SKILL_STAGE_OPTIONS,
   SKILL_VISIBILITY_OPTIONS,
   SKILL_SORT_OPTIONS,
-  getSkillCategoryLabel,
-  getSkillStageLabel,
+  getSkillCategoryKey,
+  getSkillStageKey,
 } from "@/hooks/use-skills";
 import type { SkillCategory, SkillStage, SkillVisibility, SkillSortBy, SortOrder, SkillBrief } from "@/types/skills";
 import { SkillDialog } from "@/components/skills/skill-dialog";
@@ -69,6 +70,9 @@ const categoryIcons: Record<string, React.ReactNode> = {
 };
 
 export default function SkillsPage() {
+  const t = useTranslations("skills");
+  const tCommon = useTranslations("common");
+
   const [categoryFilter, setCategoryFilter] = useState<SkillCategory | "all">("all");
   const [stageFilter, setStageFilter] = useState<SkillStage | "all">("all");
   const [visibilityFilter, setVisibilityFilter] = useState<SkillVisibility | "all">("all");
@@ -203,20 +207,20 @@ export default function SkillsPage() {
             <div>
               <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
                 <Wand2 className="h-6 w-6 text-primary" />
-                技能库
+                {t("title")}
               </h1>
               <p className="text-muted-foreground mt-1 text-sm">
-                像拼积木一样，组合你的专属 AI 能力
+                {t("description")}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" onClick={() => setIsGenerateDialogOpen(true)}>
                 <Sparkles className="mr-2 h-4 w-4" />
-                提取技能
+                {t("extract")}
               </Button>
               <Button onClick={handleCreateSkill}>
                 <Plus className="mr-2 h-4 w-4" />
-                创建技能
+                {t("create")}
               </Button>
             </div>
           </div>
@@ -226,12 +230,12 @@ export default function SkillsPage() {
             {/* 阶段筛选 */}
             <Select value={stageFilter} onValueChange={handleStageChange}>
               <SelectTrigger className="w-28">
-                <SelectValue placeholder="阶段" />
+                <SelectValue placeholder={tCommon("allStages")} />
               </SelectTrigger>
               <SelectContent>
                 {SKILL_STAGE_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                    {t(option.labelKey)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -240,12 +244,12 @@ export default function SkillsPage() {
             {/* 来源筛选 */}
             <Select value={visibilityFilter} onValueChange={handleVisibilityChange}>
               <SelectTrigger className="w-28">
-                <SelectValue placeholder="来源" />
+                <SelectValue placeholder={tCommon("allSources")} />
               </SelectTrigger>
               <SelectContent>
                 {SKILL_VISIBILITY_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                    {t(option.labelKey)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -255,7 +259,7 @@ export default function SkillsPage() {
             <div className="flex-1 max-w-sm relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="搜索技能名称..."
+                placeholder={t("searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 bg-background/50"
@@ -267,12 +271,12 @@ export default function SkillsPage() {
               <Select value={sortBy} onValueChange={handleSortByChange}>
                 <SelectTrigger className="w-auto min-w-[100px]">
                   <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground shrink-0" />
-                  <SelectValue placeholder="排序" />
+                  <SelectValue placeholder={tCommon("sortBy")} />
                 </SelectTrigger>
                 <SelectContent>
                   {SKILL_SORT_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                      {t(option.labelKey)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -282,7 +286,7 @@ export default function SkillsPage() {
                 size="icon"
                 className="h-9 w-9"
                 onClick={toggleSortOrder}
-                title={sortOrder === "desc" ? "降序（点击切换为升序）" : "升序（点击切换为降序）"}
+                title={sortOrder === "desc" ? t("descSortTip") : t("ascSortTip")}
               >
                 {sortOrder === "desc" ? (
                   <ArrowDown className="h-4 w-4" />
@@ -295,7 +299,7 @@ export default function SkillsPage() {
             {/* 统计 */}
             {totalItems > 0 && (
               <span className="text-sm text-muted-foreground font-mono">
-                共 <span className="text-foreground font-semibold">{totalItems}</span> 个技能
+                {t("total", { count: totalItems })}
               </span>
             )}
           </div>
@@ -328,7 +332,7 @@ export default function SkillsPage() {
                     )}>
                       {Icon}
                     </span>
-                    <span className="truncate">{option.label}</span>
+                    <span className="truncate">{t(option.labelKey)}</span>
                   </button>
                 );
               })}
@@ -337,7 +341,7 @@ export default function SkillsPage() {
             {/* 分隔线与提示 */}
             <div className="mt-6 pt-4 border-t border-border/40">
               <p className="text-xs text-muted-foreground/60 leading-relaxed px-1">
-                点击分类筛选技能
+                {t("clickToFilter")}
               </p>
             </div>
           </nav>
@@ -377,13 +381,13 @@ export default function SkillsPage() {
                     <CardContent className="flex items-center gap-4 py-6">
                       <AlertCircle className="h-8 w-8 text-destructive" />
                       <div className="flex-1">
-                        <h3 className="font-semibold text-destructive">加载失败</h3>
+                        <h3 className="font-semibold text-destructive">{tCommon("loadFailed")}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {error instanceof Error ? error.message : "无法加载技能库数据"}
+                          {error instanceof Error ? error.message : t("loadError")}
                         </p>
                       </div>
                       <Button variant="outline" onClick={() => refetch()}>
-                        重试
+                        {tCommon("retry")}
                       </Button>
                     </CardContent>
                   </Card>
@@ -403,7 +407,7 @@ export default function SkillsPage() {
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <Badge variant="outline" className="text-xs">
-                                  {getSkillCategoryLabel(skill.category)}
+                                  {t(getSkillCategoryKey(skill.category))}
                                 </Badge>
                                 {skill.is_featured && (
                                   <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
@@ -412,11 +416,11 @@ export default function SkillsPage() {
                               {skill.visibility === "system" ? (
                                 <Badge variant="secondary" className="text-xs">
                                   <Lock className="h-3 w-3 mr-1" />
-                                  系统
+                                  {t("system")}
                                 </Badge>
                               ) : (
                                 <Badge variant="outline" className="text-xs">
-                                  自建
+                                  {t("custom")}
                                 </Badge>
                               )}
                             </div>
@@ -426,7 +430,7 @@ export default function SkillsPage() {
                             <div className="space-y-3 flex-1">
                               {/* 描述 */}
                               <p className="text-sm text-muted-foreground line-clamp-2">
-                                {skill.description || "暂无描述"}
+                                {skill.description || t("noDescription")}
                               </p>
 
                               {/* 适用阶段 */}
@@ -437,7 +441,7 @@ export default function SkillsPage() {
                                     variant="secondary"
                                     className="text-xs"
                                   >
-                                    {getSkillStageLabel(stage)}
+                                    {t(getSkillStageKey(stage))}
                                   </Badge>
                                 ))}
                                 {skill.applicable_stages.length > 3 && (
@@ -459,7 +463,7 @@ export default function SkillsPage() {
                               }}
                             >
                               <Eye className="mr-2 h-4 w-4" />
-                              查看详情
+                              {tCommon("viewDetails")}
                             </Button>
                           </CardContent>
                         </Card>
@@ -476,10 +480,10 @@ export default function SkillsPage() {
                           onClick={() => setCurrentPage((p) => p - 1)}
                         >
                           <ChevronLeft className="h-4 w-4 mr-1" />
-                          上一页
+                          {tCommon("prevPage")}
                         </Button>
                         <span className="text-sm text-muted-foreground">
-                          第 {currentPage + 1} / {totalPages} 页
+                          {tCommon("page", { current: currentPage + 1, total: totalPages })}
                         </span>
                         <Button
                           variant="outline"
@@ -487,7 +491,7 @@ export default function SkillsPage() {
                           disabled={currentPage >= totalPages - 1}
                           onClick={() => setCurrentPage((p) => p + 1)}
                         >
-                          下一页
+                          {tCommon("nextPage")}
                           <ChevronRight className="h-4 w-4 ml-1" />
                         </Button>
                       </div>
@@ -501,12 +505,12 @@ export default function SkillsPage() {
                     <CardContent className="flex flex-col items-center justify-center py-16">
                       <Wand2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
                       <h3 className="text-lg font-semibold mb-2">
-                        {hasFilters ? "没有找到匹配的技能" : "暂无技能"}
+                        {hasFilters ? t("noMatchingSkills") : t("empty")}
                       </h3>
                       <p className="text-muted-foreground text-center max-w-sm">
                         {hasFilters
-                          ? "尝试调整筛选条件"
-                          : "点击「创建技能」添加您的第一个自定义技能"}
+                          ? tCommon("tryDifferentKeywords")
+                          : t("emptyDescription")}
                       </p>
                       {hasFilters ? (
                         <Button
@@ -514,12 +518,12 @@ export default function SkillsPage() {
                           className="mt-4"
                           onClick={clearFilters}
                         >
-                          清除筛选
+                          {tCommon("clearSearch")}
                         </Button>
                       ) : (
                         <Button className="mt-4" onClick={handleCreateSkill}>
                           <Plus className="mr-2 h-4 w-4" />
-                          创建技能
+                          {t("create")}
                         </Button>
                       )}
                     </CardContent>

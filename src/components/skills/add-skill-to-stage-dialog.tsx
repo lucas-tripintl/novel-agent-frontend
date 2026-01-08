@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,8 +33,7 @@ import { SkillDialog } from "@/components/skills/skill-dialog";
 import {
   useEnableProjectSkill,
   useSkills,
-  getSkillCategoryLabel,
-  getSkillStageLabel,
+  getSkillCategoryKey,
   SKILL_CATEGORY_OPTIONS,
   SKILL_SORT_OPTIONS,
   SKILL_STAGE_OPTIONS,
@@ -70,7 +70,7 @@ const PAGE_SIZE = 20;
 /** 阶段选项（不含"全部"） */
 const STAGE_OPTIONS = SKILL_STAGE_OPTIONS.filter((o) => o.value !== "all") as {
   value: SkillStage;
-  label: string;
+  labelKey: string;
 }[];
 
 export function AddSkillToStageDialog({
@@ -81,6 +81,7 @@ export function AddSkillToStageDialog({
   onOpenChange,
   onSuccess,
 }: AddSkillToStageDialogProps) {
+  const t = useTranslations("skills");
   const [selectedSkill, setSelectedSkill] = useState<SkillBrief | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   // 用户选择的目标阶段，初始为传入的阶段
@@ -190,7 +191,7 @@ export function AddSkillToStageDialog({
         <DialogContent className="sm:max-w-2xl h-[500px] flex flex-col p-0 overflow-hidden">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/50 shrink-0">
             <div className="flex items-center justify-between pr-8">
-              <DialogTitle>添加技能</DialogTitle>
+              <DialogTitle>{t("addSkill")}</DialogTitle>
               <Button
                 variant="outline"
                 size="sm"
@@ -198,7 +199,7 @@ export function AddSkillToStageDialog({
                 className="h-8"
               >
                 <Sparkles className="h-4 w-4 mr-1.5" />
-                创建技能
+                {t("createSkill")}
               </Button>
             </div>
           </DialogHeader>
@@ -220,7 +221,7 @@ export function AddSkillToStageDialog({
                         : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                     )}
                   >
-                    {option.label}
+                    {t(option.labelKey)}
                   </button>
                 ))}
               </nav>
@@ -233,7 +234,7 @@ export function AddSkillToStageDialog({
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="搜索技能名称或描述..."
+                    placeholder={t("searchPlaceholder")}
                     value={searchQuery}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     className="pl-9"
@@ -251,7 +252,7 @@ export function AddSkillToStageDialog({
                   <SelectContent>
                     {SKILL_SORT_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        {t(option.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -261,7 +262,7 @@ export function AddSkillToStageDialog({
                   size="icon"
                   className="h-9 w-9 shrink-0"
                   onClick={toggleSortOrder}
-                  title={sortOrder === "desc" ? "降序" : "升序"}
+                  title={sortOrder === "desc" ? t("descending") : t("ascending")}
                 >
                   {sortOrder === "desc" ? (
                     <ArrowDown className="h-4 w-4" />
@@ -284,8 +285,8 @@ export function AddSkillToStageDialog({
                     <Wand2 className="h-10 w-10 text-muted-foreground/50 mb-3" />
                     <p className="text-sm text-muted-foreground">
                       {searchQuery || categoryFilter !== "all"
-                        ? "没有找到匹配的技能"
-                        : "没有可用的技能"}
+                        ? t("noMatchingSkills")
+                        : t("noAvailableSkills")}
                     </p>
                     {(searchQuery || categoryFilter !== "all") && (
                       <Button
@@ -297,7 +298,7 @@ export function AddSkillToStageDialog({
                           setCategoryFilter("all");
                         }}
                       >
-                        清除筛选
+                        {t("clearFilters")}
                       </Button>
                     )}
                   </div>
@@ -330,16 +331,16 @@ export function AddSkillToStageDialog({
                                     className="text-[10px] px-1.5 py-0"
                                   >
                                     <Lock className="h-2.5 w-2.5 mr-0.5" />
-                                    系统
+                                    {t("system")}
                                   </Badge>
                                 )}
                               </div>
                               <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                {skill.description || "暂无描述"}
+                                {skill.description || t("noDescription")}
                               </p>
                               <div className="flex items-center gap-2 mt-2">
                                 <Badge variant="outline" className="text-xs">
-                                  {getSkillCategoryLabel(skill.category)}
+                                  {t(getSkillCategoryKey(skill.category))}
                                 </Badge>
                               </div>
                             </div>
@@ -355,7 +356,7 @@ export function AddSkillToStageDialog({
               {totalPages > 1 && (
                 <div className="flex items-center justify-between pt-3 mt-3 border-t border-border/50 shrink-0">
                   <span className="text-xs text-muted-foreground">
-                    共 {totalItems} 个技能
+                    {t("totalSkills", { count: totalItems })}
                   </span>
                   <div className="flex items-center gap-2">
                     <Button
@@ -388,7 +389,7 @@ export function AddSkillToStageDialog({
           {/* 阶段选择区域 */}
           <div className="px-6 py-3 border-t border-border/50 bg-muted/30 shrink-0">
             <div className="flex items-center gap-3">
-              <Label className="text-sm font-medium shrink-0">添加到阶段</Label>
+              <Label className="text-sm font-medium shrink-0">{t("addToStage")}</Label>
               <Select
                 value={targetStage}
                 onValueChange={(v) => setTargetStage(v as SkillStage)}
@@ -399,7 +400,7 @@ export function AddSkillToStageDialog({
                 <SelectContent>
                   {STAGE_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                      {t(option.labelKey)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -409,7 +410,7 @@ export function AddSkillToStageDialog({
 
           <DialogFooter className="px-6 py-4 border-t border-border/50 shrink-0">
             <Button variant="outline" onClick={() => handleOpenChange(false)}>
-              取消
+              {t("cancel")}
             </Button>
             <Button
               onClick={handleAddSkill}
@@ -420,7 +421,7 @@ export function AddSkillToStageDialog({
               ) : (
                 <Plus className="mr-2 h-4 w-4" />
               )}
-              添加
+              {t("add")}
             </Button>
           </DialogFooter>
         </DialogContent>

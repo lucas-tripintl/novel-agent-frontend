@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useSelectedSkill } from "@/stores/writing-store";
-import { getSkillCategoryLabel } from "@/hooks/use-skills";
+import { getSkillCategoryKey } from "@/hooks/use-skills";
 import { cn } from "@/lib/utils";
 import { Wand2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ interface SkillSelectorProps {
 }
 
 export function SkillSelector({ className }: SkillSelectorProps) {
+  const t = useTranslations("skills");
   const [dialogOpen, setDialogOpen] = useState(false);
   const { selectedSkillId, selectedSkillInfo, setSelectedSkill } =
     useSelectedSkill();
@@ -93,7 +95,7 @@ export function SkillSelector({ className }: SkillSelectorProps) {
               )}
               <div className="flex flex-wrap gap-1">
                 <Badge variant="outline" className="text-[10px]">
-                  {getSkillCategoryLabel(selectedSkillInfo.category)}
+                  {t(getSkillCategoryKey(selectedSkillInfo.category))}
                 </Badge>
               </div>
               <p className="text-[10px] text-muted-foreground">

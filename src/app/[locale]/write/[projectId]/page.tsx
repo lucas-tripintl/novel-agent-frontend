@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useProject, useProjectChapters } from "@/hooks/use-projects";
 import { useWritingStore } from "@/stores/writing-store";
 import { WritingPanel } from "@/components/write/writing-panel";
@@ -12,6 +13,7 @@ import { AlertCircle } from "lucide-react";
 export default function WritePage() {
   const params = useParams();
   const projectId = params.projectId as string;
+  const t = useTranslations("write");
 
   const { data: project, isLoading, error } = useProject(projectId);
   // 默认按 desc 排序，第一个就是最新章节
@@ -49,9 +51,9 @@ export default function WritePage() {
             <AlertCircle className="h-8 w-8 text-destructive" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold">加载项目失败</h2>
+            <h2 className="text-lg font-semibold">{t("loadProjectFailed")}</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {error?.message || "无法找到该项目"}
+              {error?.message || t("projectNotFound")}
             </p>
           </div>
         </div>

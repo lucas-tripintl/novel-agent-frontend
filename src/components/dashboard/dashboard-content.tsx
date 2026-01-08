@@ -29,8 +29,9 @@ import {
   Settings,
   Search,
 } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { ProjectStatusBadge } from "@/components/common/status-badge";
 import { projectTypeLabels, type ProjectType } from "@/types/project";
 import { useProjects, useDeleteProject } from "@/hooks/use-projects";
@@ -65,19 +66,19 @@ function ProjectCardSkeleton() {
 }
 
 // 空状态组件
-function EmptyState() {
+function EmptyState({ t }: { t: (key: string) => string }) {
   return (
     <Card className="bg-card/30 border-dashed border-2 border-border/50">
       <CardContent className="flex flex-col items-center justify-center py-16">
         <BookOpen className="h-12 w-12 text-muted-foreground/50 mb-4" />
-        <h3 className="text-lg font-semibold mb-2">还没有项目</h3>
+        <h3 className="text-lg font-semibold mb-2">{t("empty")}</h3>
         <p className="text-muted-foreground text-center max-w-sm mb-6">
-          上传你的第一本小说，开始智能拆书之旅
+          {t("emptyDescription")}
         </p>
         <Button asChild className="glow-green">
           <Link href="/analyze">
             <Plus className="mr-2 h-4 w-4" />
-            上传小说
+            {t("upload")}
           </Link>
         </Button>
       </CardContent>
@@ -86,18 +87,18 @@ function EmptyState() {
 }
 
 // 错误状态组件
-function ErrorState({ onRetry }: { onRetry: () => void }) {
+function ErrorState({ onRetry, t, tCommon }: { onRetry: () => void; t: (key: string) => string; tCommon: (key: string) => string }) {
   return (
     <Card className="bg-card/30 border-destructive/30">
       <CardContent className="flex flex-col items-center justify-center py-16">
         <AlertCircle className="h-12 w-12 text-destructive/50 mb-4" />
-        <h3 className="text-lg font-semibold mb-2">加载失败</h3>
+        <h3 className="text-lg font-semibold mb-2">{tCommon("loadFailed")}</h3>
         <p className="text-muted-foreground text-center max-w-sm mb-6">
-          无法获取项目列表，请检查网络连接后重试
+          {t("checkNetwork")}
         </p>
         <Button variant="outline" onClick={onRetry}>
           <RefreshCw className="mr-2 h-4 w-4" />
-          重试
+          {tCommon("retry")}
         </Button>
       </CardContent>
     </Card>
@@ -109,10 +110,14 @@ function ProjectCard({
   project,
   onDelete,
   onEdit,
+  t,
+  tCommon,
 }: {
   project: ProjectList;
   onDelete: (id: string) => void;
   onEdit: (project: ProjectList) => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
+  tCommon: (key: string) => string;
 }) {
   const progress =
     project.total_chapters > 0
@@ -141,7 +146,7 @@ function ProjectCard({
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => onEdit(project)}>
                 <Settings className="mr-2 h-4 w-4" />
-                编辑
+                {tCommon("edit")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -149,7 +154,7 @@ function ProjectCard({
                 onClick={() => onDelete(project.id)}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                删除
+                {tCommon("delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -170,7 +175,7 @@ function ProjectCard({
 
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground ml-auto">
             <FileText className="h-3 w-3" />
-            <span className="font-mono">{project.total_chapters} 章</span>
+            <span className="font-mono">{t("chapters", { count: project.total_chapters })}</span>
           </div>
         </div>
 
@@ -179,7 +184,7 @@ function ProjectCard({
           <div className="mb-4">
             <Progress value={progress} className="h-1.5 bg-muted/50" />
             <span className="text-[10px] font-mono text-muted-foreground mt-1 block">
-              分析进度: {project.current_chapter}/{project.total_chapters}
+              {t("analysisProgress")}: {project.current_chapter}/{project.total_chapters}
             </span>
           </div>
         )}
@@ -194,7 +199,7 @@ function ProjectCard({
           >
             <Link href={`/projects/${project.id}`}>
               <Eye className="mr-1.5 h-3.5 w-3.5" />
-              查看
+              {tCommon("view")}
             </Link>
           </Button>
           <Button
@@ -204,7 +209,7 @@ function ProjectCard({
           >
             <Link href={`/write/${project.id}`}>
               <PenLine className="mr-1.5 h-3.5 w-3.5" />
-              创作
+              {t("write")}
             </Link>
           </Button>
         </div>
@@ -214,6 +219,9 @@ function ProjectCard({
 }
 
 export function DashboardContent() {
+  const t = useTranslations("projects");
+  const tCommon = useTranslations("common");
+
   const { data, isLoading, isError, refetch } = useProjects({ limit: 50 });
   const deleteProjectMutation = useDeleteProject();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -258,20 +266,20 @@ export function DashboardContent() {
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">作品中心</h1>
-          <p className="text-muted-foreground mt-1 text-sm">管理你的作品</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+          <p className="text-muted-foreground mt-1 text-sm">{t("description")}</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" asChild>
             <Link href="/analyze">
               <Upload className="mr-2 h-4 w-4" />
-              导入书籍
+              {t("import")}
             </Link>
           </Button>
           <Button asChild className="glow-green">
             <Link href="/projects/new">
               <Plus className="mr-2 h-4 w-4" />
-              新建作品
+              {t("create")}
             </Link>
           </Button>
         </div>
@@ -282,7 +290,7 @@ export function DashboardContent() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="搜索作品名称..."
+            placeholder={t("searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 bg-background/50"
@@ -290,7 +298,7 @@ export function DashboardContent() {
         </div>
         {data && (
           <span className="text-sm text-muted-foreground font-mono">
-            共 {filteredProjects.length} 部作品
+            {t("total", { count: filteredProjects.length })}
           </span>
         )}
       </div>
@@ -303,23 +311,23 @@ export function DashboardContent() {
             ))}
           </div>
         ) : isError ? (
-          <ErrorState onRetry={() => refetch()} />
+          <ErrorState onRetry={() => refetch()} t={t} tCommon={tCommon} />
         ) : projects.length === 0 ? (
-          <EmptyState />
+          <EmptyState t={t} />
         ) : filteredProjects.length === 0 ? (
           <Card className="bg-card/30 border-dashed border-2 border-border/50">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">没有找到匹配的作品</h3>
+              <h3 className="text-lg font-semibold mb-2">{t("noMatchingProjects")}</h3>
               <p className="text-muted-foreground text-center max-w-sm">
-                尝试使用不同的关键词搜索
+                {tCommon("tryDifferentKeywords")}
               </p>
               <Button
                 variant="outline"
                 className="mt-4"
                 onClick={() => setSearchQuery("")}
               >
-                清除搜索
+                {tCommon("clearSearch")}
               </Button>
             </CardContent>
           </Card>
@@ -331,6 +339,8 @@ export function DashboardContent() {
                 project={project}
                 onDelete={handleDeleteClick}
                 onEdit={handleEditClick}
+                t={t}
+                tCommon={tCommon}
               />
             ))}
           </div>
@@ -340,7 +350,7 @@ export function DashboardContent() {
       <ConfirmDeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        targetName={projectToDelete ? `项目「${projectToDelete.name}」` : ""}
+        targetName={projectToDelete ? t("deleteConfirm", { name: projectToDelete.name }) : ""}
         onConfirm={handleDeleteConfirm}
         isPending={deleteProjectMutation.isPending}
       />

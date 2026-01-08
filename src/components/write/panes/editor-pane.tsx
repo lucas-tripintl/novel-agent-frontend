@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import {
   useWritingStore,
   useStreamingState,
@@ -26,6 +27,7 @@ interface EditorPaneProps {
 }
 
 export function EditorPane({ projectId }: EditorPaneProps) {
+  const t = useTranslations("write");
   const { chapterId, chapterNumber, title, loadDraft } = useWritingStore();
   const { isStreaming } = useStreamingState();
   const { editingEntity } = useEntityEditing();
@@ -108,9 +110,9 @@ export function EditorPane({ projectId }: EditorPaneProps) {
             <FileText className="h-8 w-8 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold">选择一个章节开始创作</h2>
+            <h2 className="text-lg font-semibold">{t("selectChapter")}</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              从左侧章节列表中选择要编辑的章节，或创建新章节
+              {t("selectChapterHint")}
             </p>
           </div>
         </div>
@@ -122,8 +124,8 @@ export function EditorPane({ projectId }: EditorPaneProps) {
     <div className="flex h-full flex-col bg-background min-h-0">
       {/* 章节状态栏 */}
       <EditorStatusBar
-        title={`第 ${chapterNumber || 1} 章`}
-        subtitle={title || "未命名章节"}
+        title={t("chapterNumber", { number: chapterNumber || 1 })}
+        subtitle={title || t("untitledChapter")}
         icon={<FileText className="h-5 w-5 text-primary" />}
         isDirty={chapterSave.isDirty}
         saveStatus={chapterSave.saveStatus}
@@ -135,7 +137,7 @@ export function EditorPane({ projectId }: EditorPaneProps) {
       {isStreaming && (
         <div className="flex items-center gap-2 px-6 py-2 bg-primary/5 border-b border-primary/20 shrink-0">
           <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-          <span className="text-sm text-primary">AI 正在创作中...</span>
+          <span className="text-sm text-primary">{t("aiWriting")}</span>
           <div className="flex-1" />
           <div className="flex gap-1">
             {[0, 1, 2].map((i) => (

@@ -10,11 +10,15 @@ import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
 import { FusionTaskEditSheet } from "@/components/fusion/fusion-task-edit-sheet";
 import { FusionTaskCard } from "@/components/fusion/fusion-task-card";
 import { Blend, Plus, AlertCircle, Search } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { useFusionTasks, useFusionModes, useDeleteFusionTask } from "@/hooks/use-fusion";
 import type { FusionTaskListWithPatterns } from "@/types/fusion";
 
 export default function FusionPage() {
+  const t = useTranslations("fusion");
+  const tCommon = useTranslations("common");
+
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -78,17 +82,17 @@ export default function FusionPage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
               <Blend className="h-6 w-6 text-primary" />
-              元素融合
+              {t("title")}
             </h1>
             <p className="text-muted-foreground mt-1 text-sm">
-              将多本书的元素融合，创造全新设定
+              {t("description")}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Button asChild className="glow-green">
               <Link href="/fusion/create">
                 <Plus className="mr-2 h-4 w-4" />
-                新建融合
+                {t("create")}
               </Link>
             </Button>
           </div>
@@ -99,7 +103,7 @@ export default function FusionPage() {
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="搜索任务ID或融合模式..."
+              placeholder={t("searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 bg-background/50"
@@ -107,7 +111,7 @@ export default function FusionPage() {
           </div>
           {tasksData && (
             <span className="text-sm text-muted-foreground font-mono">
-              共 {filteredTasks.length} 个任务
+              {t("total", { count: filteredTasks.length })}
             </span>
           )}
         </div>
@@ -142,13 +146,13 @@ export default function FusionPage() {
             <CardContent className="flex items-center gap-4 py-6">
               <AlertCircle className="h-8 w-8 text-destructive" />
               <div className="flex-1">
-                <h3 className="font-semibold text-destructive">加载失败</h3>
+                <h3 className="font-semibold text-destructive">{t("loadFailed")}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {error instanceof Error ? error.message : "无法加载融合任务"}
+                  {error instanceof Error ? error.message : t("cannotLoadTasks")}
                 </p>
               </div>
               <Button variant="outline" onClick={() => refetch()}>
-                重试
+                {tCommon("retry")}
               </Button>
             </CardContent>
           </Card>
@@ -177,16 +181,16 @@ export default function FusionPage() {
           <Card className="bg-card/30 border-dashed border-2 border-border/50">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">没有找到匹配的任务</h3>
+              <h3 className="text-lg font-semibold mb-2">{t("noMatchingTasks")}</h3>
               <p className="text-muted-foreground text-center max-w-sm">
-                尝试使用不同的关键词搜索
+                {tCommon("tryDifferentKeywords")}
               </p>
               <Button
                 variant="outline"
                 className="mt-4"
                 onClick={() => setSearchQuery("")}
               >
-                清除搜索
+                {tCommon("clearSearch")}
               </Button>
             </CardContent>
           </Card>
@@ -197,14 +201,14 @@ export default function FusionPage() {
           <Card className="bg-card/30 border-dashed border-2 border-border/50">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <Blend className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">还没有融合任务</h3>
+              <h3 className="text-lg font-semibold mb-2">{t("empty")}</h3>
               <p className="text-muted-foreground text-center max-w-sm mb-6">
-                选择多本已分析的书籍，创造全新的世界观和设定
+                {t("emptyDescription")}
               </p>
               <Button asChild className="glow-green">
                 <Link href="/fusion/create">
                   <Plus className="mr-2 h-4 w-4" />
-                  创建融合任务
+                  {t("createTask")}
                 </Link>
               </Button>
             </CardContent>
@@ -223,7 +227,7 @@ export default function FusionPage() {
       <ConfirmDeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        targetName={taskToDelete ? `融合任务 #${taskToDelete.id.slice(0, 8)}` : ""}
+        targetName={taskToDelete ? t("deleteConfirm", { id: taskToDelete.id.slice(0, 8) }) : ""}
         onConfirm={handleDeleteConfirm}
         isPending={deleteTaskMutation.isPending}
       />

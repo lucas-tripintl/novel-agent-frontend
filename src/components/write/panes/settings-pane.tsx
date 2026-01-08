@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useWritingStore, useWritingMode } from "@/stores/writing-store";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,7 @@ interface SettingsPaneProps {
 }
 
 export function SettingsPane({ projectId }: SettingsPaneProps) {
+  const t = useTranslations("write");
   const [activeTab, setActiveTab] = useState<string>("chapters");
   const mode = useWritingMode();
   const { selectedEntities } = useWritingStore();
@@ -35,7 +37,7 @@ export function SettingsPane({ projectId }: SettingsPaneProps) {
       {/* 头部 */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50">
         <BookOpen className="h-4 w-4 text-primary" />
-        <span className="font-semibold text-sm">资料库</span>
+        <span className="font-semibold text-sm">{t("library")}</span>
       </div>
 
       {/* Tabs */}
@@ -43,11 +45,11 @@ export function SettingsPane({ projectId }: SettingsPaneProps) {
         <TabsList className="mx-3 mt-3 grid grid-cols-4 shrink-0">
           <TabsTrigger value="chapters" className="gap-1 text-xs px-2">
             <FileText className="h-3.5 w-3.5" />
-            章节
+            {t("chapters")}
           </TabsTrigger>
           <TabsTrigger value="settings" className="gap-1 text-xs px-2">
             <Layers className="h-3.5 w-3.5" />
-            设定
+            {t("settings")}
             {mode === "director" && selectedEntities.length > 0 && (
               <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
                 {selectedEntities.length}
@@ -56,7 +58,7 @@ export function SettingsPane({ projectId }: SettingsPaneProps) {
           </TabsTrigger>
           <TabsTrigger value="skills" className="gap-1 text-xs px-2">
             <Wand2 className="h-3.5 w-3.5" />
-            技能
+            {t("skills")}
             {skillCount > 0 && (
               <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
                 {skillCount}
@@ -65,7 +67,7 @@ export function SettingsPane({ projectId }: SettingsPaneProps) {
           </TabsTrigger>
           <TabsTrigger value="outline" className="gap-1 text-xs px-2">
             <Map className="h-3.5 w-3.5" />
-            大纲
+            {t("outline")}
           </TabsTrigger>
         </TabsList>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -41,8 +42,8 @@ import {
   useDeleteSkill,
   SKILL_CATEGORY_OPTIONS,
   SKILL_STAGE_OPTIONS,
-  getSkillCategoryLabel,
-  getSkillStageLabel,
+  getSkillCategoryKey,
+  getSkillStageKey,
 } from "@/hooks/use-skills";
 import type {
   SkillBrief,
@@ -78,10 +79,12 @@ function StageCheckboxes({
   value,
   onChange,
   disabled,
+  t,
 }: {
   value: SkillStage[];
   onChange: (stages: SkillStage[]) => void;
   disabled?: boolean;
+  t: (key: string) => string;
 }) {
   const stages = SKILL_STAGE_OPTIONS.filter((o) => o.value !== "all");
 
@@ -109,7 +112,7 @@ function StageCheckboxes({
             htmlFor={`stage-${stage.value}`}
             className="text-sm cursor-pointer"
           >
-            {stage.label}
+            {t(stage.labelKey)}
           </label>
         </div>
       ))}
@@ -125,6 +128,8 @@ function SkillDialogContent({
   onSave,
   initialEdit = false,
 }: SkillDialogProps) {
+  const t = useTranslations("skills");
+  const tCommon = useTranslations("common");
   const isCreateMode = skill === null;
 
   // 获取完整技能详情
@@ -431,14 +436,14 @@ function SkillDialogContent({
                           (o) => o.value !== "all"
                         ).map((option) => (
                           <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                            {t(option.labelKey)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   ) : (
                     <Badge variant="outline">
-                      {getSkillCategoryLabel(renderCategory ?? "")}
+                      {t(getSkillCategoryKey(renderCategory ?? ""))}
                     </Badge>
                   )}
                 </div>
@@ -450,6 +455,7 @@ function SkillDialogContent({
                     <StageCheckboxes
                       value={editedStages}
                       onChange={setEditedStages}
+                      t={t}
                     />
                   ) : (
                     <div className="flex flex-wrap gap-1.5">
@@ -459,7 +465,7 @@ function SkillDialogContent({
                           variant="secondary"
                           className="text-xs"
                         >
-                          {getSkillStageLabel(stage)}
+                          {t(getSkillStageKey(stage))}
                         </Badge>
                       ))}
                     </div>

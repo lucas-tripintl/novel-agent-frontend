@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -62,12 +63,17 @@ function StageCheckboxes({
   value,
   onChange,
   disabled,
+  t,
 }: {
   value: SkillStage[];
   onChange: (stages: SkillStage[]) => void;
   disabled?: boolean;
+  t: (key: string) => string;
 }) {
-  const stages = SKILL_STAGE_OPTIONS.filter((o) => o.value !== "all");
+  const stages = SKILL_STAGE_OPTIONS.filter((o) => o.value !== "all") as {
+    value: SkillStage;
+    labelKey: string;
+  }[];
 
   const handleToggle = (stage: SkillStage, checked: boolean) => {
     if (checked) {
@@ -83,9 +89,9 @@ function StageCheckboxes({
         <div key={stage.value} className="flex items-center space-x-2">
           <Checkbox
             id={`gen-stage-${stage.value}`}
-            checked={value.includes(stage.value as SkillStage)}
+            checked={value.includes(stage.value)}
             onCheckedChange={(checked) =>
-              handleToggle(stage.value as SkillStage, checked === true)
+              handleToggle(stage.value, checked === true)
             }
             disabled={disabled}
           />
@@ -93,7 +99,7 @@ function StageCheckboxes({
             htmlFor={`gen-stage-${stage.value}`}
             className="text-sm cursor-pointer"
           >
-            {stage.label}
+            {t(stage.labelKey)}
           </label>
         </div>
       ))}
@@ -144,6 +150,8 @@ export function GenerateSkillDialog({
   onOpenChange,
   onSuccess,
 }: GenerateSkillDialogProps) {
+  const t = useTranslations("skills");
+  const tElements = useTranslations("elements");
   // 表单状态
   const [guidance, setGuidance] = useState("");
   const [category, setCategory] = useState<SkillCategory>("technique");
@@ -438,7 +446,7 @@ export function GenerateSkillDialog({
                       <SelectContent>
                         {PATTERN_TYPE_OPTIONS.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                            {tElements(option.labelKey)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -604,7 +612,7 @@ export function GenerateSkillDialog({
                   {SKILL_CATEGORY_OPTIONS.filter((o) => o.value !== "all").map(
                     (option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        {t(option.labelKey)}
                       </SelectItem>
                     )
                   )}
@@ -621,6 +629,7 @@ export function GenerateSkillDialog({
                 value={stages}
                 onChange={setStages}
                 disabled={generateMutation.isPending}
+                t={t}
               />
               {stages.length === 0 && (
                 <p className="text-xs text-destructive">请至少选择一个阶段</p>

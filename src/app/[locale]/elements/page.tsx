@@ -28,10 +28,10 @@ import {
   LayoutGrid,
   Loader2,
 } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { useInfinitePatterns, PATTERN_TYPE_OPTIONS } from "@/hooks/use-patterns";
-import { getPatternTypeLabel } from "@/types/pattern";
+import { useTranslations } from "next-intl";
+import { useInfinitePatterns, PATTERN_TYPE_OPTIONS, getPatternTypeKey } from "@/hooks/use-patterns";
 import type { EntityType } from "@/types/api";
 import { formatTimeAgo } from "@/lib/utils/time";
 import { PatternDetailDialog } from "@/components/elements/pattern-detail-dialog";
@@ -52,6 +52,9 @@ const categoryIcons: Record<string, React.ReactNode> = {
 };
 
 export default function ElementsPage() {
+  const t = useTranslations("elements");
+  const tCommon = useTranslations("common");
+
   const [typeFilter, setTypeFilter] = useState<EntityType | "all">("all");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -149,10 +152,10 @@ export default function ElementsPage() {
             <div>
               <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
                 <Library className="h-6 w-6 text-primary" />
-                元素库
+                {t("title")}
               </h1>
               <p className="text-muted-foreground mt-1 text-sm">
-                已提取的元素
+                {t("description")}
               </p>
             </div>
           </div>
@@ -171,7 +174,7 @@ export default function ElementsPage() {
             <div className="flex-1 max-w-sm relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="搜索模式名称..."
+                placeholder={t("searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 bg-background/50"
@@ -181,7 +184,7 @@ export default function ElementsPage() {
             {/* 统计 */}
             {total > 0 && (
               <span className="text-sm text-muted-foreground font-mono">
-                共 <span className="text-foreground font-semibold">{total}</span> 个模式
+                {t("total", { count: total })}
               </span>
             )}
           </div>
@@ -214,7 +217,7 @@ export default function ElementsPage() {
                     )}>
                       {Icon}
                     </span>
-                    <span className="truncate">{option.label}</span>
+                    <span className="truncate">{t(option.labelKey)}</span>
                   </button>
                 );
               })}
@@ -223,7 +226,7 @@ export default function ElementsPage() {
             {/* 分隔线与提示 */}
             <div className="mt-6 pt-4 border-t border-border/40">
               <p className="text-xs text-muted-foreground/60 leading-relaxed px-1">
-                点击分类筛选模式
+                {t("clickToFilter")}
               </p>
             </div>
           </nav>
@@ -263,13 +266,13 @@ export default function ElementsPage() {
                     <CardContent className="flex items-center gap-4 py-6">
                       <AlertCircle className="h-8 w-8 text-destructive" />
                       <div className="flex-1">
-                        <h3 className="font-semibold text-destructive">加载失败</h3>
+                        <h3 className="font-semibold text-destructive">{tCommon("loadFailed")}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {error instanceof Error ? error.message : "无法加载元素库数据"}
+                          {error instanceof Error ? error.message : t("loadError")}
                         </p>
                       </div>
                       <Button variant="outline" onClick={() => refetch()}>
-                        重试
+                        {tCommon("retry")}
                       </Button>
                     </CardContent>
                   </Card>
@@ -288,7 +291,7 @@ export default function ElementsPage() {
                           <CardHeader className="pb-3">
                             <div className="flex items-center justify-between">
                               <Badge variant="outline" className="text-xs">
-                                {getPatternTypeLabel(pattern.entity_type)}
+                                {t(getPatternTypeKey(pattern.entity_type))}
                               </Badge>
                               <span className="text-xs text-muted-foreground font-mono">
                                 {formatTimeAgo(pattern.created_at)}
@@ -301,7 +304,7 @@ export default function ElementsPage() {
                           <CardContent className="flex flex-col flex-1 space-y-3">
                             {/* 模式描述 */}
                             <p className="text-sm text-muted-foreground line-clamp-3 flex-1">
-                              {pattern.content || "暂无描述"}
+                              {pattern.content || t("noDescription")}
                             </p>
 
                             {/* 标签 */}
@@ -336,7 +339,7 @@ export default function ElementsPage() {
                                 }}
                               >
                                 <Eye className="mr-2 h-4 w-4" />
-                                查看
+                                {tCommon("view")}
                               </Button>
                               <Button
                                 variant="outline"
@@ -347,7 +350,7 @@ export default function ElementsPage() {
                               >
                                 <Link href={`/fusion/create?elements=${pattern.id}`}>
                                   <Blend className="mr-2 h-4 w-4" />
-                                  融合
+                                  {t("fusion")}
                                 </Link>
                               </Button>
                             </div>
@@ -364,12 +367,12 @@ export default function ElementsPage() {
                       {isFetchingNextPage && (
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          <span className="text-sm">加载更多...</span>
+                          <span className="text-sm">{t("loadingMore")}</span>
                         </div>
                       )}
                       {!hasNextPage && patterns.length > 0 && (
                         <span className="text-sm text-muted-foreground/60">
-                          已加载全部 {total} 个模式
+                          {t("allLoaded", { count: total })}
                         </span>
                       )}
                     </div>
@@ -383,13 +386,13 @@ export default function ElementsPage() {
                       <Library className="h-12 w-12 text-muted-foreground/50 mb-4" />
                       <h3 className="text-lg font-semibold mb-2">
                         {searchQuery || typeFilter !== "all" || selectedProjectId
-                          ? "没有找到匹配的模式"
-                          : "暂无抽象模式"}
+                          ? t("noMatchingPatterns")
+                          : t("empty")}
                       </h3>
                       <p className="text-muted-foreground text-center max-w-sm">
                         {searchQuery || typeFilter !== "all" || selectedProjectId
-                          ? "尝试调整筛选条件"
-                          : "分析更多作品并提取模式后，将在此处显示"}
+                          ? tCommon("tryDifferentKeywords")
+                          : t("emptyDescription")}
                       </p>
                       {(searchQuery || typeFilter !== "all" || selectedProjectId) && (
                         <Button
@@ -401,7 +404,7 @@ export default function ElementsPage() {
                             setSelectedProjectId(null);
                           }}
                         >
-                          清除筛选
+                          {tCommon("clearSearch")}
                         </Button>
                       )}
                     </CardContent>

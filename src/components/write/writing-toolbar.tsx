@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import type { ProjectRead } from "@/types/api";
 import { useWritingStore, useStreamingState } from "@/stores/writing-store";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ interface WritingToolbarProps {
 }
 
 export function WritingToolbar({ project }: WritingToolbarProps) {
+  const t = useTranslations("write");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [outlineDialogOpen, setOutlineDialogOpen] = useState(false);
@@ -80,13 +82,13 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
               </Link>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>返回作品中心</TooltipContent>
+          <TooltipContent>{t("backToProjects")}</TooltipContent>
         </Tooltip>
 
         <div className="flex items-center gap-2">
           <span className="font-semibold text-sm">{project.name}</span>
           <Badge variant="outline" className="text-xs font-mono">
-            写作中
+            {t("writing")}
           </Badge>
         </div>
       </div>
@@ -103,7 +105,7 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
             onClick={handleStopWrite}
           >
             <Square className="h-3.5 w-3.5" />
-            <span>停止</span>
+            <span>{t("stop")}</span>
           </Button>
         ) : (
           <>
@@ -118,10 +120,10 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
                   disabled={!chapterNumber}
                 >
                   <FileText className="h-3.5 w-3.5" />
-                  <span>生成细纲</span>
+                  <span>{t("generateOutline")}</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>配置并生成本章细纲</TooltipContent>
+              <TooltipContent>{t("generateOutlineTooltip")}</TooltipContent>
             </Tooltip>
 
             {/* 生成正文按钮 */}
@@ -131,7 +133,7 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
               onClick={() => setDialogOpen(true)}
             >
               <Play className="h-3.5 w-3.5" />
-              <span>生成正文</span>
+              <span>{t("generateContent")}</span>
             </Button>
           </>
         )}
@@ -146,10 +148,10 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
               disabled={isStreaming || !content}
             >
               <FileSearch className="h-3.5 w-3.5" />
-              <span>AI 审稿</span>
+              <span>{t("aiReview")}</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>让 AI 审阅当前内容并给出建议</TooltipContent>
+          <TooltipContent>{t("aiReviewTooltip")}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -162,10 +164,10 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
               disabled={isStreaming}
             >
               <Wand2 className="h-3.5 w-3.5" />
-              <span>生成设定</span>
+              <span>{t("generateEntity")}</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>生成角色、世界观等设定</TooltipContent>
+          <TooltipContent>{t("generateEntityTooltip")}</TooltipContent>
         </Tooltip>
       </div>
 
@@ -174,7 +176,7 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
         {/* 字数统计 */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="font-mono">{wordCount.toLocaleString()}</span>
-          <span>字</span>
+          <span>{t("words")}</span>
         </div>
 
         <Separator orientation="vertical" className="h-6" />
@@ -197,7 +199,7 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              {isLeftPaneCollapsed ? "展开设定面板" : "折叠设定面板"}
+              {isLeftPaneCollapsed ? t("expandSettingsPane") : t("collapseSettingsPane")}
             </TooltipContent>
           </Tooltip>
 
@@ -217,7 +219,7 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              {isRightPaneCollapsed ? "展开 AI 助手" : "折叠 AI 助手"}
+              {isRightPaneCollapsed ? t("expandAssistant") : t("collapseAssistant")}
             </TooltipContent>
           </Tooltip>
 

@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { login } from "@/lib/api/auth";
 import { useAuthStore } from "@/stores/auth-store";
 
 function LoginForm() {
+  const t = useTranslations("login");
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/";
@@ -44,15 +46,15 @@ function LoginForm() {
         if (err instanceof Error) {
           // 解析错误信息
           const apiError = err as { data?: { detail?: string } };
-          setError(apiError.data?.detail || err.message || "登录失败，请重试");
+          setError(apiError.data?.detail || err.message || t("loginFailed"));
         } else {
-          setError("登录失败，请重试");
+          setError(t("loginFailed"));
         }
       } finally {
         setIsLoading(false);
       }
     },
-    [email, password, setAuth, router, redirect]
+    [email, password, setAuth, router, redirect, t]
   );
 
   return (
@@ -63,8 +65,8 @@ function LoginForm() {
             <BookOpen className="h-6 w-6 text-primary" />
           </div>
         </div>
-        <CardTitle className="text-2xl">Astra Codex</CardTitle>
-        <CardDescription>登录以继续使用</CardDescription>
+        <CardTitle className="text-2xl">{t("title")}</CardTitle>
+        <CardDescription>{t("description")}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -75,11 +77,11 @@ function LoginForm() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">邮箱</Label>
+            <Label htmlFor="email">{t("email")}</Label>
             <Input
               id="email"
               type="email"
-              placeholder="your@email.com"
+              placeholder={t("emailPlaceholder")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -89,11 +91,11 @@ function LoginForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">密码</Label>
+            <Label htmlFor="password">{t("password")}</Label>
             <Input
               id="password"
               type="password"
-              placeholder="输入密码"
+              placeholder={t("passwordPlaceholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -106,10 +108,10 @@ function LoginForm() {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                登录中...
+                {t("loggingIn")}
               </>
             ) : (
-              "登录"
+              t("submit")
             )}
           </Button>
         </form>

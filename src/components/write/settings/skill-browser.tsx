@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,8 +22,8 @@ import { AddSkillToStageDialog } from "@/components/skills/add-skill-to-stage-di
 import {
   useProjectSkills,
   useDisableProjectSkill,
-  getSkillCategoryLabel,
-  getSkillStageLabel,
+  getSkillCategoryKey,
+  getSkillStageKey,
   SKILL_STAGE_OPTIONS,
 } from "@/hooks/use-skills";
 import type { ProjectSkillRead, SkillStage } from "@/types/skills";
@@ -38,10 +39,11 @@ const MAX_SKILLS_PER_STAGE = 3;
 /** 阶段列表（排除 "all"） */
 const STAGES = SKILL_STAGE_OPTIONS.filter((o) => o.value !== "all") as {
   value: SkillStage;
-  label: string;
+  labelKey: string;
 }[];
 
 export function SkillBrowser({ projectId }: SkillBrowserProps) {
+  const t = useTranslations("skills");
   // 当前打开添加对话框的阶段
   const [addingStage, setAddingStage] = useState<SkillStage | null>(null);
   // 折叠状态
@@ -126,7 +128,7 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
       {/* 头部 */}
       <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/50">
         <span className="text-xs text-muted-foreground truncate">
-          按阶段配置技能
+          {t("configureByStage")}
         </span>
       </div>
 
@@ -154,14 +156,14 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
           {isError && (
             <div className="flex flex-col items-center justify-center py-6 text-center">
               <AlertCircle className="h-6 w-6 text-destructive mb-1.5" />
-              <p className="text-xs text-muted-foreground">加载失败</p>
+              <p className="text-xs text-muted-foreground">{t("loadFailed")}</p>
               <Button
                 variant="ghost"
                 size="sm"
                 className="mt-1.5 h-6 text-xs"
                 onClick={() => refetch()}
               >
-                重试
+                {t("retry")}
               </Button>
             </div>
           )}
@@ -191,7 +193,7 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
                             )}
                           />
                           <span className="font-medium text-xs flex-1 truncate min-w-0">
-                            {stage.label}
+                            {t(stage.labelKey)}
                           </span>
                           <Badge
                             variant="secondary"
@@ -207,7 +209,7 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
                         <div className="px-2 pb-1.5 pt-1 space-y-1 border-t border-border/30">
                           {skills.length === 0 ? (
                             <p className="text-[11px] text-muted-foreground py-1.5 text-center">
-                              暂无技能
+                              {t("noSkills")}
                             </p>
                           ) : (
                             skills.map((skill) => (
@@ -216,6 +218,7 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
                                 skill={skill}
                                 onRemove={() => handleRemoveSkill(skill.skill_id)}
                                 isRemoving={disableMutation.isPending}
+                                t={t}
                               />
                             ))
                           )}
@@ -229,7 +232,7 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
                             disabled={!canAdd}
                           >
                             <Plus className="h-2.5 w-2.5 mr-0.5" />
-                            {canAdd ? "添加技能" : "已达上限"}
+                            {canAdd ? t("addSkill") : t("limitReached")}
                           </Button>
                         </div>
                       </CollapsibleContent>
@@ -265,21 +268,23 @@ function StageSkillItem({
   skill,
   onRemove,
   isRemoving,
+  t,
 }: {
   skill: ProjectSkillRead;
   onRemove: () => void;
   isRemoving: boolean;
+  t: (key: string) => string;
 }) {
   return (
     <div className="group flex items-center gap-1 px-1.5 py-1 rounded bg-background/50 hover:bg-accent/30 transition-colors min-w-0">
       <span className="text-[11px] flex-1 truncate min-w-0">{skill.skill_name}</span>
       <Badge variant="outline" className="text-[10px] h-3.5 px-0.5 shrink-0 hidden sm:inline-flex">
-        {getSkillCategoryLabel(skill.skill_category)}
+        {t(getSkillCategoryKey(skill.skill_category))}
       </Badge>
       {/* 如果是所有阶段生效的技能，显示标记 */}
       {!skill.stage && (
         <Badge variant="secondary" className="text-[10px] h-3.5 px-0.5 shrink-0">
-          全局
+          {t("global")}
         </Badge>
       )}
       <Button

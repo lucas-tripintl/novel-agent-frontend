@@ -7,6 +7,7 @@
  */
 
 import { useState, useCallback, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { usePatterns, PATTERN_TYPE_OPTIONS } from "@/hooks/use-patterns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -83,6 +84,7 @@ export function PatternSelector({
   onSelectionChange,
   initialSelection = [],
 }: PatternSelectorProps) {
+  const t = useTranslations("elements");
   // 状态管理
   const [typeFilter, setTypeFilter] = useState<EntityType | "all">("all");
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -255,12 +257,12 @@ export function PatternSelector({
           onValueChange={(v) => setTypeFilter(v as EntityType | "all")}
         >
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="元素类型" />
+            <SelectValue placeholder={t("types.all")} />
           </SelectTrigger>
           <SelectContent>
             {PATTERN_TYPE_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
-                {option.label}
+                {t(option.labelKey)}
               </SelectItem>
             ))}
           </SelectContent>
