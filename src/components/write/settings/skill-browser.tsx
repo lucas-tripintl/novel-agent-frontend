@@ -90,8 +90,8 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
   }, [projectSkills]);
 
   const handleRemoveSkill = useCallback(
-    async (skillId: string) => {
-      await disableMutation.mutateAsync(skillId);
+    async (skillId: string, stage: SkillStage) => {
+      await disableMutation.mutateAsync({ skillId, stage });
     },
     [disableMutation]
   );
@@ -216,7 +216,7 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
                               <StageSkillItem
                                 key={`${stage.value}-${skill.id}`}
                                 skill={skill}
-                                onRemove={() => handleRemoveSkill(skill.skill_id)}
+                                onRemove={() => handleRemoveSkill(skill.skill_id, stage.value)}
                                 isRemoving={disableMutation.isPending}
                                 t={t}
                               />

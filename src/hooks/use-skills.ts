@@ -164,7 +164,13 @@ export function useDisableProjectSkill(projectId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (skillId: string) => disableProjectSkill(projectId, skillId),
+    mutationFn: ({
+      skillId,
+      stage,
+    }: {
+      skillId: string;
+      stage?: string | null;
+    }) => disableProjectSkill(projectId, skillId, stage),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: skillKeys.projectSkills(projectId),

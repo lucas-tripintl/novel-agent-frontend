@@ -110,7 +110,8 @@ export default function FusionDetailPage() {
 
   // 获取融合模式名称
   const getModeName = (mode: string) => {
-    const modeInfo = modesData?.find((m) => m.mode === mode);
+    if (!Array.isArray(modesData)) return mode;
+    const modeInfo = modesData.find((m) => m.mode === mode);
     return modeInfo?.name ?? mode;
   };
 

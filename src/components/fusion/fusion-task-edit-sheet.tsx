@@ -122,7 +122,7 @@ export function FusionTaskEditSheet({
                     <SelectValue placeholder="选择融合模式" />
                   </SelectTrigger>
                   <SelectContent>
-                    {modesData?.map((mode) => (
+                    {(Array.isArray(modesData) ? modesData : []).map((mode) => (
                       <SelectItem key={mode.mode} value={mode.mode}>
                         {mode.name}
                       </SelectItem>

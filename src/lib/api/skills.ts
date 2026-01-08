@@ -96,8 +96,14 @@ export async function enableProjectSkill(
 /**
  * 禁用项目技能
  */
-export async function disableProjectSkill(projectId: string, skillId: string) {
-  return apiClient.delete(`/skills/projects/${projectId}/${skillId}`);
+export async function disableProjectSkill(
+  projectId: string,
+  skillId: string,
+  stage?: string | null
+) {
+  return apiClient.delete(`/skills/projects/${projectId}/${skillId}`, {
+    params: stage ? { stage } : undefined,
+  });
 }
 
 /**

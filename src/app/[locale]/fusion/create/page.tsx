@@ -148,7 +148,7 @@ export default function FusionCreatePage() {
   };
 
   // 获取融合模式列表
-  const fusionModes = modesData ?? [];
+  const fusionModes = Array.isArray(modesData) ? modesData : [];
 
   return (
     <MainLayout>
