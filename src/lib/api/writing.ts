@@ -6,7 +6,6 @@ import type {
   StreamWriteParams,
   StreamEvent,
   ReviewParams,
-  SaveChapterParams,
 } from "@/types/writing";
 
 // API 基础 URL
@@ -150,33 +149,6 @@ export async function* streamReview(
         }
       }
     }
-  }
-}
-
-/**
- * 保存章节
- */
-export async function saveChapter(params: SaveChapterParams): Promise<void> {
-  const token = getStoredToken();
-
-  const response = await fetch(
-    `${API_BASE_URL}/projects/${params.projectId}/chapters/${params.chapterId}`,
-    {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({
-        title: params.title,
-        outline: params.outline,
-        content: params.content,
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`保存失败: ${response.status}`);
   }
 }
 

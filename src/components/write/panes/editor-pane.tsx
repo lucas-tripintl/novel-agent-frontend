@@ -54,7 +54,13 @@ export function EditorPane({ projectId }: EditorPaneProps) {
     enabled: !!chapterId && !!chapterNumber && chapterNumber > 0,
   });
 
-  // 检测章节切换，触发过渡状态
+  // 使用章节细纲 API
+  const { data: chapterOutlineData } = useChapterOutline(
+    projectId,
+    chapterNumber
+  );
+
+  // Effect 1: 检测章节切换，触发过渡状态
   useEffect(() => {
     if (chapterId && chapterId !== prevChapterIdRef.current) {
       setIsTransitioning(true);
@@ -62,49 +68,42 @@ export function EditorPane({ projectId }: EditorPaneProps) {
     }
   }, [chapterId]);
 
-  // 数据加载完成后，延迟一小段时间再结束过渡（让动画更平滑）
+  // Effect 2: 章节数据加载完成后，一次性处理
+  // - 加载章节内容到 store
+  // - 加载细纲内容到 store
+  // - 延迟结束过渡状态
   useEffect(() => {
-    if (chapterDetail && isTransitioning) {
-      const timer = setTimeout(() => setIsTransitioning(false), 150);
+    if (!chapterDetail) return;
+
+    // 加载章节内容
+    loadDraft({
+      title: chapterDetail.title || "",
+      outline: chapterDetail.summary || "",
+      content: chapterDetail.content || "",
+    });
+
+    // 如果细纲数据也已经到达，一起加载
+    if (chapterOutlineData) {
+      loadChapterOutline(chapterOutlineData.content || "");
+    }
+
+    // 数据加载完成后，延迟结束过渡
+    if (isTransitioning) {
+      const timer = setTimeout(() => setIsTransitioning(false), 100);
       return () => clearTimeout(timer);
     }
-  }, [chapterDetail, isTransitioning]);
+  }, [chapterDetail, chapterOutlineData, loadDraft, loadChapterOutline, isTransitioning]);
+
+  // Effect 3: 处理细纲单独更新（当细纲数据晚于章节数据到达时）
+  useEffect(() => {
+    // 只在章节数据已加载、细纲数据刚到达时触发
+    if (chapterOutlineData && chapterDetail && !isTransitioning) {
+      loadChapterOutline(chapterOutlineData.content || "");
+    }
+  }, [chapterOutlineData, chapterDetail, isTransitioning, loadChapterOutline]);
 
   // 判断是否正在加载章节内容
   const isLoadingContent = isTransitioning || (isChapterFetching && !chapterDetail);
-
-  // 使用章节细纲 API
-  const { data: chapterOutlineData } = useChapterOutline(
-    projectId,
-    chapterNumber
-  );
-
-  // 加载章节内容
-  useEffect(() => {
-    if (chapterDetail) {
-      loadDraft({
-        title: chapterDetail.title || "",
-        outline: chapterDetail.summary || "",
-        content: chapterDetail.content || "",
-      });
-    }
-  }, [chapterDetail, loadDraft]);
-
-  // 加载细纲内容
-  useEffect(() => {
-    const queryKeyStr = JSON.stringify(["chapterOutlines", "detail", projectId, chapterNumber]);
-    console.log("[EditorPane] 细纲数据变化:", {
-      projectId,
-      chapterNumber,
-      hasData: !!chapterOutlineData,
-      content: chapterOutlineData?.content?.slice(0, 100),
-      queryKeyStr,
-    });
-    if (chapterOutlineData) {
-      console.log("[EditorPane] 加载细纲内容到 store:", chapterOutlineData.content?.slice(0, 100));
-      loadChapterOutline(chapterOutlineData.content || "");
-    }
-  }, [chapterOutlineData, chapterNumber, projectId, loadChapterOutline]);
 
   // 切换章节时重置滚动位置
   useEffect(() => {

@@ -186,8 +186,10 @@ interface WritingState {
   generationCollabMode: boolean;
 
   // ============ Actions ============
-  /** 设置当前项目和章节 */
+  /** 设置当前项目和章节（完整重置，用于首次进入或项目切换） */
   setContext: (projectId: string | null, chapterId: string | null, chapterNumber?: number | null) => void;
+  /** 仅切换章节上下文（轻量级，用于章节列表点击切换） */
+  setChapterContext: (chapterId: string | null, chapterNumber: number | null) => void;
 
   /** 设置写作模式 */
   setMode: (mode: WritingMode) => void;
@@ -448,6 +450,22 @@ export const useWritingStore = create<WritingState>()(
           activeToolCalls:
             state.projectId !== projectId ? [] : state.activeToolCalls,
         })),
+
+      // 轻量级章节切换 - 更新 chapterId/chapterNumber 并清空编辑器内容
+      // 必须清空内容，否则当新章节没有数据时会显示旧内容
+      setChapterContext: (chapterId, chapterNumber) =>
+        set({
+          chapterId,
+          chapterNumber,
+          // 清空编辑器内容（会被新数据覆盖）
+          title: "",
+          outline: "",
+          content: "",
+          isDirty: false,
+          // 清空细纲
+          chapterOutline: "",
+          isChapterOutlineDirty: false,
+        }),
 
       setMode: (mode) => {
         set({ mode });

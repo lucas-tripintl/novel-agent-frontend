@@ -152,15 +152,6 @@ export interface ChapterDraft {
   wordCount: number;
 }
 
-/** 保存章节请求 */
-export interface SaveChapterParams {
-  projectId: string;
-  chapterId: string;
-  title: string;
-  outline?: string;
-  content: string;
-}
-
 // ============ 编辑器状态 ============
 
 /** 编辑器选区 */

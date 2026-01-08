@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef, memo } from "react";
 import { useProjectChapters, useDeleteChapter, useCreateChapter } from "@/hooks/use-projects";
 import { useWritingStore, useEntityEditing, useEditorContent, useOutlineEditing, useChapterOutlineState, useChapterSaveState } from "@/stores/writing-store";
-import { saveChapter } from "@/lib/api/writing";
+import { updateChapter } from "@/lib/api/projects";
 import { upsertChapterOutline } from "@/lib/api/chapter-outlines";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,126 @@ interface ChapterListProps {
   projectId: string;
 }
 
+// ============ ChapterListItem - memoized 章节列表项 ============
+interface ChapterListItemProps {
+  chapter: ChapterRead;
+  isActive: boolean;
+  isSwitchingTo: boolean;
+  onSelect: (chapterId: string, chapterNumber: number) => void;
+  onEdit: (chapter: ChapterRead) => void;
+  onDelete: (chapter: ChapterRead) => void;
+}
+
+const ChapterListItem = memo(
+  function ChapterListItem({
+    chapter,
+    isActive,
+    isSwitchingTo,
+    onSelect,
+    onEdit,
+    onDelete,
+  }: ChapterListItemProps) {
+    const isAnalyzed = chapter.analyzed;
+
+    return (
+      <div
+        className={cn(
+          "flex items-center gap-1 rounded-lg transition-all duration-150 group",
+          "hover:bg-muted/50",
+          isSwitchingTo && "bg-primary/5 border border-primary/20 scale-[0.99]",
+          isActive && !isSwitchingTo && "bg-primary/10 border border-primary/30"
+        )}
+      >
+        <button
+          onClick={() => onSelect(chapter.id, chapter.chapter_number)}
+          className={cn(
+            "flex-1 flex items-center gap-3 px-3 py-2.5 text-left",
+            "transition-transform duration-100 active:scale-[0.98]"
+          )}
+          disabled={isSwitchingTo}
+        >
+          <div className="shrink-0">
+            {isSwitchingTo ? (
+              <Loader2 className="h-4 w-4 text-primary animate-spin" />
+            ) : isActive ? (
+              <PenLine className="h-4 w-4 text-primary" />
+            ) : isAnalyzed ? (
+              <CheckCircle2 className="h-4 w-4 text-primary/60" />
+            ) : (
+              <Circle className="h-4 w-4 text-muted-foreground/40" />
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground font-mono">
+                第 {chapter.chapter_number} 章
+              </span>
+              <span className="text-[10px] text-muted-foreground/60 font-mono">
+                {(chapter.word_count ?? 0).toLocaleString()}字
+              </span>
+              {isActive && !isSwitchingTo && (
+                <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
+                  编辑中
+                </Badge>
+              )}
+              {isSwitchingTo && (
+                <Badge variant="outline" className="h-4 px-1.5 text-[10px] text-primary border-primary/30">
+                  切换中
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm font-medium truncate mt-0.5">
+              {chapter.title || "未命名章节"}
+            </p>
+          </div>
+
+          <ChevronRight
+            className={cn(
+              "h-4 w-4 shrink-0 transition-all duration-150",
+              isSwitchingTo ? "text-primary translate-x-0.5" : isActive ? "text-primary" : "text-muted-foreground/40"
+            )}
+          />
+        </button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 mr-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onEdit(chapter)}>
+              <Settings className="mr-2 h-4 w-4" />
+              编辑
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={() => onDelete(chapter)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              删除
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    );
+  },
+  // 自定义比较函数：只在关键属性改变时才 re-render
+  (prev, next) =>
+    prev.chapter.id === next.chapter.id &&
+    prev.chapter.title === next.chapter.title &&
+    prev.chapter.word_count === next.chapter.word_count &&
+    prev.chapter.analyzed === next.chapter.analyzed &&
+    prev.isActive === next.isActive &&
+    prev.isSwitchingTo === next.isSwitchingTo
+);
+
 export function ChapterList({ projectId }: ChapterListProps) {
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc"); // 默认倒序，最新章节在前
   const [editSheetOpen, setEditSheetOpen] = useState(false);
@@ -66,7 +186,7 @@ export function ChapterList({ projectId }: ChapterListProps) {
   const deleteChapterMutation = useDeleteChapter(projectId);
   const createChapterMutation = useCreateChapter(projectId);
 
-  const { chapterId, setContext } = useWritingStore();
+  const { chapterId, setContext, setChapterContext } = useWritingStore();
   const { editingEntity, isEntityDirty, closeEntityEditor } = useEntityEditing();
   const { editingOutline, closeOutlineEditor } = useOutlineEditing();
   const { isDirty: isChapterDirty } = useEditorContent();
@@ -162,11 +282,13 @@ export function ChapterList({ projectId }: ChapterListProps) {
     if (editingOutline) {
       closeOutlineEditor();
     }
-    // 然后切换章节，同时传递 chapterNumber
-    setContext(projectId, targetChapterId, targetChapterNumber);
-    // 切换完成后清除加载状态（延迟一小段时间让过渡更平滑）
-    setTimeout(() => setSwitchingToChapterId(null), 300);
-  }, [editingEntity, closeEntityEditor, editingOutline, closeOutlineEditor, setContext, projectId]);
+    // 使用轻量级的章节切换（不清空编辑器内容，减少 re-render）
+    setChapterContext(targetChapterId, targetChapterNumber);
+    // 切换完成后清除加载状态（使用 requestAnimationFrame 让动画更平滑）
+    requestAnimationFrame(() => {
+      setTimeout(() => setSwitchingToChapterId(null), 150);
+    });
+  }, [editingEntity, closeEntityEditor, editingOutline, closeOutlineEditor, setChapterContext]);
 
   const [pendingChapterNumber, setPendingChapterNumber] = useState<number | null>(null);
 
@@ -205,11 +327,9 @@ export function ChapterList({ projectId }: ChapterListProps) {
       // 保存正文/摘要
       if (isDirty) {
         tasks.push(
-          saveChapter({
-            projectId: currentProjectId,
-            chapterId: currentChapterId,
+          updateChapter(currentProjectId, currentChapterNumber, {
             title: currentTitle,
-            outline: currentOutline,
+            summary: currentOutline,
             content: currentContent,
           }).then(() => markAsSaved())
         );
@@ -361,105 +481,17 @@ export function ChapterList({ projectId }: ChapterListProps) {
               </div>
             ) : (
               <>
-                {chapters.map((chapter) => {
-                  const isActive = chapter.id === chapterId;
-                  const isSwitchingTo = chapter.id === switchingToChapterId;
-                  const isAnalyzed = chapter.analyzed;
-
-                  return (
-                    <div
-                      key={chapter.id}
-                      className={cn(
-                        "flex items-center gap-1 rounded-lg transition-all duration-150 group",
-                        "hover:bg-muted/50",
-                        // 正在切换到此章节时的高亮效果
-                        isSwitchingTo && "bg-primary/5 border border-primary/20 scale-[0.99]",
-                        isActive && !isSwitchingTo && "bg-primary/10 border border-primary/30"
-                      )}
-                    >
-                      <button
-                        onClick={() => handleSelectChapter(chapter.id, chapter.chapter_number)}
-                        className={cn(
-                          "flex-1 flex items-center gap-3 px-3 py-2.5 text-left",
-                          "transition-transform duration-100 active:scale-[0.98]"
-                        )}
-                        disabled={isSwitchingTo}
-                      >
-                        {/* 状态图标 */}
-                        <div className="shrink-0">
-                          {isSwitchingTo ? (
-                            <Loader2 className="h-4 w-4 text-primary animate-spin" />
-                          ) : isActive ? (
-                            <PenLine className="h-4 w-4 text-primary" />
-                          ) : isAnalyzed ? (
-                            <CheckCircle2 className="h-4 w-4 text-primary/60" />
-                          ) : (
-                            <Circle className="h-4 w-4 text-muted-foreground/40" />
-                          )}
-                        </div>
-
-                        {/* 章节信息 */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground font-mono">
-                              第 {chapter.chapter_number} 章
-                            </span>
-                            <span className="text-[10px] text-muted-foreground/60 font-mono">
-                              {(chapter.word_count ?? 0).toLocaleString()}字
-                            </span>
-                            {isActive && !isSwitchingTo && (
-                              <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
-                                编辑中
-                              </Badge>
-                            )}
-                            {isSwitchingTo && (
-                              <Badge variant="outline" className="h-4 px-1.5 text-[10px] text-primary border-primary/30">
-                                切换中
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm font-medium truncate mt-0.5">
-                            {chapter.title || "未命名章节"}
-                          </p>
-                        </div>
-
-                        <ChevronRight
-                          className={cn(
-                            "h-4 w-4 shrink-0 transition-all duration-150",
-                            isSwitchingTo ? "text-primary translate-x-0.5" : isActive ? "text-primary" : "text-muted-foreground/40"
-                          )}
-                        />
-                      </button>
-
-                      {/* 操作菜单 */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 mr-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditClick(chapter)}>
-                            <Settings className="mr-2 h-4 w-4" />
-                            编辑
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => handleDeleteClick(chapter)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            删除
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  );
-                })}
+                {chapters.map((chapter) => (
+                  <ChapterListItem
+                    key={chapter.id}
+                    chapter={chapter}
+                    isActive={chapter.id === chapterId}
+                    isSwitchingTo={chapter.id === switchingToChapterId}
+                    onSelect={handleSelectChapter}
+                    onEdit={handleEditClick}
+                    onDelete={handleDeleteClick}
+                  />
+                ))}
 
                 {/* 加载更多触发器 */}
                 <div ref={loadMoreRef} className="py-2">
