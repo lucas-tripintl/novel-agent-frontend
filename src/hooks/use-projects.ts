@@ -5,6 +5,7 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import {
   listProjects,
+  createProject,
   deleteProject,
   updateProject,
   getProject,
@@ -23,6 +24,7 @@ import {
   type ChapterUpdateData,
   type GoldenFingerUpdateData,
 } from "@/lib/api/projects";
+import type { ProjectCreateData } from "@/types/api";
 import type { ProjectList, ProjectStatus } from "@/types/api";
 
 // Query keys
@@ -135,6 +137,20 @@ export function useProjectGoldenFingers(
     queryKey: projectKeys.goldenFingers(projectId, params),
     queryFn: () => listGoldenFingers(projectId, params),
     enabled: enabled && !!projectId,
+  });
+}
+
+/**
+ * 创建项目
+ */
+export function useCreateProject() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: ProjectCreateData) => createProject(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
+    },
   });
 }
 

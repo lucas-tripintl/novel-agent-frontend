@@ -8,7 +8,6 @@
  */
 
 import { apiClient } from "./client";
-import type { SuccessResponse } from "@/types/api";
 import type {
   ChapterOutlineRead,
   ChapterOutlineCreate,
@@ -26,7 +25,7 @@ export async function getChapterOutlines(
     chapter_end?: number;
   }
 ) {
-  return apiClient.get<SuccessResponse<ChapterOutlineRead[]>>(
+  return apiClient.get<ChapterOutlineRead[]>(
     `/projects/${projectId}/chapters/outlines`,
     { params }
   );
@@ -39,7 +38,7 @@ export async function getChapterOutline(
   projectId: string,
   chapterNumber: number
 ) {
-  return apiClient.get<SuccessResponse<ChapterOutlineRead>>(
+  return apiClient.get<ChapterOutlineRead>(
     `/projects/${projectId}/chapters/${chapterNumber}/outline`
   );
 }
@@ -52,7 +51,7 @@ export async function upsertChapterOutline(
   chapterNumber: number,
   data: ChapterOutlineCreate
 ) {
-  return apiClient.put<SuccessResponse<ChapterOutlineRead>>(
+  return apiClient.put<ChapterOutlineRead>(
     `/projects/${projectId}/chapters/${chapterNumber}/outline`,
     data
   );
@@ -80,7 +79,7 @@ export async function generateChapterOutline(
   chapterNumber: number,
   params?: GenerateChapterOutlineParams
 ) {
-  return apiClient.post<SuccessResponse<GenerateChapterOutlineResponse>>(
+  return apiClient.post<GenerateChapterOutlineResponse>(
     `/projects/${projectId}/chapters/${chapterNumber}/outline/generate`,
     params?.prompt ? { prompt: params.prompt } : undefined
   );

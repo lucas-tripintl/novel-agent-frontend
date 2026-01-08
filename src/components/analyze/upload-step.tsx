@@ -49,9 +49,9 @@ export function UploadStep({ onSuccess }: UploadStepProps) {
     importProject(
       { file: selectedFile, projectName },
       {
-        onSuccess: (response) => {
+        onSuccess: (data) => {
           setDialogOpen(false);
-          onSuccess(response.data);
+          onSuccess(data);
         },
       }
     );

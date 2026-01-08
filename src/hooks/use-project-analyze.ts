@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { analyzeProject, analyzeStyle, synthesizeWorldview } from "@/lib/api/projects";
-import type { SuccessResponse, TaskCreateResponse, AnalysisType } from "@/types/api";
+import type { TaskCreateResponse, AnalysisType } from "@/types/api";
 
 interface AnalyzeConfig {
   analysisTypes: AnalysisType[];
@@ -15,7 +15,7 @@ interface AnalyzeConfig {
 export function useProjectAnalyze(projectId: string) {
   const queryClient = useQueryClient();
 
-  return useMutation<SuccessResponse<TaskCreateResponse>, Error, AnalyzeConfig>({
+  return useMutation<TaskCreateResponse, Error, AnalyzeConfig>({
     mutationFn: async (config) => {
       return analyzeProject(projectId, {
         analysis_types: config.analysisTypes,
@@ -39,7 +39,7 @@ interface StyleAnalyzeConfig {
 export function useStyleAnalyze(projectId: string) {
   const queryClient = useQueryClient();
 
-  return useMutation<SuccessResponse<TaskCreateResponse>, Error, StyleAnalyzeConfig>({
+  return useMutation<TaskCreateResponse, Error, StyleAnalyzeConfig>({
     mutationFn: async (config) => {
       return analyzeStyle(projectId, {
         sample_chapters: config.sampleChapters ?? 10,
@@ -54,7 +54,7 @@ export function useStyleAnalyze(projectId: string) {
 export function useWorldviewSynthesize(projectId: string) {
   const queryClient = useQueryClient();
 
-  return useMutation<SuccessResponse<TaskCreateResponse>, Error, void>({
+  return useMutation<TaskCreateResponse, Error, void>({
     mutationFn: async () => {
       return synthesizeWorldview(projectId);
     },

@@ -96,7 +96,19 @@
     "write": "創作",
     "analysisProgress": "分析進度",
     "checkNetwork": "無法取得專案列表，請檢查網路連線後重試",
-    "deleteConfirm": "專案「{name}」"
+    "deleteConfirm": "專案「{name}」",
+    "createDialog": {
+      "title": "開啟新故事",
+      "description": "創建一個新的創作專案",
+      "nameLabel": "作品名稱",
+      "namePlaceholder": "給你的新作品起個名字...",
+      "typeLabel": "小說類型",
+      "typePlaceholder": "如：玄幻、都市、科幻...",
+      "typeHint": "可選，最多 20 字",
+      "descriptionLabel": "簡介",
+      "descriptionPlaceholder": "寫下你的創作構想...",
+      "creating": "創建中..."
+    }
   },
   "entities": {
     "title": "設定庫",

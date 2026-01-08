@@ -4,11 +4,11 @@
 
 import { apiClient } from "./client";
 import type {
-  SuccessResponse,
   PaginatedResponse,
   ProjectImportResponse,
   ProjectRead,
   ProjectList,
+  ProjectCreateData,
   ChapterRead,
   EntityRead,
   EntityType,
@@ -36,6 +36,10 @@ export async function getProject(projectId: string) {
   return apiClient.get<ProjectRead>(`/projects/${projectId}`);
 }
 
+export async function createProject(data: ProjectCreateData) {
+  return apiClient.post<ProjectRead>("/projects", data);
+}
+
 export async function importProject(data: {
   file: File;
   project_name?: string;
@@ -50,7 +54,7 @@ export async function importProject(data: {
   if (data.start_chapter) params.start_chapter = data.start_chapter;
   if (data.end_chapter) params.end_chapter = data.end_chapter;
 
-  return apiClient.post<SuccessResponse<ProjectImportResponse>>(
+  return apiClient.post<ProjectImportResponse>(
     "/projects/import",
     formData,
     { params }
@@ -143,7 +147,7 @@ export async function analyzeProject(
   projectId: string,
   config: AnalyzeRequest
 ) {
-  return apiClient.post<SuccessResponse<TaskCreateResponse>>(
+  return apiClient.post<TaskCreateResponse>(
     `/projects/${projectId}/analyze`,
     {
       analysis_types: config.analysis_types,
@@ -156,7 +160,7 @@ export async function analyzeProject(
 }
 
 export async function extractPatterns(projectId: string) {
-  return apiClient.post<SuccessResponse<TaskCreateResponse>>(
+  return apiClient.post<TaskCreateResponse>(
     `/projects/${projectId}/extract-patterns`
   );
 }
@@ -167,7 +171,7 @@ export async function synthesizeWorldview(
   projectId: string,
   config: SynthesizeRequest = {}
 ) {
-  return apiClient.post<SuccessResponse<TaskCreateResponse>>(
+  return apiClient.post<TaskCreateResponse>(
     `/projects/${projectId}/synthesize`,
     config
   );
@@ -177,7 +181,7 @@ export async function analyzeStyle(
   projectId: string,
   config: StyleAnalyzeRequest = {}
 ) {
-  return apiClient.post<SuccessResponse<TaskCreateResponse>>(
+  return apiClient.post<TaskCreateResponse>(
     `/projects/${projectId}/style/analyze`,
     {
       sample_chapters: config.sample_chapters ?? 10,

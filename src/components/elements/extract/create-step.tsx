@@ -21,8 +21,8 @@ export function CreateStep({ onSuccess }: CreateStepProps) {
     // 提取模式 mutation
     const extractMutation = useMutation({
         mutationFn: async (projectId: string) => {
-            const response = await extractPatterns(projectId);
-            return response.data;
+            // API Client 已自动解包 v2 响应的 data 字段
+            return extractPatterns(projectId);
         },
         onSuccess: (data) => {
             setStatus({ type: "success", message: "提取任务已启动，请在“分析中”标签页查看进度" });

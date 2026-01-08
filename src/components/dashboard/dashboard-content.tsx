@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
 import { ProjectEditSheet } from "@/components/project/project-edit-sheet";
+import { CreateProjectDialog } from "@/components/project/create-project-dialog";
 import {
   BookOpen,
   FileText,
@@ -229,6 +230,7 @@ export function DashboardContent() {
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<ProjectList | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const projects = data?.items ?? [];
 
@@ -276,11 +278,9 @@ export function DashboardContent() {
               {t("import")}
             </Link>
           </Button>
-          <Button asChild className="glow-green">
-            <Link href="/projects/new">
-              <Plus className="mr-2 h-4 w-4" />
-              {t("create")}
-            </Link>
+          <Button onClick={() => setCreateDialogOpen(true)} className="glow-green">
+            <Plus className="mr-2 h-4 w-4" />
+            {t("create")}
           </Button>
         </div>
       </div>
@@ -360,6 +360,12 @@ export function DashboardContent() {
         project={projectToEdit}
         open={editSheetOpen}
         onOpenChange={setEditSheetOpen}
+      />
+
+      {/* 新建作品对话框 */}
+      <CreateProjectDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
       />
     </div>
   );

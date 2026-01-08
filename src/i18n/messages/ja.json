@@ -95,7 +95,19 @@
     "write": "執筆",
     "analysisProgress": "分析進捗",
     "checkNetwork": "プロジェクトリストを取得できません。ネットワーク接続を確認してください。",
-    "deleteConfirm": "プロジェクト「{name}」"
+    "deleteConfirm": "プロジェクト「{name}」",
+    "createDialog": {
+      "title": "新しい物語を始める",
+      "description": "新しい創作プロジェクトを作成",
+      "nameLabel": "作品名",
+      "namePlaceholder": "新しい作品に名前をつけましょう...",
+      "typeLabel": "ジャンル",
+      "typePlaceholder": "例：ファンタジー、現代、SF...",
+      "typeHint": "任意、最大20文字",
+      "descriptionLabel": "概要",
+      "descriptionPlaceholder": "創作の構想を書いてください...",
+      "creating": "作成中..."
+    }
   },
   "entities": {
     "title": "エンティティ",

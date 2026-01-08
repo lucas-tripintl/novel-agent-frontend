@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { importProject } from "@/lib/api/projects";
-import type { ProjectImportResponse, SuccessResponse } from "@/types/api";
+import type { ProjectImportResponse } from "@/types/api";
 
 interface ImportProjectData {
   file: File;
@@ -14,11 +14,7 @@ interface ImportProjectData {
 export function useProjectImport() {
   const queryClient = useQueryClient();
 
-  return useMutation<
-    SuccessResponse<ProjectImportResponse>,
-    Error,
-    ImportProjectData
-  >({
+  return useMutation<ProjectImportResponse, Error, ImportProjectData>({
     mutationFn: async (data) => {
       return importProject({
         file: data.file,

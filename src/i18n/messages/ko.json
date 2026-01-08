@@ -95,7 +95,19 @@
     "write": "집필",
     "analysisProgress": "분석 진행률",
     "checkNetwork": "프로젝트 목록을 가져올 수 없습니다. 네트워크 연결을 확인하세요.",
-    "deleteConfirm": "프로젝트 \"{name}\""
+    "deleteConfirm": "프로젝트 \"{name}\"",
+    "createDialog": {
+      "title": "새 이야기 시작",
+      "description": "새 창작 프로젝트 만들기",
+      "nameLabel": "작품명",
+      "namePlaceholder": "새 작품의 이름을 지어주세요...",
+      "typeLabel": "장르",
+      "typePlaceholder": "예: 판타지, 현대, SF...",
+      "typeHint": "선택사항, 최대 20자",
+      "descriptionLabel": "소개",
+      "descriptionPlaceholder": "창작 구상을 적어주세요...",
+      "creating": "생성 중..."
+    }
   },
   "entities": {
     "title": "엔티티",

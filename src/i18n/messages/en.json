@@ -95,7 +95,19 @@
     "write": "Write",
     "analysisProgress": "Analysis Progress",
     "checkNetwork": "Unable to get project list. Please check your network connection and try again.",
-    "deleteConfirm": "Project \"{name}\""
+    "deleteConfirm": "Project \"{name}\"",
+    "createDialog": {
+      "title": "Start a New Story",
+      "description": "Create a new writing project",
+      "nameLabel": "Project Name",
+      "namePlaceholder": "Give your new work a name...",
+      "typeLabel": "Genre",
+      "typePlaceholder": "e.g., Fantasy, Romance, Sci-Fi...",
+      "typeHint": "Optional, max 20 characters",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Write down your creative vision...",
+      "creating": "Creating..."
+    }
   },
   "entities": {
     "title": "Entities",

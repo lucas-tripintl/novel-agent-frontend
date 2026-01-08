@@ -1,6 +1,10 @@
 /**
  * API Client - 统一的 HTTP 请求封装
+ *
+ * 使用 v2 响应格式：{ code: 0, msg: "", data: T }
  */
+
+import { getApiLocale } from "./locale";
 
 // 开发环境通过 rewrites 代理，生产环境直接调用（需后端配 CORS）
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
@@ -33,6 +37,9 @@ function handleUnauthorized() {
   }
 }
 
+/**
+ * HTTP 层错误（网络错误、4xx/5xx 非 v2 格式响应）
+ */
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -42,6 +49,28 @@ export class ApiError extends Error {
     super(`API Error: ${status} ${statusText}`);
     this.name = "ApiError";
   }
+}
+
+/**
+ * v2 业务错误（code !== 0）
+ * 后端返回的结构化错误，包含错误码和国际化消息
+ */
+export class BusinessError extends Error {
+  constructor(
+    public code: number,
+    public msg: string,
+    public data?: unknown
+  ) {
+    super(msg);
+    this.name = "BusinessError";
+  }
+}
+
+/** v2 响应格式 */
+interface ApiResponseV2<T = unknown> {
+  code: number;
+  msg: string;
+  data: T;
 }
 
 interface RequestOptions extends RequestInit {
@@ -73,17 +102,20 @@ async function request<T>(
   // 获取 token
   const token = getStoredToken();
 
-  const headers: HeadersInit = {
-    ...init.headers,
+  // 构建请求头
+  const headers: Record<string, string> = {
+    ...(init.headers as Record<string, string>),
+    "X-Api-Version": "v2", // 使用 v2 响应格式
+    "Accept-Language": getApiLocale(), // 国际化
   };
 
   // 如果不是 FormData，设置 Content-Type
   if (!(init.body instanceof FormData)) {
-    (headers as Record<string, string>)["Content-Type"] = "application/json";
+    headers["Content-Type"] = "application/json";
   }
 
   if (token) {
-    (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
   const response = await fetch(url, {
@@ -91,27 +123,56 @@ async function request<T>(
     headers,
   });
 
+  // HTTP 层错误处理
   if (!response.ok) {
     // 401 未授权 - 跳转登录
     if (response.status === 401 && !skipAuthRedirect) {
       handleUnauthorized();
     }
 
-    let data: unknown;
+    // 尝试解析 v2 格式的错误响应
+    let errorData: unknown;
     try {
-      data = await response.json();
-    } catch {
-      // ignore
+      const json = await response.json();
+      // 如果是 v2 格式，抛出 BusinessError
+      if (typeof json.code === "number" && typeof json.msg === "string") {
+        throw new BusinessError(json.code, json.msg, json.data);
+      }
+      errorData = json;
+    } catch (e) {
+      // 如果已经是 BusinessError，直接抛出
+      if (e instanceof BusinessError) {
+        throw e;
+      }
+      // 否则忽略解析错误
     }
-    throw new ApiError(response.status, response.statusText, data);
+
+    throw new ApiError(response.status, response.statusText, errorData);
   }
 
-  // 如果是 204 No Content，返回空对象
+  // 204 No Content - 返回空对象
   if (response.status === 204) {
     return {} as T;
   }
 
-  return response.json();
+  // 解析 v2 响应
+  const json = await response.json();
+
+  // 检查是否为 v2 格式
+  if (typeof json.code !== "number") {
+    // 非 v2 格式（可能是旧 API 或后端配置错误）
+    // 直接返回整个响应，保持向后兼容
+    console.warn("[API] Response is not v2 format:", endpoint);
+    return json as T;
+  }
+
+  // 检查业务错误码
+  if (json.code !== 0) {
+    throw new BusinessError(json.code, json.msg, json.data);
+  }
+
+  // 自动解包 data
+  return json.data as T;
 }
 
 export const apiClient = {
@@ -129,14 +190,14 @@ export const apiClient = {
     request<T>(endpoint, {
       ...options,
       method: "PUT",
-      body: JSON.stringify(body),
+      body: body instanceof FormData ? body : JSON.stringify(body),
     }),
 
   patch: <T>(endpoint: string, body?: unknown, options?: RequestOptions) =>
     request<T>(endpoint, {
       ...options,
       method: "PATCH",
-      body: JSON.stringify(body),
+      body: body instanceof FormData ? body : JSON.stringify(body),
     }),
 
   delete: <T>(endpoint: string, options?: RequestOptions) =>

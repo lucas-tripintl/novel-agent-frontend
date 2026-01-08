@@ -37,8 +37,8 @@ export function useChapterOutlines(
   return useQuery({
     queryKey: chapterOutlineKeys.list(projectId ?? "", params),
     queryFn: async () => {
-      const response = await getChapterOutlines(projectId!, params);
-      return response.data;
+      // API Client 已自动解包 v2 响应的 data 字段
+      return getChapterOutlines(projectId!, params);
     },
     enabled: !!projectId,
   });
@@ -57,36 +57,17 @@ export function useChapterOutline(
 
   return useQuery({
     queryKey,
-    queryFn: async () => {
+    queryFn: async (): Promise<ChapterOutlineRead | null> => {
       console.log("[useChapterOutline] 开始查询:", { projectId, chapterNumber, queryKey });
       try {
-        const response = await getChapterOutline(projectId!, chapterNumber!);
-        console.log("[useChapterOutline] API 原始响应:", JSON.stringify(response).slice(0, 500));
-
-        // API 可能返回两种格式：
-        // 1. 直接返回 ChapterOutlineRead 对象（有 id 字段）
-        // 2. 包装在 SuccessResponse 中: { success: true, data: ChapterOutlineRead }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const rawResponse = response as any;
-        let data: ChapterOutlineRead | null;
-
-        if (rawResponse?.success === true && rawResponse?.data) {
-          // 包装格式
-          data = rawResponse.data as ChapterOutlineRead;
-        } else if (rawResponse?.id) {
-          // 直接返回数据格式（检查 id 字段即可）
-          data = rawResponse as ChapterOutlineRead;
-        } else {
-          data = null;
-        }
-
-        console.log("[useChapterOutline] 提取数据:", {
+        // API Client 已自动解包 v2 响应的 data 字段
+        const data = await getChapterOutline(projectId!, chapterNumber!);
+        console.log("[useChapterOutline] 获取数据:", {
           projectId,
           chapterNumber,
           hasData: !!data,
           dataContent: data?.content?.slice(0, 100),
         });
-
         return data;
       } catch (error) {
         console.log("[useChapterOutline] 查询异常:", { projectId, chapterNumber, error });
@@ -124,8 +105,8 @@ export function useUpsertChapterOutline(projectId: string) {
       chapterNumber: number;
       data: ChapterOutlineCreate;
     }) => {
-      const response = await upsertChapterOutline(projectId, chapterNumber, data);
-      return response.data;
+      // API Client 已自动解包 v2 响应的 data 字段
+      return upsertChapterOutline(projectId, chapterNumber, data);
     },
     onSuccess: (_, { chapterNumber }) => {
       // 刷新该章节的细纲缓存
@@ -187,8 +168,8 @@ export function useGenerateChapterOutline(projectId: string) {
       chapterNumber: number;
       prompt?: string;
     }) => {
-      const response = await generateChapterOutline(projectId, chapterNumber, { prompt });
-      return response.data;
+      // API Client 已自动解包 v2 响应的 data 字段
+      return generateChapterOutline(projectId, chapterNumber, { prompt });
     },
     onSuccess: (data) => {
       console.log(`细纲生成任务已创建: ${data.message}`);

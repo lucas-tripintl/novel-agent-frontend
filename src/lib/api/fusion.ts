@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from "./client";
-import type { PaginatedResponse, SuccessResponse, TaskCreateResponse, FusionBuildResponse } from "@/types/api";
+import type { PaginatedResponse, TaskCreateResponse, FusionBuildResponse } from "@/types/api";
 import type {
   FusionTaskRead,
   FusionTaskList,
@@ -22,8 +22,7 @@ import type {
  * 获取所有可用的融合模式
  */
 export async function listFusionModes() {
-  const response = await apiClient.get<SuccessResponse<FusionModeRead[]>>("/fusion/modes");
-  return response.data;
+  return apiClient.get<FusionModeRead[]>("/fusion/modes");
 }
 
 // ============ 融合任务 ============
@@ -51,21 +50,14 @@ export async function listFusionTasks(params: FusionTasksParams = {}) {
  * 创建融合任务
  */
 export async function createFusionTask(request: FusionTaskCreateRequest) {
-  const response = await apiClient.post<SuccessResponse<FusionTaskRead>>(
-    "/fusion/tasks",
-    request
-  );
-  return response.data;
+  return apiClient.post<FusionTaskRead>("/fusion/tasks", request);
 }
 
 /**
  * 获取融合任务详情
  */
 export async function getFusionTask(taskId: string) {
-  const response = await apiClient.get<SuccessResponse<FusionTaskRead>>(
-    `/fusion/tasks/${taskId}`
-  );
-  return response.data;
+  return apiClient.get<FusionTaskRead>(`/fusion/tasks/${taskId}`);
 }
 
 /**
@@ -79,11 +71,7 @@ export interface FusionTaskUpdateData {
 }
 
 export async function updateFusionTask(taskId: string, data: FusionTaskUpdateData) {
-  const response = await apiClient.patch<SuccessResponse<FusionTaskRead>>(
-    `/fusion/tasks/${taskId}`,
-    data
-  );
-  return response.data;
+  return apiClient.patch<FusionTaskRead>(`/fusion/tasks/${taskId}`, data);
 }
 
 /**
@@ -99,40 +87,26 @@ export async function deleteFusionTask(taskId: string) {
  * 运行融合流水线（提取 + 融合）
  */
 export async function runFusionPipeline(taskId: string) {
-  const response = await apiClient.post<SuccessResponse<TaskCreateResponse>>(
-    `/fusion/tasks/${taskId}/run`
-  );
-  return response.data;
+  return apiClient.post<TaskCreateResponse>(`/fusion/tasks/${taskId}/run`);
 }
 
 /**
  * 获取融合候选方案列表
  */
 export async function listFusionCandidates(taskId: string) {
-  const response = await apiClient.get<SuccessResponse<FusionCandidateRead[]>>(
-    `/fusion/tasks/${taskId}/candidates`
-  );
-  return response.data;
+  return apiClient.get<FusionCandidateRead[]>(`/fusion/tasks/${taskId}/candidates`);
 }
 
 /**
  * 选择候选方案
  */
 export async function selectFusionCandidate(taskId: string, request: FusionSelectRequest) {
-  const response = await apiClient.post<SuccessResponse<FusionTaskRead>>(
-    `/fusion/tasks/${taskId}/select`,
-    request
-  );
-  return response.data;
+  return apiClient.post<FusionTaskRead>(`/fusion/tasks/${taskId}/select`, request);
 }
 
 /**
  * 基于候选方案创建项目（直接返回 project_id）
  */
 export async function buildFusionProject(taskId: string, request: FusionBuildRequest) {
-  const response = await apiClient.post<SuccessResponse<FusionBuildResponse>>(
-    `/fusion/tasks/${taskId}/build`,
-    request
-  );
-  return response.data;
+  return apiClient.post<FusionBuildResponse>(`/fusion/tasks/${taskId}/build`, request);
 }

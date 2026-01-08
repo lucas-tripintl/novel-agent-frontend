@@ -1,14 +1,16 @@
 /**
  * API 响应类型定义 - 基于 openapi.json
+ *
+ * 注意：API Client 已自动解包 v2 响应的 data 字段，
+ * 所以这里的类型直接定义业务数据结构，不需要包装。
  */
 
 // ============ 通用响应 ============
 
-export interface SuccessResponse<T> {
-  success: true;
-  data: T;
-}
-
+/**
+ * 分页响应数据结构
+ * API 返回的分页数据会自动解包，直接使用此类型
+ */
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;
@@ -98,12 +100,9 @@ export interface WriteChapterParams {
 
 /** 流水线任务响应 */
 export interface PipelineTaskResponse {
-  success: boolean;
-  data: {
-    task_id: string;
-    status: TaskStatus;
-    message: string;
-  };
+  task_id: string;
+  status: TaskStatus;
+  message: string;
 }
 
 /** 取消任务响应 */
@@ -132,6 +131,13 @@ export interface ProjectImportResponse {
   total_chapters: number;
   imported_chapters: number;
   message: string;
+}
+
+// 创建项目请求
+export interface ProjectCreateData {
+  name: string;
+  project_type?: string;  // 小说类型，如"玄幻"、"都市"等
+  description?: string;
 }
 
 export interface ProjectRead {

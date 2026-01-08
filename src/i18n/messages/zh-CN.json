@@ -95,7 +95,19 @@
     "write": "创作",
     "analysisProgress": "分析进度",
     "checkNetwork": "无法获取项目列表，请检查网络连接后重试",
-    "deleteConfirm": "项目「{name}」"
+    "deleteConfirm": "项目「{name}」",
+    "createDialog": {
+      "title": "开启新故事",
+      "description": "创建一个新的创作项目",
+      "nameLabel": "作品名称",
+      "namePlaceholder": "给你的新作品起个名字...",
+      "typeLabel": "小说类型",
+      "typePlaceholder": "如：玄幻、都市、科幻...",
+      "typeHint": "可选，最多 20 字",
+      "descriptionLabel": "简介",
+      "descriptionPlaceholder": "写下你的创作构想...",
+      "creating": "创建中..."
+    }
   },
   "entities": {
     "title": "设定库",

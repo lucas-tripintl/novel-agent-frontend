@@ -10,7 +10,7 @@
  */
 
 import { apiClient } from "./client";
-import type { PaginatedResponse, EntityType, SuccessResponse } from "@/types/api";
+import type { PaginatedResponse, EntityType } from "@/types/api";
 import type { PatternRead } from "@/types/pattern";
 
 /**
@@ -73,11 +73,7 @@ export async function updatePattern(
   patternId: string,
   data: PatternUpdateData
 ): Promise<PatternRead> {
-  const response = await apiClient.patch<SuccessResponse<PatternRead>>(
-    `/patterns/${patternId}`,
-    data
-  );
-  return response.data;
+  return apiClient.patch<PatternRead>(`/patterns/${patternId}`, data);
 }
 
 /**
