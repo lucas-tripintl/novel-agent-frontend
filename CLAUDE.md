@@ -175,7 +175,7 @@ interface EntityRead {
 
 ### 国际化 (i18n) 系统
 
-应用支持 5 种语言：简体中文 (zh)、繁体中文 (zh-TW)、英语 (en)、日语 (ja)、韩语 (ko)。
+应用支持 3 种语言：简体中文 (zh-CN)、繁体中文 (zh-TW)、英语 (en)。
 
 #### 核心文件
 
@@ -184,7 +184,7 @@ interface EntityRead {
 | `src/i18n/routing.ts` | 路由配置、支持的语言列表 |
 | `src/i18n/navigation.ts` | 国际化导航 hooks (useRouter, usePathname, Link) |
 | `src/i18n/request.ts` | 服务端翻译加载 |
-| `src/messages/*.json` | 各语言翻译文件 |
+| `src/i18n/messages/*.json` | 各语言翻译文件 (zh-CN, zh-TW, en) |
 | `src/middleware.ts` | 语言检测和路由重定向 |
 | `src/components/layout/locale-switcher.tsx` | 语言切换器组件 |
 
@@ -211,8 +211,6 @@ function MyComponent() {
 不同语言文字长度差异显著：
 - 中文：字符少但单字宽（如 "技能库" = 3 字符）
 - 英文：字符多但单字窄（如 "Skills" = 6 字符）
-- 日语：混合假名汉字，通常比中文长（如 "スキルライブラリ"）
-- 韩语：音节块组合（如 "스킬 라이브러리"）
 
 **设计原则**：
 
@@ -273,9 +271,9 @@ function MyComponent() {
 
 #### 添加新翻译
 
-1. 在 `src/messages/` 下的每个语言文件中添加对应键值
+1. 在 `src/i18n/messages/` 下的每个语言文件中添加对应键值
 2. 使用 `useTranslations("namespace")` 获取翻译函数
-3. 确保所有 5 种语言文件都有对应翻译
+3. 确保所有 3 种语言文件都有对应翻译
 
 ### 页面标题样式
 
