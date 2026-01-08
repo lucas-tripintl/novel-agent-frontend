@@ -1,0 +1,127 @@
+{
+  "common": {
+    "search": "検索",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "edit": "編集",
+    "create": "作成",
+    "view": "表示",
+    "loading": "読み込み中...",
+    "noData": "データなし",
+    "confirm": "確認",
+    "back": "戻る",
+    "next": "次へ",
+    "previous": "前へ",
+    "submit": "送信",
+    "reset": "リセット",
+    "close": "閉じる",
+    "all": "すべて",
+    "more": "もっと見る",
+    "less": "閉じる"
+  },
+  "layout": {
+    "brand": "Astra Codex",
+    "tagline": "創作星図",
+    "workspace": "ワークスペース",
+    "creativeWorkshop": "クリエイティブ工房",
+    "account": "アカウント",
+    "login": "ログイン",
+    "logout": "ログアウト"
+  },
+  "nav": {
+    "projects": "作品センター",
+    "analyze": "設定抽出",
+    "skills": "スキル",
+    "entities": "エンティティ",
+    "elementsExtract": "要素抽出",
+    "elementsLibrary": "要素ライブラリ",
+    "fusion": "フュージョン"
+  },
+  "locale": {
+    "switch": "言語を切り替え",
+    "zhCN": "中文",
+    "en": "English",
+    "ja": "日本語",
+    "ko": "한국어"
+  },
+  "theme": {
+    "switch": "テーマを切り替え",
+    "switchTo": "{theme}に切り替え",
+    "ink": "墨韻白",
+    "cyberpunk": "サイバーパンク"
+  },
+  "projects": {
+    "title": "作品センター",
+    "description": "小説プロジェクトを管理",
+    "searchPlaceholder": "作品を検索...",
+    "create": "新規作成",
+    "empty": "作品がありません",
+    "emptyDescription": "最初の作品を作成して分析を始めましょう",
+    "analyzing": "分析中",
+    "completed": "完了",
+    "chapters": "{count}章",
+    "characters": "{count}人のキャラクター",
+    "entities": "{count}個のエンティティ"
+  },
+  "entities": {
+    "title": "エンティティ",
+    "description": "小説の設定を閲覧・管理",
+    "searchPlaceholder": "エンティティを検索...",
+    "all": "すべて",
+    "empty": "エンティティなし",
+    "emptyDescription": "小説から抽出されたエンティティがここに表示されます",
+    "character": "キャラクター",
+    "worldview": "世界観",
+    "item": "アイテム",
+    "event": "イベント",
+    "location": "場所",
+    "total": "合計 {count}件"
+  },
+  "skills": {
+    "title": "スキル",
+    "description": "ライティング技法とクリエイティブパターン",
+    "searchPlaceholder": "スキルを検索...",
+    "empty": "スキルなし",
+    "emptyDescription": "スキルライブラリは空です"
+  },
+  "analyze": {
+    "title": "設定抽出",
+    "description": "小説から世界観とキャラクター設定をインテリジェントに抽出",
+    "upload": "ファイルをアップロード",
+    "paste": "テキストを貼り付け",
+    "start": "分析開始",
+    "analyzing": "分析中...",
+    "complete": "分析完了",
+    "steps": {
+      "upload": "アップロード",
+      "config": "設定",
+      "analyze": "分析",
+      "result": "結果"
+    }
+  },
+  "fusion": {
+    "title": "フュージョン",
+    "description": "異なる要素を融合して新しいアイデアを創造",
+    "searchPlaceholder": "フュージョンタスクを検索...",
+    "create": "新規フュージョン",
+    "empty": "フュージョンタスクなし",
+    "emptyDescription": "最初のフュージョンタスクを作成"
+  },
+  "elements": {
+    "title": "要素ライブラリ",
+    "description": "クリエイティブ要素を管理",
+    "extract": "要素抽出",
+    "extractDescription": "テキストからクリエイティブ要素を抽出"
+  },
+  "write": {
+    "title": "執筆",
+    "outline": "アウトライン",
+    "draft": "下書き",
+    "settings": "設定",
+    "assistant": "アシスタント",
+    "save": "保存",
+    "autoSave": "自動保存",
+    "wordCount": "{count}文字"
+  }
+}

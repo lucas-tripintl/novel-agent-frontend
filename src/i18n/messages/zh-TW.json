@@ -1,0 +1,128 @@
+{
+  "common": {
+    "search": "搜尋",
+    "save": "儲存",
+    "cancel": "取消",
+    "delete": "刪除",
+    "edit": "編輯",
+    "create": "建立",
+    "view": "檢視",
+    "loading": "載入中...",
+    "noData": "暫無資料",
+    "confirm": "確認",
+    "back": "返回",
+    "next": "下一步",
+    "previous": "上一步",
+    "submit": "提交",
+    "reset": "重設",
+    "close": "關閉",
+    "all": "全部",
+    "more": "更多",
+    "less": "收起"
+  },
+  "layout": {
+    "brand": "Astra Codex",
+    "tagline": "創作星圖",
+    "workspace": "工作區",
+    "creativeWorkshop": "創意工坊",
+    "account": "帳戶",
+    "login": "登入",
+    "logout": "登出"
+  },
+  "nav": {
+    "projects": "作品中心",
+    "analyze": "設定提取",
+    "skills": "技能庫",
+    "entities": "設定庫",
+    "elementsExtract": "元素提取",
+    "elementsLibrary": "元素庫",
+    "fusion": "元素融合"
+  },
+  "locale": {
+    "switch": "切換語言",
+    "zhCN": "简体中文",
+    "zhTW": "繁體中文",
+    "en": "English",
+    "ja": "日本語",
+    "ko": "한국어"
+  },
+  "theme": {
+    "switch": "切換主題",
+    "switchTo": "切換到{theme}",
+    "ink": "墨韻白",
+    "cyberpunk": "科技黑"
+  },
+  "projects": {
+    "title": "作品中心",
+    "description": "管理您的小說專案",
+    "searchPlaceholder": "搜尋作品...",
+    "create": "新建作品",
+    "empty": "還沒有作品",
+    "emptyDescription": "建立您的第一個作品開始分析",
+    "analyzing": "分析中",
+    "completed": "已完成",
+    "chapters": "{count} 章",
+    "characters": "{count} 人物",
+    "entities": "{count} 設定"
+  },
+  "entities": {
+    "title": "設定庫",
+    "description": "瀏覽和管理小說設定",
+    "searchPlaceholder": "搜尋設定...",
+    "all": "全部",
+    "empty": "暫無設定",
+    "emptyDescription": "從小說中提取設定後將顯示在這裡",
+    "character": "角色",
+    "worldview": "世界觀",
+    "item": "物品",
+    "event": "事件",
+    "location": "地點",
+    "total": "共 {count} 項"
+  },
+  "skills": {
+    "title": "技能庫",
+    "description": "寫作技法與創意模式",
+    "searchPlaceholder": "搜尋技法...",
+    "empty": "暫無技法",
+    "emptyDescription": "技法庫為空"
+  },
+  "analyze": {
+    "title": "設定提取",
+    "description": "從小說中智能提取世界觀和人物設定",
+    "upload": "上傳檔案",
+    "paste": "貼上文字",
+    "start": "開始分析",
+    "analyzing": "正在分析...",
+    "complete": "分析完成",
+    "steps": {
+      "upload": "上傳",
+      "config": "設定",
+      "analyze": "分析",
+      "result": "結果"
+    }
+  },
+  "fusion": {
+    "title": "元素融合",
+    "description": "融合不同元素創造新的創意",
+    "searchPlaceholder": "搜尋融合任務...",
+    "create": "新建融合",
+    "empty": "暫無融合任務",
+    "emptyDescription": "建立您的第一個融合任務"
+  },
+  "elements": {
+    "title": "元素庫",
+    "description": "管理創意元素",
+    "extract": "元素提取",
+    "extractDescription": "從文字中提取創意元素"
+  },
+  "write": {
+    "title": "寫作",
+    "outline": "大綱",
+    "draft": "草稿",
+    "settings": "設定",
+    "assistant": "助手",
+    "save": "儲存",
+    "autoSave": "自動儲存",
+    "wordCount": "{count} 字"
+  }
+}

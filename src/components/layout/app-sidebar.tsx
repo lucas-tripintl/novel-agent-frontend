@@ -32,29 +32,29 @@ import {
   Zap,
   Wand2,
 } from "lucide-react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { useAuthStore } from "@/stores/auth-store";
 import { cn } from "@/lib/utils";
 
 const mainNavItems = [
   {
-    title: "作品中心",
+    titleKey: "projects" as const,
     icon: FolderOpen,
     href: "/",
   },
   {
-    title: "设定提取",
+    titleKey: "analyze" as const,
     icon: Zap,
     href: "/analyze",
   },
   {
-    title: "技能库",
+    titleKey: "skills" as const,
     icon: Wand2,
     href: "/skills",
   },
   {
-    title: "设定库",
+    titleKey: "entities" as const,
     icon: Database,
     href: "/entities",
   },
@@ -62,17 +62,17 @@ const mainNavItems = [
 
 const creationNavItems = [
   {
-    title: "元素提取",
+    titleKey: "elementsExtract" as const,
     icon: Sparkles,
     href: "/elements/extract",
   },
   {
-    title: "元素库",
+    titleKey: "elementsLibrary" as const,
     icon: Library,
     href: "/elements",
   },
   {
-    title: "元素融合",
+    titleKey: "fusion" as const,
     icon: Blend,
     href: "/fusion",
   },
@@ -82,6 +82,8 @@ export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const t = useTranslations("nav");
+  const tLayout = useTranslations("layout");
 
   const handleLogout = () => {
     logout();
@@ -99,8 +101,8 @@ export function AppSidebar() {
             <BookOpen className="h-5 w-5 text-primary" />
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="font-semibold text-foreground">Astra Codex</span>
-            <span className="text-xs text-muted-foreground">创作星图</span>
+            <span className="font-semibold text-foreground">{tLayout("brand")}</span>
+            <span className="text-xs text-muted-foreground">{tLayout("tagline")}</span>
           </div>
         </Link>
       </SidebarHeader>
@@ -108,7 +110,7 @@ export function AppSidebar() {
       <SidebarContent className="scrollbar-thin">
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-medium text-muted-foreground">
-            工作区
+            {tLayout("workspace")}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -117,12 +119,12 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.href}
-                    tooltip={item.title}
+                    tooltip={t(item.titleKey)}
                     className="transition-colors hover:bg-accent/50"
                   >
                     <Link href={item.href}>
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span>{t(item.titleKey)}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -133,7 +135,7 @@ export function AppSidebar() {
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-medium text-muted-foreground">
-            创意工坊
+            {tLayout("creativeWorkshop")}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -142,12 +144,12 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
-                    tooltip={item.title}
+                    tooltip={t(item.titleKey)}
                     className="transition-colors hover:bg-accent/50"
                   >
                     <Link href={item.href}>
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span>{t(item.titleKey)}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -179,12 +181,12 @@ export function AppSidebar() {
             </DropdownMenuTrigger>
             <DropdownMenuContent side="right" align="end" className="w-48">
               <DropdownMenuLabel className="text-xs text-muted-foreground">
-                账户
+                {tLayout("account")}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
-                退出登录
+                {tLayout("logout")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -194,7 +196,7 @@ export function AppSidebar() {
               href="/login"
               className="flex items-center justify-center gap-2 rounded-lg bg-primary/10 p-3 text-sm text-primary hover:bg-primary/20 transition-colors"
             >
-              登录
+              {tLayout("login")}
             </Link>
           </div>
         )}

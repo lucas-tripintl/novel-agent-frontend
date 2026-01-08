@@ -1,0 +1,127 @@
+{
+  "common": {
+    "search": "Search",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "view": "View",
+    "loading": "Loading...",
+    "noData": "No data",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "reset": "Reset",
+    "close": "Close",
+    "all": "All",
+    "more": "More",
+    "less": "Less"
+  },
+  "layout": {
+    "brand": "Astra Codex",
+    "tagline": "Creative Constellation",
+    "workspace": "Workspace",
+    "creativeWorkshop": "Creative Workshop",
+    "account": "Account",
+    "login": "Login",
+    "logout": "Logout"
+  },
+  "nav": {
+    "projects": "Projects",
+    "analyze": "Extract Settings",
+    "skills": "Skills",
+    "entities": "Entities",
+    "elementsExtract": "Extract Elements",
+    "elementsLibrary": "Elements",
+    "fusion": "Fusion"
+  },
+  "locale": {
+    "switch": "Switch Language",
+    "zhCN": "中文",
+    "en": "English",
+    "ja": "日本語",
+    "ko": "한국어"
+  },
+  "theme": {
+    "switch": "Switch Theme",
+    "switchTo": "Switch to {theme}",
+    "ink": "Ink White",
+    "cyberpunk": "Cyberpunk"
+  },
+  "projects": {
+    "title": "Projects",
+    "description": "Manage your novel projects",
+    "searchPlaceholder": "Search projects...",
+    "create": "New Project",
+    "empty": "No projects yet",
+    "emptyDescription": "Create your first project to start analyzing",
+    "analyzing": "Analyzing",
+    "completed": "Completed",
+    "chapters": "{count} chapters",
+    "characters": "{count} characters",
+    "entities": "{count} entities"
+  },
+  "entities": {
+    "title": "Entities",
+    "description": "Browse and manage novel settings",
+    "searchPlaceholder": "Search entities...",
+    "all": "All",
+    "empty": "No entities",
+    "emptyDescription": "Entities extracted from novels will appear here",
+    "character": "Character",
+    "worldview": "Worldview",
+    "item": "Item",
+    "event": "Event",
+    "location": "Location",
+    "total": "{count} total"
+  },
+  "skills": {
+    "title": "Skills",
+    "description": "Writing techniques and creative patterns",
+    "searchPlaceholder": "Search skills...",
+    "empty": "No skills",
+    "emptyDescription": "Skills library is empty"
+  },
+  "analyze": {
+    "title": "Extract Settings",
+    "description": "Intelligently extract worldview and character settings from novels",
+    "upload": "Upload File",
+    "paste": "Paste Text",
+    "start": "Start Analysis",
+    "analyzing": "Analyzing...",
+    "complete": "Analysis Complete",
+    "steps": {
+      "upload": "Upload",
+      "config": "Configure",
+      "analyze": "Analyze",
+      "result": "Result"
+    }
+  },
+  "fusion": {
+    "title": "Fusion",
+    "description": "Fuse different elements to create new ideas",
+    "searchPlaceholder": "Search fusion tasks...",
+    "create": "New Fusion",
+    "empty": "No fusion tasks",
+    "emptyDescription": "Create your first fusion task"
+  },
+  "elements": {
+    "title": "Elements",
+    "description": "Manage creative elements",
+    "extract": "Extract Elements",
+    "extractDescription": "Extract creative elements from text"
+  },
+  "write": {
+    "title": "Write",
+    "outline": "Outline",
+    "draft": "Draft",
+    "settings": "Settings",
+    "assistant": "Assistant",
+    "save": "Save",
+    "autoSave": "Auto Save",
+    "wordCount": "{count} words"
+  }
+}

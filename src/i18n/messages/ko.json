@@ -1,0 +1,127 @@
+{
+  "common": {
+    "search": "검색",
+    "save": "저장",
+    "cancel": "취소",
+    "delete": "삭제",
+    "edit": "편집",
+    "create": "생성",
+    "view": "보기",
+    "loading": "로딩 중...",
+    "noData": "데이터 없음",
+    "confirm": "확인",
+    "back": "뒤로",
+    "next": "다음",
+    "previous": "이전",
+    "submit": "제출",
+    "reset": "초기화",
+    "close": "닫기",
+    "all": "전체",
+    "more": "더 보기",
+    "less": "접기"
+  },
+  "layout": {
+    "brand": "Astra Codex",
+    "tagline": "창작 성도",
+    "workspace": "워크스페이스",
+    "creativeWorkshop": "크리에이티브 공방",
+    "account": "계정",
+    "login": "로그인",
+    "logout": "로그아웃"
+  },
+  "nav": {
+    "projects": "작품 센터",
+    "analyze": "설정 추출",
+    "skills": "스킬",
+    "entities": "엔티티",
+    "elementsExtract": "요소 추출",
+    "elementsLibrary": "요소 라이브러리",
+    "fusion": "퓨전"
+  },
+  "locale": {
+    "switch": "언어 전환",
+    "zhCN": "中文",
+    "en": "English",
+    "ja": "日本語",
+    "ko": "한국어"
+  },
+  "theme": {
+    "switch": "테마 전환",
+    "switchTo": "{theme}로 전환",
+    "ink": "묵운백",
+    "cyberpunk": "사이버펑크"
+  },
+  "projects": {
+    "title": "작품 센터",
+    "description": "소설 프로젝트 관리",
+    "searchPlaceholder": "작품 검색...",
+    "create": "새 작품",
+    "empty": "작품이 없습니다",
+    "emptyDescription": "첫 번째 작품을 만들어 분석을 시작하세요",
+    "analyzing": "분석 중",
+    "completed": "완료",
+    "chapters": "{count}장",
+    "characters": "{count}명의 캐릭터",
+    "entities": "{count}개의 엔티티"
+  },
+  "entities": {
+    "title": "엔티티",
+    "description": "소설 설정 탐색 및 관리",
+    "searchPlaceholder": "엔티티 검색...",
+    "all": "전체",
+    "empty": "엔티티 없음",
+    "emptyDescription": "소설에서 추출된 엔티티가 여기에 표시됩니다",
+    "character": "캐릭터",
+    "worldview": "세계관",
+    "item": "아이템",
+    "event": "이벤트",
+    "location": "장소",
+    "total": "총 {count}개"
+  },
+  "skills": {
+    "title": "스킬",
+    "description": "글쓰기 기법과 창작 패턴",
+    "searchPlaceholder": "스킬 검색...",
+    "empty": "스킬 없음",
+    "emptyDescription": "스킬 라이브러리가 비어 있습니다"
+  },
+  "analyze": {
+    "title": "설정 추출",
+    "description": "소설에서 세계관과 캐릭터 설정을 지능적으로 추출",
+    "upload": "파일 업로드",
+    "paste": "텍스트 붙여넣기",
+    "start": "분석 시작",
+    "analyzing": "분석 중...",
+    "complete": "분석 완료",
+    "steps": {
+      "upload": "업로드",
+      "config": "설정",
+      "analyze": "분석",
+      "result": "결과"
+    }
+  },
+  "fusion": {
+    "title": "퓨전",
+    "description": "다양한 요소를 융합하여 새로운 아이디어 창출",
+    "searchPlaceholder": "퓨전 작업 검색...",
+    "create": "새 퓨전",
+    "empty": "퓨전 작업 없음",
+    "emptyDescription": "첫 번째 퓨전 작업을 만드세요"
+  },
+  "elements": {
+    "title": "요소 라이브러리",
+    "description": "창작 요소 관리",
+    "extract": "요소 추출",
+    "extractDescription": "텍스트에서 창작 요소 추출"
+  },
+  "write": {
+    "title": "글쓰기",
+    "outline": "아웃라인",
+    "draft": "초안",
+    "settings": "설정",
+    "assistant": "어시스턴트",
+    "save": "저장",
+    "autoSave": "자동 저장",
+    "wordCount": "{count}자"
+  }
+}

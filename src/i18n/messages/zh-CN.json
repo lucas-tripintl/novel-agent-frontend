@@ -1,0 +1,127 @@
+{
+  "common": {
+    "search": "搜索",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "create": "创建",
+    "view": "查看",
+    "loading": "加载中...",
+    "noData": "暂无数据",
+    "confirm": "确认",
+    "back": "返回",
+    "next": "下一步",
+    "previous": "上一步",
+    "submit": "提交",
+    "reset": "重置",
+    "close": "关闭",
+    "all": "全部",
+    "more": "更多",
+    "less": "收起"
+  },
+  "layout": {
+    "brand": "Astra Codex",
+    "tagline": "创作星图",
+    "workspace": "工作区",
+    "creativeWorkshop": "创意工坊",
+    "account": "账户",
+    "login": "登录",
+    "logout": "退出登录"
+  },
+  "nav": {
+    "projects": "作品中心",
+    "analyze": "设定提取",
+    "skills": "技能库",
+    "entities": "设定库",
+    "elementsExtract": "元素提取",
+    "elementsLibrary": "元素库",
+    "fusion": "元素融合"
+  },
+  "locale": {
+    "switch": "切换语言",
+    "zhCN": "中文",
+    "en": "English",
+    "ja": "日本語",
+    "ko": "한국어"
+  },
+  "theme": {
+    "switch": "切换主题",
+    "switchTo": "切换到{theme}",
+    "ink": "墨韵白",
+    "cyberpunk": "科技黑"
+  },
+  "projects": {
+    "title": "作品中心",
+    "description": "管理您的小说项目",
+    "searchPlaceholder": "搜索作品...",
+    "create": "新建作品",
+    "empty": "还没有作品",
+    "emptyDescription": "创建您的第一个作品开始分析",
+    "analyzing": "分析中",
+    "completed": "已完成",
+    "chapters": "{count} 章",
+    "characters": "{count} 人物",
+    "entities": "{count} 设定"
+  },
+  "entities": {
+    "title": "设定库",
+    "description": "浏览和管理小说设定",
+    "searchPlaceholder": "搜索设定...",
+    "all": "全部",
+    "empty": "暂无设定",
+    "emptyDescription": "从小说中提取设定后将显示在这里",
+    "character": "角色",
+    "worldview": "世界观",
+    "item": "物品",
+    "event": "事件",
+    "location": "地点",
+    "total": "共 {count} 项"
+  },
+  "skills": {
+    "title": "技能库",
+    "description": "写作技法与创意模式",
+    "searchPlaceholder": "搜索技法...",
+    "empty": "暂无技法",
+    "emptyDescription": "技法库为空"
+  },
+  "analyze": {
+    "title": "设定提取",
+    "description": "从小说中智能提取世界观和人物设定",
+    "upload": "上传文件",
+    "paste": "粘贴文本",
+    "start": "开始分析",
+    "analyzing": "正在分析...",
+    "complete": "分析完成",
+    "steps": {
+      "upload": "上传",
+      "config": "配置",
+      "analyze": "分析",
+      "result": "结果"
+    }
+  },
+  "fusion": {
+    "title": "元素融合",
+    "description": "融合不同元素创造新的创意",
+    "searchPlaceholder": "搜索融合任务...",
+    "create": "新建融合",
+    "empty": "暂无融合任务",
+    "emptyDescription": "创建您的第一个融合任务"
+  },
+  "elements": {
+    "title": "元素库",
+    "description": "管理创意元素",
+    "extract": "元素提取",
+    "extractDescription": "从文本中提取创意元素"
+  },
+  "write": {
+    "title": "写作",
+    "outline": "大纲",
+    "draft": "草稿",
+    "settings": "设定",
+    "assistant": "助手",
+    "save": "保存",
+    "autoSave": "自动保存",
+    "wordCount": "{count} 字"
+  }
+}
