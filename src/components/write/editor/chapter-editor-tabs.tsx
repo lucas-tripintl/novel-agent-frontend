@@ -15,9 +15,9 @@ import { useInlineEdit } from "@/hooks/use-inline-edit";
 import { useGenerateChapterSummary } from "@/hooks/use-generate-summary";
 import { useTasks } from "@/hooks/use-tasks";
 import { useInteractiveOutline } from "@/hooks/use-interactive-outline";
-import { DecisionPointDialog } from "../decision-point-dialog";
 import { useTranslations } from "next-intl";
-import { Sparkles, FileText, BookOpen, AlignLeft, Loader2, Square } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Sparkles, FileText, BookOpen, AlignLeft, Loader2 } from "lucide-react";
 import type { QuickAction } from "@/types/inline-edit";
 
 interface ChapterEditorTabsProps {
@@ -44,18 +44,11 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
 
   const { isStreaming } = useStreamingState();
 
-  // 交互式细纲生成状态
-  const {
-    streamingOutline,
-    currentDecisionPoint,
-  } = useInteractiveOutlineState();
+  // 交互式细纲生成状态（决策交互现在在右侧面板处理）
+  const { streamingOutline } = useInteractiveOutlineState();
 
-  // 交互式细纲生成 hook
+  // 交互式细纲生成 hook（决策交互现在在右侧面板处理）
   const {
-    selectOption,
-    skipDecision,
-    submitCustomInput,
-    stopGeneration,
     isGenerating: isInteractiveGenerating,
     isWaitingDecision,
   } = useInteractiveOutline(projectId, chapterNumber);
@@ -259,40 +252,25 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
 
       {/* 细纲 Tab */}
       <TabsContent value="outline" className="flex-1 m-0 mt-0 min-h-0 p-4 flex flex-col">
-        {/* 交互式生成中 */}
+        {/* 交互式生成中（决策交互在右侧面板） */}
         {isInteractiveGenerating || isWaitingDecision ? (
           <div className="flex-1 flex flex-col">
-            {/* 顶部状态栏 */}
-            <div className="flex items-center justify-between mb-3 shrink-0">
-              <div className="flex items-center gap-2">
-                {isWaitingDecision ? (
-                  <>
-                    <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                    <span className="text-sm text-amber-600 font-medium whitespace-nowrap">
-                      {t("waitingDecision")}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    <span className="text-sm text-muted-foreground whitespace-nowrap">
-                      {t("generatingOutline")}
-                    </span>
-                  </>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1.5 text-xs text-destructive hover:text-destructive whitespace-nowrap"
-                onClick={stopGeneration}
-              >
-                <Square className="h-3 w-3" />
-                {t("stop")}
-              </Button>
+            {/* 简化的状态栏 - 详细交互在右侧面板 */}
+            <div className="flex items-center gap-2 mb-3 shrink-0">
+              {isWaitingDecision ? (
+                <Badge variant="outline" className="text-amber-600 border-amber-500/30 gap-1.5">
+                  <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  {t("waitingDecisionArrow")}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-primary border-primary/30 gap-1.5">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  {t("generatingBadge")}
+                </Badge>
+              )}
             </div>
 
-            {/* 流式内容展示 */}
+            {/* 流式内容展示 - 只读 */}
             <SimpleTiptapEditor
               value={streamingOutline || ""}
               onChange={() => {}}
@@ -302,20 +280,6 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
               placeholder={t("outlineCreating")}
               className="flex-1 min-h-[300px]"
               enableInlineEdit={false}
-            />
-
-            {/* 决策点对话框 */}
-            <DecisionPointDialog
-              decision={currentDecisionPoint}
-              open={isWaitingDecision && !!currentDecisionPoint}
-              onSubmit={async (decision) => {
-                if (decision.custom_input) {
-                  await submitCustomInput(decision.custom_input);
-                } else if (decision.chosen_option_id) {
-                  await selectOption(decision.chosen_option_id);
-                }
-              }}
-              onSkip={skipDecision}
             />
           </div>
         ) : isOutlineGenerating ? (

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   BookOpen,
@@ -102,13 +101,17 @@ export function AnalyzingList() {
               </div>
             </div>
 
-            {/* 进度 */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>进度</span>
-                <span>{Math.round(task.progress)}%</span>
+            {/* Loading */}
+            <div className="flex items-center gap-3 py-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 shrink-0">
+                <Loader2 className="h-4 w-4 text-primary animate-spin" />
               </div>
-              <Progress value={task.progress} className="h-2" />
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium">AI 正在深度分析中...</span>
+                <span className="text-xs text-muted-foreground">
+                  根据文本长度，预计需要 3~5 分钟
+                </span>
+              </div>
             </div>
 
             {/* 消息 */}

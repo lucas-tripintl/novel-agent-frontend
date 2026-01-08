@@ -182,6 +182,8 @@ interface WritingState {
   currentDecisionPoint: DecisionPoint | null;
   /** 草稿 ID */
   outlineDraftId: string | null;
+  /** 是否处于生成协作模式（右侧面板显示决策面板而非聊天） */
+  generationCollabMode: boolean;
 
   // ============ Actions ============
   /** 设置当前项目和章节 */
@@ -335,6 +337,10 @@ interface WritingState {
   setOutlineDraftId: (id: string | null) => void;
   /** 重置交互式生成状态 */
   resetOutlineGeneration: () => void;
+  /** 进入生成协作模式（自动展开右侧面板） */
+  enterGenerationCollabMode: () => void;
+  /** 退出生成协作模式 */
+  exitGenerationCollabMode: () => void;
 
   /** 重置状态 */
   reset: () => void;
@@ -407,6 +413,7 @@ const initialState = {
   streamingOutline: "",
   currentDecisionPoint: null,
   outlineDraftId: null,
+  generationCollabMode: false,
 };
 
 export const useWritingStore = create<WritingState>()(
@@ -763,6 +770,17 @@ export const useWritingStore = create<WritingState>()(
           outlineDraftId: null,
         }),
 
+      enterGenerationCollabMode: () =>
+        set({
+          generationCollabMode: true,
+          isRightPaneCollapsed: false, // 自动展开右侧面板
+        }),
+
+      exitGenerationCollabMode: () =>
+        set({
+          generationCollabMode: false,
+        }),
+
       reset: () => set(initialState),
     }),
     {
@@ -1014,12 +1032,15 @@ export function useInteractiveOutlineState() {
       streamingOutline: state.streamingOutline,
       currentDecisionPoint: state.currentDecisionPoint,
       outlineDraftId: state.outlineDraftId,
+      generationCollabMode: state.generationCollabMode,
       setOutlineGenerationStatus: state.setOutlineGenerationStatus,
       setStreamingOutline: state.setStreamingOutline,
       appendStreamingOutline: state.appendStreamingOutline,
       setCurrentDecisionPoint: state.setCurrentDecisionPoint,
       setOutlineDraftId: state.setOutlineDraftId,
       resetOutlineGeneration: state.resetOutlineGeneration,
+      enterGenerationCollabMode: state.enterGenerationCollabMode,
+      exitGenerationCollabMode: state.exitGenerationCollabMode,
       // 关联的 actions
       setActiveEditorTab: state.setActiveEditorTab,
       loadChapterOutline: state.loadChapterOutline,

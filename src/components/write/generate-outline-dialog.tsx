@@ -61,10 +61,13 @@ export function GenerateOutlineDialog({
   const [skillBrowserOpen, setSkillBrowserOpen] = useState(false);
 
   // 交互式生成 Hook
-  const { startGeneration, isGenerating, draftId } = useInteractiveOutline(
+  const { startGeneration, isGenerating, draftId, reset: resetOutlineState } = useInteractiveOutline(
     projectId,
     chapterNumber
   );
+
+  // 追踪本次打开对话框后是否启动了生成
+  const [hasStartedGeneration, setHasStartedGeneration] = useState(false);
 
   // 重置表单
   const resetForm = () => {
@@ -75,14 +78,23 @@ export function GenerateOutlineDialog({
     setSelectedSkills([]);
     setEntityBrowserOpen(false);
     setSkillBrowserOpen(false);
+    setHasStartedGeneration(false);
   };
 
-  // 当收到 SSE 响应（draftId 被设置）时，关闭对话框
+  // 对话框打开时重置 hasStartedGeneration，确保每次打开都是干净状态
   useEffect(() => {
-    if (open && draftId) {
+    if (open) {
+      setHasStartedGeneration(false);
+    }
+  }, [open]);
+
+  // 当收到 SSE 响应（draftId 被设置）时，关闭对话框
+  // 只在本次打开后启动过生成时才关闭，避免上次残留的 draftId 导致立即关闭
+  useEffect(() => {
+    if (open && draftId && hasStartedGeneration) {
       onOpenChange(false);
     }
-  }, [open, draftId, onOpenChange]);
+  }, [open, draftId, hasStartedGeneration, onOpenChange]);
 
   // 处理对话框打开/关闭
   const handleOpenChange = (newOpen: boolean) => {
@@ -94,6 +106,8 @@ export function GenerateOutlineDialog({
 
   // 处理生成
   const handleGenerate = () => {
+    // 标记已启动生成，让 useEffect 可以在收到 draftId 后关闭对话框
+    setHasStartedGeneration(true);
     // 启动生成，对话框会在收到 SSE 响应时自动关闭
     startGeneration({
       mode,

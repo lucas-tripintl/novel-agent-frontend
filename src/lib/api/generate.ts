@@ -16,13 +16,13 @@ export interface GenerateEntityRequest {
   };
 }
 
+/**
+ * 生成响应（v2 格式，apiClient 已自动解包 data）
+ */
 export interface GenerateEntityResponse {
-  success: boolean;
-  data: {
-    name: string;
-    entity_type: string;
-    content: string; // Markdown
-  };
+  name: string;
+  entity_type: string;
+  content: string; // Markdown
 }
 
 export async function generateEntity(

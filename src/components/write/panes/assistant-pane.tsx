@@ -45,6 +45,8 @@ import { SkillSelector } from "../assistant/skill-selector";
 import { ToolCallIndicator } from "../assistant/tool-call-indicator";
 import { SessionHistory } from "../assistant/session-history";
 import { ModelSelector } from "../assistant/model-selector";
+import { DecisionPanel } from "../assistant/decision-panel";
+import { useInteractiveOutline } from "@/hooks/use-interactive-outline";
 import type { ChatMessage as ChatMessageType } from "@/types/writing";
 import type { SendChatMessageRequest } from "@/types/chat";
 
@@ -67,7 +69,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
   const mode = useWritingMode();
   const contextEntities = useContextEntities();
   const { content: editorContent, outline } = useEditorContent();
-  const { chapterOutline } = useChapterOutlineState();
+  const { chapterOutline, chapterOutline: chapterOutlineContent } = useChapterOutlineState();
   const { activeContextSource } = useActiveContextSource();
   const { editingEntity } = useEntityEditing();
   const { editingOutline } = useOutlineEditing();
@@ -81,6 +83,14 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
     setStreamingChatContent,
     setActiveToolCalls,
   } = useChatSessionState();
+
+  // 获取章节号和协作模式状态
+  const chapterNumber = useWritingStore((state) => state.chapterNumber);
+  const generationCollabMode = useWritingStore((state) => state.generationCollabMode);
+  const exitGenerationCollabMode = useWritingStore((state) => state.exitGenerationCollabMode);
+
+  // 交互式细纲生成 hook
+  const interactiveOutline = useInteractiveOutline(projectId, chapterNumber);
 
   // 获取会话列表（用于自动创建会话）
   const { data: sessionsData } = useChatSessions(projectId, { status: "active" });
@@ -353,6 +363,26 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
       setIsCreatingSession(false);
     }
   }, [createSession, isCreatingSession, isStreaming, selectedModelId, setCurrentChatSession]);
+
+  // 生成协作模式 - 显示决策面板
+  if (generationCollabMode) {
+    return (
+      <DecisionPanel
+        status={interactiveOutline.status}
+        decision={interactiveOutline.currentDecision}
+        onSelectOption={interactiveOutline.selectOption}
+        onSkip={interactiveOutline.skipDecision}
+        onCustomInput={interactiveOutline.submitCustomInput}
+        onStop={() => {
+          interactiveOutline.stopGeneration();
+          exitGenerationCollabMode();
+        }}
+        onComplete={() => {
+          exitGenerationCollabMode();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex h-full flex-col border-l border-border/50 bg-card/30 min-h-0">

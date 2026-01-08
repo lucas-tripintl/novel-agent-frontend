@@ -62,6 +62,8 @@ export function useInteractiveOutline(
     resetOutlineGeneration,
     setActiveEditorTab,
     loadChapterOutline,
+    enterGenerationCollabMode,
+    exitGenerationCollabMode,
   } = useInteractiveOutlineState();
 
   const agentRef = useRef<OutlineAgent | DecisionAgent | null>(null);
@@ -115,7 +117,11 @@ export function useInteractiveOutline(
         const e = event as RunFinishedEvent;
         const result = e.result as OutlineRunResult | undefined;
 
-        if (!result) return;
+        if (!result) {
+          // 没有结果时重置为 idle，避免卡在 generating 状态
+          setOutlineGenerationStatus("idle");
+          return;
+        }
 
         if (result.outcome === "interrupt" && result.interrupt) {
           setCurrentDecisionPoint(result.interrupt.payload);
@@ -130,6 +136,10 @@ export function useInteractiveOutline(
             setStreamingOutline(finalContent);
             loadChapterOutline(finalContent);
           }
+        } else {
+          // 其他 outcome (如 failure) 重置为 idle
+          console.warn("细纲生成结束，未知 outcome:", result.outcome);
+          setOutlineGenerationStatus("idle");
         }
       },
 
@@ -164,6 +174,9 @@ export function useInteractiveOutline(
       setOutlineGenerationStatus("generating");
       setActiveEditorTab("outline");
 
+      // 进入生成协作模式（自动展开右侧面板）
+      enterGenerationCollabMode();
+
       const token = getStoredToken();
       const agent = new OutlineAgent({
         projectId,
@@ -194,6 +207,7 @@ export function useInteractiveOutline(
       resetOutlineGeneration,
       setOutlineGenerationStatus,
       setActiveEditorTab,
+      enterGenerationCollabMode,
       createSubscriber,
     ]
   );
