@@ -49,14 +49,17 @@ const categoryIcons: Record<string, React.ReactNode> = {
   golden_opening_report: <FileText className="h-4 w-4" />,
 };
 
-// 默认的实体类型选项（常用类型）
+// 默认的实体类型选项（与设定库一致）
 const DEFAULT_TYPE_OPTIONS: { value: EntityType | "all"; label: string }[] = [
   { value: "all", label: "全部" },
+  { value: "worldview", label: "世界观设定" },
   { value: "character", label: "角色" },
-  { value: "worldview", label: "世界观" },
   { value: "plotline", label: "剧情线" },
   { value: "golden_finger", label: "金手指" },
   { value: "foreshadowing", label: "伏笔" },
+  { value: "cool_point_pattern", label: "爽点模式" },
+  { value: "writing_technique", label: "写作技巧" },
+  { value: "golden_opening_report", label: "黄金三章报告" },
 ];
 
 export interface EntityBrowserDialogProps {
@@ -325,7 +328,7 @@ export function EntityBrowserDialog({
             </div>
 
             {/* 设定列表 */}
-            <ScrollArea ref={scrollRef} className="flex-1">
+            <ScrollArea ref={scrollRef} className="flex-1 overflow-hidden">
               <div className="p-4 space-y-2">
                 {/* 加载状态 */}
                 {isLoading && (

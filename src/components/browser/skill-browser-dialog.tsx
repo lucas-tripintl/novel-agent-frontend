@@ -308,7 +308,7 @@ export function SkillBrowserDialog({
             </div>
 
             {/* 技能列表 */}
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 overflow-hidden">
               <div className="p-4 space-y-2">
                 {/* 加载状态 */}
                 {isLoading && (

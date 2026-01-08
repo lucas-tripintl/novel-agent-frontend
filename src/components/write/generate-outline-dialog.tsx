@@ -337,7 +337,6 @@ export function GenerateOutlineDialog({
         open={entityBrowserOpen}
         onOpenChange={setEntityBrowserOpen}
         initialSelected={selectedEntities}
-        allowedTypes={["character", "worldview", "plotline"]}
         selectionMode="multiple"
         onConfirm={setSelectedEntities}
         title="选择参考设定"
