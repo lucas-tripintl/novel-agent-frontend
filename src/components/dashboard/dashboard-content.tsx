@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
-import { ProjectEditSheet } from "@/components/project/project-edit-sheet";
+import { ProjectEditDialog } from "@/components/project/project-edit-dialog";
 import { CreateProjectDialog } from "@/components/project/create-project-dialog";
 import {
   BookOpen,
@@ -25,7 +25,7 @@ import {
   Trash2,
   AlertCircle,
   RefreshCw,
-  Eye,
+  Edit,
   PenLine,
   Settings,
   Search,
@@ -175,6 +175,13 @@ function ProjectCard({
           </div>
         </div>
 
+        {/* 简介 */}
+        {project.description && (
+          <p className="text-xs text-muted-foreground line-clamp-2 mb-4">
+            {project.description}
+          </p>
+        )}
+
         {/* 进度条 - 分析中时显示 */}
         {project.status === "in_progress" && project.total_chapters > 0 && (
           <div className="mb-4">
@@ -186,17 +193,15 @@ function ProjectCard({
         )}
 
         {/* 操作按钮 */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 mt-auto">
           <Button
             variant="outline"
             size="sm"
-            className="flex-1 h-9 text-xs border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all"
-            asChild
+            className="flex-1 h-9 text-xs border-border/50 hover:border-primary/50 hover:bg-accent hover:text-accent-foreground transition-all"
+            onClick={() => onEdit(project)}
           >
-            <Link href={`/projects/${project.id}`}>
-              <Eye className="mr-1.5 h-3.5 w-3.5" />
-              {tCommon("view")}
-            </Link>
+            <Edit className="mr-1.5 h-3.5 w-3.5" />
+            {tCommon("edit")}
           </Button>
           <Button
             size="sm"
@@ -350,8 +355,8 @@ export function DashboardContent() {
         isPending={deleteProjectMutation.isPending}
       />
 
-      {/* 项目编辑面板 */}
-      <ProjectEditSheet
+      {/* 项目编辑对话框 */}
+      <ProjectEditDialog
         project={projectToEdit}
         open={editSheetOpen}
         onOpenChange={setEditSheetOpen}

@@ -107,6 +107,18 @@
       "descriptionLabel": "소개",
       "descriptionPlaceholder": "창작 구상을 적어주세요...",
       "creating": "생성 중..."
+    },
+    "editDialog": {
+      "title": "작품 편집",
+      "description": "작품 기본 정보 수정",
+      "nameLabel": "작품명",
+      "namePlaceholder": "작품명 입력",
+      "typeLabel": "장르",
+      "typePlaceholder": "예: 판타지, 현대, SF...",
+      "typeHint": "분류 및 스타일 참조용",
+      "descriptionLabel": "작품 소개",
+      "descriptionPlaceholder": "작품의 내용과 스타일을 간략히 설명...",
+      "saving": "저장 중..."
     }
   },
   "entities": {

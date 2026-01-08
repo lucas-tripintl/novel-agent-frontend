@@ -49,7 +49,7 @@ export function CreateProjectDialog({
         description: description.trim() || undefined,
       });
       handleOpenChange(false);
-      router.push(`/projects/${result.id}`);
+      router.push(`/write/${result.id}`);
     } catch {
       // 错误由 React Query 处理
     } finally {

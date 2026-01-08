@@ -67,6 +67,7 @@ export async function deleteProject(projectId: string) {
 
 export interface ProjectUpdateData {
   name?: string;
+  project_type?: string;
   description?: string;
   status?: "active" | "archived" | "completed";
 }

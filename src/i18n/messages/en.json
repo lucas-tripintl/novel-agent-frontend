@@ -107,6 +107,18 @@
       "descriptionLabel": "Description",
       "descriptionPlaceholder": "Write down your creative vision...",
       "creating": "Creating..."
+    },
+    "editDialog": {
+      "title": "Edit Project",
+      "description": "Modify project information",
+      "nameLabel": "Project Name",
+      "namePlaceholder": "Enter project name",
+      "typeLabel": "Genre",
+      "typePlaceholder": "e.g., Fantasy, Romance, Sci-Fi...",
+      "typeHint": "For categorization and style reference",
+      "descriptionLabel": "Synopsis",
+      "descriptionPlaceholder": "Briefly describe the content and style...",
+      "saving": "Saving..."
     }
   },
   "entities": {

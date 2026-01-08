@@ -107,6 +107,18 @@
       "descriptionLabel": "简介",
       "descriptionPlaceholder": "写下你的创作构想...",
       "creating": "创建中..."
+    },
+    "editDialog": {
+      "title": "编辑作品",
+      "description": "修改作品的基本信息",
+      "nameLabel": "作品名称",
+      "namePlaceholder": "输入作品名称",
+      "typeLabel": "小说类型",
+      "typePlaceholder": "如：玄幻、都市、科幻...",
+      "typeHint": "用于分类和风格参考",
+      "descriptionLabel": "作品简介",
+      "descriptionPlaceholder": "简要描述作品内容和风格...",
+      "saving": "保存中..."
     }
   },
   "entities": {

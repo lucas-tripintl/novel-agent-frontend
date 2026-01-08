@@ -107,6 +107,18 @@
       "descriptionLabel": "概要",
       "descriptionPlaceholder": "創作の構想を書いてください...",
       "creating": "作成中..."
+    },
+    "editDialog": {
+      "title": "作品を編集",
+      "description": "作品の基本情報を変更",
+      "nameLabel": "作品名",
+      "namePlaceholder": "作品名を入力",
+      "typeLabel": "ジャンル",
+      "typePlaceholder": "例：ファンタジー、現代、SF...",
+      "typeHint": "分類とスタイル参考用",
+      "descriptionLabel": "あらすじ",
+      "descriptionPlaceholder": "作品の内容とスタイルを簡潔に説明...",
+      "saving": "保存中..."
     }
   },
   "entities": {
