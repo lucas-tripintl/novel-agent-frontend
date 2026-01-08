@@ -34,15 +34,8 @@ import { Link } from "@/i18n/navigation";
 import { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { ProjectStatusBadge } from "@/components/common/status-badge";
-import { projectTypeLabels, type ProjectType } from "@/types/project";
 import { useProjects, useDeleteProject } from "@/hooks/use-projects";
 import type { ProjectList } from "@/types/api";
-
-// 项目类型徽章样式
-const projectTypeBadgeStyles: Record<ProjectType, string> = {
-  original: "bg-blue-500/20 text-blue-500 border-blue-500/30",
-  continuation: "bg-violet-500/20 text-violet-500 border-violet-500/30",
-};
 
 // 项目卡片骨架屏
 function ProjectCardSkeleton() {
@@ -163,12 +156,14 @@ function ProjectCard({
 
         {/* 徽章行 */}
         <div className="flex flex-wrap items-center gap-1.5 mb-4">
-          <Badge
-            variant="outline"
-            className={`text-[10px] px-1.5 py-0 ${projectTypeBadgeStyles[project.project_type]}`}
-          >
-            {projectTypeLabels[project.project_type]}
-          </Badge>
+          {project.project_type && (
+            <Badge
+              variant="outline"
+              className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/30"
+            >
+              {project.project_type}
+            </Badge>
+          )}
 
           {project.status !== "completed" && (
             <ProjectStatusBadge status={project.status} />

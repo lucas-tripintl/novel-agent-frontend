@@ -155,7 +155,7 @@ export interface ProjectRead {
 export interface ProjectList {
   id: string;
   name: string;
-  project_type: ProjectType;
+  project_type: string;  // 小说类型，用户输入的字符串
   status: ProjectStatus;
   current_chapter: number;
   total_chapters: number;
