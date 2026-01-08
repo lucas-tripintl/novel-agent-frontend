@@ -348,7 +348,22 @@
     "untitledChapter": "未命名章節",
     "aiWriting": "AI 正在創作中...",
     "chapterOutline": "章節細綱",
-    "chapterContent": "正文"
+    "chapterContent": "正文",
+    "contentTab": "正文",
+    "outlineTab": "細綱",
+    "summaryTab": "摘要",
+    "generating": "生成中...",
+    "generateSummary": "生成摘要",
+    "waitingDecision": "等待決策...",
+    "generatingOutline": "正在生成細綱...",
+    "contentPlaceholder": "開始創作你的故事...",
+    "outlineCreating": "AI 正在創作細綱...",
+    "outlinePlaceholder": "輸入章節細綱：劇情設計、情緒節奏、衝突設計、爽點伏筆...",
+    "summaryPlaceholder": "本章主要內容概述...（建議100字以內）",
+    "outlineDescription": "細綱是寫作前的規劃文檔，包含劇情設計、情緒節奏、衝突設計等。支援 Markdown 格式。",
+    "summaryDescription": "摘要是本章內容的簡短描述，用於快速了解章節核心內容。",
+    "contentTooShort": "正文內容不足 100 字，無法生成摘要",
+    "generateSummaryFailed": "生成摘要失敗，請稍後重試"
   },
   "login": {
     "title": "Astra Codex",

@@ -123,6 +123,14 @@ export interface InterruptInfo {
   payload: DecisionPoint;
 }
 
+/** SSE 状态数据 */
+export interface SSEStateData {
+  outline?: unknown[];
+  segments?: unknown[];  // 兼容两种命名
+  decisions?: Record<string, unknown>;
+  output?: string;  // HYBRID 模式的整合输出
+}
+
 /** SSE 事件 */
 export interface OutlineSSEEvent {
   type: OutlineSSEEventType;
@@ -134,11 +142,7 @@ export interface OutlineSSEEvent {
   // RUN_FINISHED
   outcome?: "success" | "interrupt";
   interrupt?: InterruptInfo;
-  // STATE_SNAPSHOT
-  state?: {
-    outline: unknown[];
-    decisions: Record<string, unknown>;
-  };
+  state?: SSEStateData;  // RUN_FINISHED(success) 和 STATE_SNAPSHOT 都可能包含
   // RUN_ERROR
   message?: string;
 }

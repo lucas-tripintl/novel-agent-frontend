@@ -12,11 +12,11 @@ import { Button } from "@/components/ui/button";
 import { TiptapEditor } from "./tiptap-editor";
 import { SimpleTiptapEditor } from "./simple-tiptap-editor";
 import { useInlineEdit } from "@/hooks/use-inline-edit";
-import { useGenerateChapterOutline } from "@/hooks/use-chapter-outline";
 import { useGenerateChapterSummary } from "@/hooks/use-generate-summary";
 import { useTasks } from "@/hooks/use-tasks";
 import { useInteractiveOutline } from "@/hooks/use-interactive-outline";
 import { DecisionPointDialog } from "../decision-point-dialog";
+import { useTranslations } from "next-intl";
 import { Sparkles, FileText, BookOpen, AlignLeft, Loader2, Square } from "lucide-react";
 import type { QuickAction } from "@/types/inline-edit";
 
@@ -25,6 +25,8 @@ interface ChapterEditorTabsProps {
 }
 
 export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
+  const t = useTranslations("write");
+
   const {
     chapterNumber,
     content,
@@ -82,9 +84,6 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
         task.meta?.chapter_number === chapterNumber
     );
   }, [tasksData?.items, chapterNumber]);
-
-  // 生成细纲 mutation
-  const generateOutlineMutation = useGenerateChapterOutline(projectId);
 
   // 生成摘要 mutation
   const generateSummaryMutation = useGenerateChapterSummary();
@@ -163,70 +162,31 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
     rejectEdit();
   };
 
-  // 生成按钮配置（仅细纲和摘要，正文通过工具栏的"开始书写"生成）
-  const generateConfig = useMemo(
-    () => ({
-      outline: {
-        label: "生成细纲",
-        icon: FileText,
-      },
-      summary: {
-        label: "生成摘要",
-        icon: AlignLeft,
-      },
-    }),
-    []
-  );
-
-  // 处理生成（仅细纲和摘要）
-  const handleGenerate = useCallback(() => {
+  // 处理生成摘要
+  const handleGenerateSummary = useCallback(() => {
     if (!chapterNumber) return;
 
-    switch (activeEditorTab) {
-      case "outline":
-        // 生成细纲
-        generateOutlineMutation.mutate({
-          chapterNumber,
-          prompt: undefined,
-        });
-        break;
-
-      case "summary":
-        // 生成摘要 - 基于正文内容
-        if (!content || content.length < 100) {
-          alert("正文内容不足 100 字，无法生成摘要");
-          return;
-        }
-        generateSummaryMutation.mutate(content, {
-          onSuccess: (data) => {
-            setOutline(data.summary);
-          },
-          onError: (error) => {
-            console.error("生成摘要失败:", error);
-            alert("生成摘要失败，请稍后重试");
-          },
-        });
-        break;
+    // 生成摘要 - 基于正文内容
+    if (!content || content.length < 100) {
+      alert(t("contentTooShort"));
+      return;
     }
-  }, [
-    activeEditorTab,
-    chapterNumber,
-    content,
-    generateOutlineMutation,
-    generateSummaryMutation,
-    setOutline,
-  ]);
+    generateSummaryMutation.mutate(content, {
+      onSuccess: (data) => {
+        setOutline(data.summary);
+      },
+      onError: (error) => {
+        console.error("生成摘要失败:", error);
+        alert(t("generateSummaryFailed"));
+      },
+    });
+  }, [chapterNumber, content, generateSummaryMutation, setOutline, t]);
 
   // 是否正在生成
-  const isGenerating =
-    isStreaming ||
-    generateOutlineMutation.isPending ||
-    generateSummaryMutation.isPending;
+  const isGenerating = isStreaming || generateSummaryMutation.isPending;
 
-  // 当前 tab 的生成配置（content tab 没有生成按钮）
-  const currentConfig = activeEditorTab !== "content"
-    ? generateConfig[activeEditorTab]
-    : null;
+  // 是否显示生成摘要按钮（仅在摘要 Tab）
+  const showGenerateButton = activeEditorTab === "summary";
 
   return (
     <Tabs
@@ -239,35 +199,35 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
         <TabsList className="h-8 bg-muted/50">
           <TabsTrigger value="content" className="text-xs px-3 h-6 gap-1.5">
             <BookOpen className="h-3 w-3" />
-            正文
+            <span className="whitespace-nowrap">{t("contentTab")}</span>
           </TabsTrigger>
           <TabsTrigger value="outline" className="text-xs px-3 h-6 gap-1.5">
             <FileText className="h-3 w-3" />
-            细纲
+            <span className="whitespace-nowrap">{t("outlineTab")}</span>
           </TabsTrigger>
           <TabsTrigger value="summary" className="text-xs px-3 h-6 gap-1.5">
             <AlignLeft className="h-3 w-3" />
-            摘要
+            <span className="whitespace-nowrap">{t("summaryTab")}</span>
           </TabsTrigger>
         </TabsList>
 
-        {currentConfig && (
+        {showGenerateButton && (
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 gap-1.5 text-xs text-primary hover:text-primary"
-            onClick={handleGenerate}
+            className="h-7 gap-1.5 text-xs text-primary hover:text-primary whitespace-nowrap"
+            onClick={handleGenerateSummary}
             disabled={isGenerating || !chapterNumber}
           >
             {isGenerating ? (
               <>
                 <Loader2 className="h-3 w-3 animate-spin" />
-                生成中...
+                {t("generating")}
               </>
             ) : (
               <>
                 <Sparkles className="h-3 w-3" />
-                {currentConfig.label}
+                {t("generateSummary")}
               </>
             )}
           </Button>
@@ -279,14 +239,14 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
         {isChapterWriting ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-4 min-h-[400px]">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">AI 正在创作中...</p>
+            <p className="text-sm text-muted-foreground">{t("aiWriting")}</p>
           </div>
         ) : (
           <TiptapEditor
             content={content}
             onChange={setContent}
             isReadOnly={isStreaming}
-            placeholder="开始创作你的故事..."
+            placeholder={t("contentPlaceholder")}
             targetType="content"
             enableInlineEdit={!!projectId && !isStreaming}
             onQuickAction={handleContentQuickAction}
@@ -308,15 +268,15 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
                 {isWaitingDecision ? (
                   <>
                     <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                    <span className="text-sm text-amber-600 font-medium">
-                      等待决策...
+                    <span className="text-sm text-amber-600 font-medium whitespace-nowrap">
+                      {t("waitingDecision")}
                     </span>
                   </>
                 ) : (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    <span className="text-sm text-muted-foreground">
-                      正在生成细纲...
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">
+                      {t("generatingOutline")}
                     </span>
                   </>
                 )}
@@ -324,11 +284,11 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 gap-1.5 text-xs text-destructive hover:text-destructive"
+                className="h-7 gap-1.5 text-xs text-destructive hover:text-destructive whitespace-nowrap"
                 onClick={stopGeneration}
               >
                 <Square className="h-3 w-3" />
-                停止
+                {t("stop")}
               </Button>
             </div>
 
@@ -339,7 +299,7 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
               targetType="novel-outline"
               mode="multi-line"
               markdown={true}
-              placeholder="AI 正在创作细纲..."
+              placeholder={t("outlineCreating")}
               className="flex-1 min-h-[300px]"
               enableInlineEdit={false}
             />
@@ -362,7 +322,7 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
           /* 任务队列生成中（兼容旧方式） */
           <div className="flex-1 flex flex-col items-center justify-center gap-4 min-h-[300px]">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">正在生成细纲...</p>
+            <p className="text-sm text-muted-foreground">{t("generatingOutline")}</p>
           </div>
         ) : (
           /* 正常编辑模式 */
@@ -372,7 +332,7 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
             targetType="novel-outline"
             mode="multi-line"
             markdown={true}
-            placeholder="输入章节细纲：剧情设计、情绪节奏、冲突设计、爽点伏笔..."
+            placeholder={t("outlinePlaceholder")}
             className="flex-1 min-h-[300px]"
             enableInlineEdit={!!projectId}
             onQuickAction={handleOutlineQuickAction}
@@ -382,8 +342,7 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
           />
         )}
         <p className="mt-3 text-xs text-muted-foreground shrink-0">
-          细纲是写作前的规划文档，包含剧情设计、情绪节奏、冲突设计等。
-          支持 Markdown 格式。点击「生成细纲」可 AI 自动生成。
+          {t("outlineDescription")}
         </p>
       </TabsContent>
 
@@ -394,7 +353,7 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
           onChange={setOutline}
           targetType="outline"
           mode="multi-line"
-          placeholder="本章主要内容概述...（建议100字以内）"
+          placeholder={t("summaryPlaceholder")}
           className="flex-1 min-h-[150px]"
           enableInlineEdit={!!projectId}
           onQuickAction={handleSummaryQuickAction}
@@ -403,7 +362,7 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
           onRejectEdit={handleRejectEdit}
         />
         <p className="mt-3 text-xs text-muted-foreground shrink-0">
-          摘要是本章内容的简短描述，用于快速了解章节核心内容。
+          {t("summaryDescription")}
         </p>
       </TabsContent>
     </Tabs>

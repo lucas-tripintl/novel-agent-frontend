@@ -347,7 +347,22 @@
     "untitledChapter": "Untitled Chapter",
     "aiWriting": "AI is writing...",
     "chapterOutline": "Chapter Outline",
-    "chapterContent": "Content"
+    "chapterContent": "Content",
+    "contentTab": "Content",
+    "outlineTab": "Outline",
+    "summaryTab": "Summary",
+    "generating": "Generating...",
+    "generateSummary": "Generate Summary",
+    "waitingDecision": "Waiting for decision...",
+    "generatingOutline": "Generating outline...",
+    "contentPlaceholder": "Start writing your story...",
+    "outlineCreating": "AI is creating outline...",
+    "outlinePlaceholder": "Enter chapter outline: plot design, pacing, conflicts, highlights...",
+    "summaryPlaceholder": "Brief summary of this chapter... (under 100 words recommended)",
+    "outlineDescription": "Outline is a pre-writing planning document containing plot design, pacing, conflicts, etc. Supports Markdown format.",
+    "summaryDescription": "Summary is a brief description of this chapter for quick understanding of the core content.",
+    "contentTooShort": "Content is less than 100 characters, cannot generate summary",
+    "generateSummaryFailed": "Failed to generate summary, please try again later"
   },
   "login": {
     "title": "Astra Codex",

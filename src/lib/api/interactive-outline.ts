@@ -44,7 +44,18 @@ async function* parseSSEStream(
   while (true) {
     const { done, value } = await reader.read();
 
-    if (done) break;
+    if (done) {
+      // 处理 buffer 中残留的最后一行
+      if (buffer.trim().startsWith("data: ")) {
+        try {
+          const data = JSON.parse(buffer.trim().slice(6)) as OutlineSSEEvent;
+          yield data;
+        } catch (e) {
+          console.error("解析最后一条 SSE 数据失败:", e, buffer);
+        }
+      }
+      break;
+    }
 
     buffer += decoder.decode(value, { stream: true });
 

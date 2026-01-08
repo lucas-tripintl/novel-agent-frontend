@@ -347,7 +347,22 @@
     "untitledChapter": "제목 없는 챕터",
     "aiWriting": "AI가 집필 중...",
     "chapterOutline": "챕터 아웃라인",
-    "chapterContent": "본문"
+    "chapterContent": "본문",
+    "contentTab": "본문",
+    "outlineTab": "세부 아웃라인",
+    "summaryTab": "요약",
+    "generating": "생성 중...",
+    "generateSummary": "요약 생성",
+    "waitingDecision": "결정 대기 중...",
+    "generatingOutline": "아웃라인 생성 중...",
+    "contentPlaceholder": "당신의 이야기를 시작하세요...",
+    "outlineCreating": "AI가 아웃라인을 작성 중...",
+    "outlinePlaceholder": "챕터 아웃라인 입력: 플롯 설계, 페이싱, 갈등, 하이라이트...",
+    "summaryPlaceholder": "이 장의 주요 내용 개요... (100자 이내 권장)",
+    "outlineDescription": "아웃라인은 집필 전 계획 문서로, 플롯 설계, 페이싱, 갈등 등을 포함합니다. Markdown 형식 지원.",
+    "summaryDescription": "요약은 이 장 내용의 간단한 설명으로, 핵심 내용을 빠르게 파악할 수 있습니다.",
+    "contentTooShort": "본문이 100자 미만이어서 요약을 생성할 수 없습니다",
+    "generateSummaryFailed": "요약 생성에 실패했습니다. 나중에 다시 시도해 주세요"
   },
   "login": {
     "title": "Astra Codex",

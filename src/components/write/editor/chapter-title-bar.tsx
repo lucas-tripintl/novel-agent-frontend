@@ -62,10 +62,6 @@ export function ChapterTitleBar({ chapterNumber }: ChapterTitleBarProps) {
 
   return (
     <div className="space-y-3">
-      {/* 章节编号 */}
-      <Badge variant="outline" className="font-mono text-xs">
-        第 {chapterNumber} 章
-      </Badge>
 
       {/* 标题输入 - 使用 SimpleTiptapEditor */}
       <SimpleTiptapEditor

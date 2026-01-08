@@ -347,7 +347,22 @@
     "untitledChapter": "無題の章",
     "aiWriting": "AIが執筆中...",
     "chapterOutline": "章のアウトライン",
-    "chapterContent": "本文"
+    "chapterContent": "本文",
+    "contentTab": "本文",
+    "outlineTab": "詳細アウトライン",
+    "summaryTab": "要約",
+    "generating": "生成中...",
+    "generateSummary": "要約を生成",
+    "waitingDecision": "決定待ち...",
+    "generatingOutline": "アウトライン生成中...",
+    "contentPlaceholder": "あなたの物語を書き始めましょう...",
+    "outlineCreating": "AIがアウトラインを作成中...",
+    "outlinePlaceholder": "章のアウトラインを入力：プロット設計、ペース配分、コンフリクト、ハイライト...",
+    "summaryPlaceholder": "この章の主な内容の概要...（100文字以内推奨）",
+    "outlineDescription": "アウトラインは執筆前の計画書で、プロット設計、ペース配分、コンフリクトなどを含みます。Markdownフォーマットをサポート。",
+    "summaryDescription": "要約はこの章の内容を簡潔に説明し、章の核心を素早く理解するためのものです。",
+    "contentTooShort": "本文が100文字未満のため、要約を生成できません",
+    "generateSummaryFailed": "要約の生成に失敗しました。後でもう一度お試しください"
   },
   "login": {
     "title": "Astra Codex",

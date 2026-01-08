@@ -77,17 +77,32 @@ export function useInteractiveOutline(projectId: string, chapterNumber: number |
             setCurrentDecisionPoint(event.interrupt.payload);
             setOutlineGenerationStatus("decision");
           } else if (event.outcome === "success") {
-            // 完成
+            // 完成 - 优先从 event.state 获取最终数据
             setOutlineGenerationStatus("completed");
-            // 同步到章节细纲
-            loadChapterOutline(streamingOutline);
+            if (event.state?.output) {
+              // HYBRID 模式：使用整合后的输出
+              setStreamingOutline(event.state.output);
+              loadChapterOutline(event.state.output);
+            } else if (event.state?.outline || event.state?.segments) {
+              // 原模式：使用 segments
+              const segments = event.state.outline || event.state.segments || [];
+              const finalContent = formatOutlineSegments(segments);
+              setStreamingOutline(finalContent);
+              loadChapterOutline(finalContent);
+            }
+            // 如果没有 state，STATE_SNAPSHOT 会处理
           }
           break;
 
         case "STATE_SNAPSHOT":
-          // 最终状态快照
-          if (event.state?.outline) {
-            const finalContent = formatOutlineSegments(event.state.outline);
+          // 最终状态快照 - 作为 RUN_FINISHED 的补充
+          if (event.state?.output) {
+            // HYBRID 模式
+            setStreamingOutline(event.state.output);
+            loadChapterOutline(event.state.output);
+          } else if (event.state?.outline || event.state?.segments) {
+            const segments = event.state.outline || event.state.segments || [];
+            const finalContent = formatOutlineSegments(segments);
             setStreamingOutline(finalContent);
             loadChapterOutline(finalContent);
           }
@@ -105,7 +120,6 @@ export function useInteractiveOutline(projectId: string, chapterNumber: number |
       setCurrentDecisionPoint,
       setOutlineGenerationStatus,
       loadChapterOutline,
-      streamingOutline,
       setStreamingOutline,
     ]
   );
