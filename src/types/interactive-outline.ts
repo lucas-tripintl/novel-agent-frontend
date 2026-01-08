@@ -99,31 +99,24 @@ export interface GetOutlineDraftResponse {
   draft?: OutlineDraft;
 }
 
-// ============ SSE 事件 ============
+// ============ AG-UI SDK 扩展类型 ============
 
-/** SSE 事件类型 */
-export type OutlineSSEEventType =
-  | "RUN_STARTED"
-  | "STATE_DELTA"
-  | "STATE_SNAPSHOT"
-  | "RUN_FINISHED"
-  | "RUN_ERROR";
-
-/** STATE_DELTA 操作 */
-export interface StateDeltaOp {
-  op: "add" | "replace" | "remove";
-  path: string;
-  value?: unknown;
-}
-
-/** RUN_FINISHED 中断信息 */
+/**
+ * RUN_FINISHED 中断信息
+ *
+ * 当 outcome 为 "interrupt" 时，包含决策点信息
+ */
 export interface InterruptInfo {
   id: string;
   reason: string;
   payload: DecisionPoint;
 }
 
-/** SSE 状态数据 */
+/**
+ * SSE 状态数据
+ *
+ * RUN_FINISHED(success) 和 STATE_SNAPSHOT 事件中的状态
+ */
 export interface SSEStateData {
   outline?: unknown[];
   segments?: unknown[];  // 兼容两种命名
@@ -131,20 +124,16 @@ export interface SSEStateData {
   output?: string;  // HYBRID 模式的整合输出
 }
 
-/** SSE 事件 */
-export interface OutlineSSEEvent {
-  type: OutlineSSEEventType;
-  // RUN_STARTED
-  threadId?: string;
-  runId?: string;
-  // STATE_DELTA
-  delta?: StateDeltaOp[];
-  // RUN_FINISHED
-  outcome?: "success" | "interrupt";
+/**
+ * RUN_FINISHED 事件的 result 结构
+ *
+ * AG-UI SDK 的 RunFinishedEvent.result 类型扩展
+ * 后端需要将 outcome/state/interrupt 包装到 result 字段中
+ */
+export interface OutlineRunResult {
+  outcome: "success" | "interrupt";
+  state?: SSEStateData;
   interrupt?: InterruptInfo;
-  state?: SSEStateData;  // RUN_FINISHED(success) 和 STATE_SNAPSHOT 都可能包含
-  // RUN_ERROR
-  message?: string;
 }
 
 // ============ 生成模式配置 ============

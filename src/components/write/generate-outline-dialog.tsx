@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,7 @@ import {
   Sparkles,
   Zap,
   Play,
+  Loader2,
 } from "lucide-react";
 import { useInteractiveOutline } from "@/hooks/use-interactive-outline";
 import { EntityBrowserDialog } from "@/components/browser/entity-browser-dialog";
@@ -60,7 +61,7 @@ export function GenerateOutlineDialog({
   const [skillBrowserOpen, setSkillBrowserOpen] = useState(false);
 
   // 交互式生成 Hook
-  const { startGeneration, isGenerating } = useInteractiveOutline(
+  const { startGeneration, isGenerating, draftId } = useInteractiveOutline(
     projectId,
     chapterNumber
   );
@@ -76,6 +77,13 @@ export function GenerateOutlineDialog({
     setSkillBrowserOpen(false);
   };
 
+  // 当收到 SSE 响应（draftId 被设置）时，关闭对话框
+  useEffect(() => {
+    if (open && draftId) {
+      onOpenChange(false);
+    }
+  }, [open, draftId, onOpenChange]);
+
   // 处理对话框打开/关闭
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
@@ -85,8 +93,9 @@ export function GenerateOutlineDialog({
   };
 
   // 处理生成
-  const handleGenerate = async () => {
-    await startGeneration({
+  const handleGenerate = () => {
+    // 启动生成，对话框会在收到 SSE 响应时自动关闭
+    startGeneration({
       mode,
       density,
       guidance: guidance.trim() || undefined,
@@ -99,9 +108,6 @@ export function GenerateOutlineDialog({
           ? selectedSkills.map((s) => s.id)
           : undefined,
     });
-
-    // 关闭对话框
-    handleOpenChange(false);
   };
 
   // 移除参考设定
@@ -325,8 +331,12 @@ export function GenerateOutlineDialog({
             disabled={!chapterNumber || isGenerating}
             className="gap-1.5"
           >
-            <Play className="h-4 w-4" />
-            开始生成
+            {isGenerating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Play className="h-4 w-4" />
+            )}
+            {isGenerating ? "启动中..." : "开始生成"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,28 +1,54 @@
 /**
  * 交互式细纲生成 Hook
  *
- * 处理 SSE 流式生成和决策点交互
+ * 使用 AG-UI SDK 处理 SSE 流式生成和决策点交互
  */
 
 import { useCallback, useRef } from "react";
+import type {
+  AgentSubscriber,
+  RunStartedEvent,
+  RunFinishedEvent,
+  RunErrorEvent,
+  StateDeltaEvent,
+  StateSnapshotEvent,
+} from "@ag-ui/client";
 import { useInteractiveOutlineState } from "@/stores/writing-store";
+import { OutlineAgent } from "@/lib/api/outline-agent";
+import { DecisionAgent } from "@/lib/api/decision-agent";
 import {
-  streamStartOutlineGeneration,
-  streamSubmitDecision,
   getOutlineDraft,
   abandonOutlineDraft,
 } from "@/lib/api/interactive-outline";
 import type {
   StartOutlineGenerationRequest,
   UserDecision,
-  OutlineSSEEvent,
   OutlineDraft,
+  OutlineRunResult,
 } from "@/types/interactive-outline";
+
+// 获取存储的 token
+function getStoredToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const stored = localStorage.getItem("novel-agent-auth");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return parsed.state?.token || null;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
 
 /**
  * 交互式细纲生成 Hook
  */
-export function useInteractiveOutline(projectId: string, chapterNumber: number | null) {
+export function useInteractiveOutline(
+  projectId: string,
+  chapterNumber: number | null
+) {
   const {
     outlineGenerationStatus,
     streamingOutline,
@@ -38,89 +64,88 @@ export function useInteractiveOutline(projectId: string, chapterNumber: number |
     loadChapterOutline,
   } = useInteractiveOutlineState();
 
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const agentRef = useRef<OutlineAgent | DecisionAgent | null>(null);
 
   /**
-   * 处理 SSE 事件
+   * 创建 AG-UI Subscriber
    */
-  const handleSSEEvent = useCallback(
-    (event: OutlineSSEEvent) => {
-      switch (event.type) {
-        case "RUN_STARTED":
-          // 记录 draft ID (from threadId)
-          if (event.threadId) {
-            setOutlineDraftId(event.threadId);
-          }
-          break;
+  const createSubscriber = useCallback(
+    (): AgentSubscriber => ({
+      onRunStartedEvent: ({ event }) => {
+        const e = event as RunStartedEvent;
+        if (e.threadId) {
+          setOutlineDraftId(e.threadId);
+        }
+      },
 
-        case "STATE_DELTA":
-          // 增量更新内容
-          if (event.delta) {
-            for (const op of event.delta) {
-              // 处理内容追加
-              if (op.op === "add" && typeof op.value === "string") {
-                appendStreamingOutline(op.value);
-              } else if (op.op === "add" && typeof op.value === "object" && op.value !== null) {
-                // 处理 segment 对象
-                const segment = op.value as { content?: string };
-                if (segment.content) {
-                  appendStreamingOutline(segment.content + "\n\n");
-                }
+      onStateDeltaEvent: ({ event }) => {
+        const e = event as StateDeltaEvent;
+        if (e.delta) {
+          for (const op of e.delta) {
+            if (op.op === "add" && typeof op.value === "string") {
+              appendStreamingOutline(op.value);
+            } else if (
+              op.op === "add" &&
+              typeof op.value === "object" &&
+              op.value !== null
+            ) {
+              const segment = op.value as { content?: string };
+              if (segment.content) {
+                appendStreamingOutline(segment.content + "\n\n");
               }
             }
           }
-          break;
+        }
+      },
 
-        case "RUN_FINISHED":
-          if (event.outcome === "interrupt" && event.interrupt) {
-            // 决策点
-            setCurrentDecisionPoint(event.interrupt.payload);
-            setOutlineGenerationStatus("decision");
-          } else if (event.outcome === "success") {
-            // 完成 - 优先从 event.state 获取最终数据
-            setOutlineGenerationStatus("completed");
-            if (event.state?.output) {
-              // HYBRID 模式：使用整合后的输出
-              setStreamingOutline(event.state.output);
-              loadChapterOutline(event.state.output);
-            } else if (event.state?.outline || event.state?.segments) {
-              // 原模式：使用 segments
-              const segments = event.state.outline || event.state.segments || [];
-              const finalContent = formatOutlineSegments(segments);
-              setStreamingOutline(finalContent);
-              loadChapterOutline(finalContent);
-            }
-            // 如果没有 state，STATE_SNAPSHOT 会处理
-          }
-          break;
+      onStateSnapshotEvent: ({ event }) => {
+        const e = event as StateSnapshotEvent;
+        const snapshot = e.snapshot as OutlineRunResult["state"];
+        if (snapshot?.output) {
+          setStreamingOutline(snapshot.output);
+          loadChapterOutline(snapshot.output);
+        } else if (snapshot?.segments) {
+          const finalContent = formatOutlineSegments(snapshot.segments);
+          setStreamingOutline(finalContent);
+          loadChapterOutline(finalContent);
+        }
+      },
 
-        case "STATE_SNAPSHOT":
-          // 最终状态快照 - 作为 RUN_FINISHED 的补充
-          if (event.state?.output) {
-            // HYBRID 模式
-            setStreamingOutline(event.state.output);
-            loadChapterOutline(event.state.output);
-          } else if (event.state?.outline || event.state?.segments) {
-            const segments = event.state.outline || event.state.segments || [];
-            const finalContent = formatOutlineSegments(segments);
+      onRunFinishedEvent: ({ event }) => {
+        const e = event as RunFinishedEvent;
+        const result = e.result as OutlineRunResult | undefined;
+
+        if (!result) return;
+
+        if (result.outcome === "interrupt" && result.interrupt) {
+          setCurrentDecisionPoint(result.interrupt.payload);
+          setOutlineGenerationStatus("decision");
+        } else if (result.outcome === "success") {
+          setOutlineGenerationStatus("completed");
+          if (result.state?.output) {
+            setStreamingOutline(result.state.output);
+            loadChapterOutline(result.state.output);
+          } else if (result.state?.segments) {
+            const finalContent = formatOutlineSegments(result.state.segments);
             setStreamingOutline(finalContent);
             loadChapterOutline(finalContent);
           }
-          break;
+        }
+      },
 
-        case "RUN_ERROR":
-          console.error("细纲生成错误:", event.message);
-          setOutlineGenerationStatus("error");
-          break;
-      }
-    },
+      onRunErrorEvent: ({ event }) => {
+        const e = event as RunErrorEvent;
+        console.error("细纲生成错误:", e.message);
+        setOutlineGenerationStatus("error");
+      },
+    }),
     [
       setOutlineDraftId,
       appendStreamingOutline,
+      setStreamingOutline,
       setCurrentDecisionPoint,
       setOutlineGenerationStatus,
       loadChapterOutline,
-      setStreamingOutline,
     ]
   );
 
@@ -137,30 +162,30 @@ export function useInteractiveOutline(projectId: string, chapterNumber: number |
       // 重置状态
       resetOutlineGeneration();
       setOutlineGenerationStatus("generating");
-      setActiveEditorTab("outline"); // 切换到细纲 tab
+      setActiveEditorTab("outline");
 
-      abortControllerRef.current = new AbortController();
+      const token = getStoredToken();
+      const agent = new OutlineAgent({
+        projectId,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      agent.setRequestBody({
+        ...params,
+        chapter_number: chapterNumber,
+      });
+
+      agentRef.current = agent;
 
       try {
-        const fullParams: StartOutlineGenerationRequest = {
-          ...params,
-          chapter_number: chapterNumber,
-        };
-
-        for await (const event of streamStartOutlineGeneration(
-          projectId,
-          fullParams,
-          abortControllerRef.current.signal
-        )) {
-          handleSSEEvent(event);
-        }
+        await agent.runAgent({}, createSubscriber());
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
           console.error("细纲生成失败:", err);
           setOutlineGenerationStatus("error");
         }
       } finally {
-        abortControllerRef.current = null;
+        agentRef.current = null;
       }
     },
     [
@@ -169,7 +194,7 @@ export function useInteractiveOutline(projectId: string, chapterNumber: number |
       resetOutlineGeneration,
       setOutlineGenerationStatus,
       setActiveEditorTab,
-      handleSSEEvent,
+      createSubscriber,
     ]
   );
 
@@ -186,24 +211,25 @@ export function useInteractiveOutline(projectId: string, chapterNumber: number |
       setOutlineGenerationStatus("generating");
       setCurrentDecisionPoint(null);
 
-      abortControllerRef.current = new AbortController();
+      const token = getStoredToken();
+      const agent = new DecisionAgent({
+        projectId,
+        draftId: outlineDraftId,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      agent.setDecision(decision);
+      agentRef.current = agent;
 
       try {
-        for await (const event of streamSubmitDecision(
-          projectId,
-          outlineDraftId,
-          decision,
-          abortControllerRef.current.signal
-        )) {
-          handleSSEEvent(event);
-        }
+        await agent.runAgent({}, createSubscriber());
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
           console.error("提交决策失败:", err);
           setOutlineGenerationStatus("error");
         }
       } finally {
-        abortControllerRef.current = null;
+        agentRef.current = null;
       }
     },
     [
@@ -211,7 +237,7 @@ export function useInteractiveOutline(projectId: string, chapterNumber: number |
       outlineDraftId,
       setOutlineGenerationStatus,
       setCurrentDecisionPoint,
-      handleSSEEvent,
+      createSubscriber,
     ]
   );
 
@@ -221,14 +247,14 @@ export function useInteractiveOutline(projectId: string, chapterNumber: number |
   const skipDecision = useCallback(async () => {
     if (!currentDecisionPoint) return;
 
-    // 找到推荐的选项
     const recommendedOption = currentDecisionPoint.options.find(
       (opt) => opt.recommended
     );
 
     const decision: UserDecision = {
       decision_point_id: currentDecisionPoint.id,
-      chosen_option_id: recommendedOption?.id || currentDecisionPoint.options[0]?.id || null,
+      chosen_option_id:
+        recommendedOption?.id || currentDecisionPoint.options[0]?.id || null,
       custom_input: null,
       skipped: true,
     };
@@ -278,7 +304,7 @@ export function useInteractiveOutline(projectId: string, chapterNumber: number |
    * 停止生成
    */
   const stopGeneration = useCallback(() => {
-    abortControllerRef.current?.abort();
+    agentRef.current?.abortRun();
     setOutlineGenerationStatus("idle");
   }, [setOutlineGenerationStatus]);
 
