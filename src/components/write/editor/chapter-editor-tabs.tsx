@@ -28,6 +28,7 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
   const t = useTranslations("write");
 
   const {
+    chapterId,
     chapterNumber,
     content,
     setContent,
@@ -157,23 +158,26 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
 
   // 处理生成摘要
   const handleGenerateSummary = useCallback(() => {
-    if (!chapterNumber) return;
+    if (!chapterId) return;
 
-    // 生成摘要 - 基于正文内容
+    // 检查正文内容是否足够
     if (!content || content.length < 100) {
       alert(t("contentTooShort"));
       return;
     }
-    generateSummaryMutation.mutate(content, {
-      onSuccess: (data) => {
-        setOutline(data.summary);
-      },
-      onError: (error) => {
-        console.error("生成摘要失败:", error);
-        alert(t("generateSummaryFailed"));
-      },
-    });
-  }, [chapterNumber, content, generateSummaryMutation, setOutline, t]);
+    generateSummaryMutation.mutate(
+      { chapterId, save: true },
+      {
+        onSuccess: (data) => {
+          setOutline(data.summary);
+        },
+        onError: (error) => {
+          console.error("生成摘要失败:", error);
+          alert(t("generateSummaryFailed"));
+        },
+      }
+    );
+  }, [chapterId, content, generateSummaryMutation, setOutline, t]);
 
   // 是否正在生成
   const isGenerating = isStreaming || generateSummaryMutation.isPending;
@@ -210,7 +214,7 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
             size="sm"
             className="h-7 gap-1.5 text-xs text-primary hover:text-primary whitespace-nowrap"
             onClick={handleGenerateSummary}
-            disabled={isGenerating || !chapterNumber}
+            disabled={isGenerating || !chapterId}
           >
             {isGenerating ? (
               <>
@@ -317,6 +321,7 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
           onChange={setOutline}
           targetType="outline"
           mode="multi-line"
+          markdown={true}
           placeholder={t("summaryPlaceholder")}
           className="flex-1 min-h-[150px]"
           enableInlineEdit={!!projectId}

@@ -345,6 +345,7 @@
     "selectChapterHint": "Select a chapter from the left sidebar or create a new one",
     "chapterNumber": "Chapter {number}",
     "untitledChapter": "Untitled Chapter",
+    "loading": "Loading...",
     "aiWriting": "AI is writing...",
     "chapterOutline": "Chapter Outline",
     "chapterContent": "Content",

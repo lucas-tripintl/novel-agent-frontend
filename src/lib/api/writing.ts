@@ -207,24 +207,34 @@ export async function getChapterContent(
 
 /**
  * 生成章节摘要
+ * @param chapterId 章节 ID
+ * @param save 是否将摘要保存到数据库的 Chapter.summary 字段
  */
 export async function generateChapterSummary(
-  content: string
+  chapterId: string,
+  save: boolean = false
 ): Promise<{ summary: string }> {
   const token = getStoredToken();
 
-  const response = await fetch(`${API_BASE_URL}/summaries/chapter`, {
+  const url = new URL(`${API_BASE_URL}/summaries/chapter`, window.location.origin);
+  if (save) {
+    url.searchParams.set("save", "true");
+  }
+
+  const response = await fetch(url.toString(), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ chapter_id: chapterId }),
   });
 
   if (!response.ok) {
     throw new Error(`生成摘要失败: ${response.status}`);
   }
 
-  return response.json();
+  const result = await response.json();
+  // 适配新的响应格式 { success: true, data: { summary: "..." } }
+  return result.data || result;
 }

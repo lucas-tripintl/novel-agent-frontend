@@ -345,6 +345,7 @@
     "selectChapterHint": "从左侧章节列表中选择要编辑的章节，或创建新章节",
     "chapterNumber": "第 {number} 章",
     "untitledChapter": "未命名章节",
+    "loading": "加载中...",
     "aiWriting": "AI 正在创作中...",
     "chapterOutline": "章节细纲",
     "chapterContent": "正文",

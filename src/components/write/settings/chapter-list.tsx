@@ -89,6 +89,8 @@ export function ChapterList({ projectId }: ChapterListProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingChapterId, setPendingChapterId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  // 追踪正在切换到的章节，用于显示加载状态
+  const [switchingToChapterId, setSwitchingToChapterId] = useState<string | null>(null);
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -150,6 +152,8 @@ export function ChapterList({ projectId }: ChapterListProps) {
 
   // 执行章节切换
   const doSwitchChapter = useCallback((targetChapterId: string, targetChapterNumber: number) => {
+    // 设置正在切换的章节ID（用于即时视觉反馈）
+    setSwitchingToChapterId(targetChapterId);
     // 先关闭设定编辑器
     if (editingEntity) {
       closeEntityEditor();
@@ -160,6 +164,8 @@ export function ChapterList({ projectId }: ChapterListProps) {
     }
     // 然后切换章节，同时传递 chapterNumber
     setContext(projectId, targetChapterId, targetChapterNumber);
+    // 切换完成后清除加载状态（延迟一小段时间让过渡更平滑）
+    setTimeout(() => setSwitchingToChapterId(null), 300);
   }, [editingEntity, closeEntityEditor, editingOutline, closeOutlineEditor, setContext, projectId]);
 
   const [pendingChapterNumber, setPendingChapterNumber] = useState<number | null>(null);
@@ -357,24 +363,33 @@ export function ChapterList({ projectId }: ChapterListProps) {
               <>
                 {chapters.map((chapter) => {
                   const isActive = chapter.id === chapterId;
+                  const isSwitchingTo = chapter.id === switchingToChapterId;
                   const isAnalyzed = chapter.analyzed;
 
                   return (
                     <div
                       key={chapter.id}
                       className={cn(
-                        "flex items-center gap-1 rounded-lg transition-all group",
+                        "flex items-center gap-1 rounded-lg transition-all duration-150 group",
                         "hover:bg-muted/50",
-                        isActive && "bg-primary/10 border border-primary/30"
+                        // 正在切换到此章节时的高亮效果
+                        isSwitchingTo && "bg-primary/5 border border-primary/20 scale-[0.99]",
+                        isActive && !isSwitchingTo && "bg-primary/10 border border-primary/30"
                       )}
                     >
                       <button
                         onClick={() => handleSelectChapter(chapter.id, chapter.chapter_number)}
-                        className="flex-1 flex items-center gap-3 px-3 py-2.5 text-left"
+                        className={cn(
+                          "flex-1 flex items-center gap-3 px-3 py-2.5 text-left",
+                          "transition-transform duration-100 active:scale-[0.98]"
+                        )}
+                        disabled={isSwitchingTo}
                       >
                         {/* 状态图标 */}
                         <div className="shrink-0">
-                          {isActive ? (
+                          {isSwitchingTo ? (
+                            <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                          ) : isActive ? (
                             <PenLine className="h-4 w-4 text-primary" />
                           ) : isAnalyzed ? (
                             <CheckCircle2 className="h-4 w-4 text-primary/60" />
@@ -392,9 +407,14 @@ export function ChapterList({ projectId }: ChapterListProps) {
                             <span className="text-[10px] text-muted-foreground/60 font-mono">
                               {(chapter.word_count ?? 0).toLocaleString()}字
                             </span>
-                            {isActive && (
+                            {isActive && !isSwitchingTo && (
                               <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
                                 编辑中
+                              </Badge>
+                            )}
+                            {isSwitchingTo && (
+                              <Badge variant="outline" className="h-4 px-1.5 text-[10px] text-primary border-primary/30">
+                                切换中
                               </Badge>
                             )}
                           </div>
@@ -405,8 +425,8 @@ export function ChapterList({ projectId }: ChapterListProps) {
 
                         <ChevronRight
                           className={cn(
-                            "h-4 w-4 shrink-0 transition-transform",
-                            isActive ? "text-primary" : "text-muted-foreground/40"
+                            "h-4 w-4 shrink-0 transition-all duration-150",
+                            isSwitchingTo ? "text-primary translate-x-0.5" : isActive ? "text-primary" : "text-muted-foreground/40"
                           )}
                         />
                       </button>
