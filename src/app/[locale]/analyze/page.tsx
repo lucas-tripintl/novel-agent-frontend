@@ -114,7 +114,7 @@ export default function AnalyzePage() {
           </TabsList>
 
           {/* 上传 Tab */}
-          <TabsContent value="upload" className="flex-1 flex flex-col min-h-0 mt-0">
+          <TabsContent value="upload" className="flex-1 flex flex-col min-h-0 mt-0 overflow-auto">
             {/* 步骤指示器 */}
             {currentStep !== "upload" && (
               <div className="shrink-0 mb-6">
@@ -142,12 +142,12 @@ export default function AnalyzePage() {
           </TabsContent>
 
           {/* 分析中 Tab */}
-          <TabsContent value="analyzing" className="mt-0">
+          <TabsContent value="analyzing" className="flex-1 min-h-0 mt-0 overflow-auto">
             <AnalyzingList />
           </TabsContent>
 
           {/* 历史 Tab */}
-          <TabsContent value="history" className="mt-0">
+          <TabsContent value="history" className="flex-1 min-h-0 mt-0 overflow-auto">
             <HistoryList />
           </TabsContent>
         </Tabs>
