@@ -173,6 +173,110 @@ interface EntityRead {
 - 等宽字体: `font-mono` (用于数据/代码展示)
 - 自定义颜色: `neon-green`, `neon-purple`, `neon-cyan`
 
+### 国际化 (i18n) 系统
+
+应用支持 5 种语言：简体中文 (zh)、繁体中文 (zh-TW)、英语 (en)、日语 (ja)、韩语 (ko)。
+
+#### 核心文件
+
+| 文件/目录 | 用途 |
+|-----------|------|
+| `src/i18n/routing.ts` | 路由配置、支持的语言列表 |
+| `src/i18n/navigation.ts` | 国际化导航 hooks (useRouter, usePathname, Link) |
+| `src/i18n/request.ts` | 服务端翻译加载 |
+| `src/messages/*.json` | 各语言翻译文件 |
+| `src/middleware.ts` | 语言检测和路由重定向 |
+| `src/components/layout/locale-switcher.tsx` | 语言切换器组件 |
+
+#### 使用方法
+
+```tsx
+import { useTranslations } from "next-intl";
+import { Link, useRouter, usePathname } from "@/i18n/navigation";
+
+function MyComponent() {
+  const t = useTranslations("namespace");
+
+  return (
+    <div>
+      <h1>{t("title")}</h1>
+      <Link href="/about">{t("aboutLink")}</Link>
+    </div>
+  );
+}
+```
+
+#### 多语言宽度适配原则
+
+不同语言文字长度差异显著：
+- 中文：字符少但单字宽（如 "技能库" = 3 字符）
+- 英文：字符多但单字窄（如 "Skills" = 6 字符）
+- 日语：混合假名汉字，通常比中文长（如 "スキルライブラリ"）
+- 韩语：音节块组合（如 "스킬 라이브러리"）
+
+**设计原则**：
+
+1. **内容优先** - 让内容决定宽度，而非强制固定
+2. **有限弹性** - 设置 min/max 边界防止极端情况
+3. **视觉稳定** - 避免切换语言时布局大幅抖动
+4. **优雅降级** - 超长文本使用 truncate + tooltip
+
+**正确做法**：
+
+```tsx
+// ✅ Select/下拉触发器 - 内容自适应 + 最小宽度
+<SelectTrigger className="w-auto min-w-24">
+
+// ✅ 侧边栏导航 - 允许撑开但设置上限
+<nav className="shrink-0 min-w-40 max-w-[200px] w-fit">
+  <span className="whitespace-nowrap">{t("label")}</span>
+</nav>
+
+// ✅ 下拉菜单内容 - 内容自适应
+<DropdownMenuContent className="w-fit min-w-36">
+
+// ✅ 用户内容（可能很长）- 固定宽度 + truncate + tooltip
+<span className="max-w-[100px] truncate" title={userContent}>
+  {userContent}
+</span>
+```
+
+**错误做法**：
+
+```tsx
+// ❌ 固定宽度显示翻译文本 - 会被截断
+<SelectTrigger className="w-28">
+
+// ❌ 导航栏固定宽度 - 长文本溢出
+<nav className="w-40">
+  <span className="truncate">{t("longLabel")}</span>
+</nav>
+
+// ❌ 翻译文本使用 truncate 而不是 whitespace-nowrap
+<span className="truncate">{t("navItem")}</span>
+```
+
+**宽度适配模式对照表**：
+
+| 场景 | 推荐类名 | 说明 |
+|------|----------|------|
+| Select 触发器 | `w-auto min-w-24` | 内容自适应，最小 96px |
+| 侧边栏导航 | `min-w-40 max-w-[200px] w-fit` | 160px ~ 200px 范围 |
+| 下拉菜单 | `w-fit min-w-36` | 内容自适应，最小 144px |
+| 导航标签文本 | `whitespace-nowrap` | 禁止换行，让容器撑开 |
+| 用户内容（名称等） | `max-w-[Xpx] truncate` + `title` | 固定上限 + 截断 + tooltip |
+
+**区分翻译文本 vs 用户内容**：
+
+- **翻译文本** (UI 标签)：使用 `whitespace-nowrap`，让容器自适应
+- **用户内容** (名称、描述)：使用 `truncate` + `title` tooltip，因为长度不可控
+
+#### 添加新翻译
+
+1. 在 `src/messages/` 下的每个语言文件中添加对应键值
+2. 使用 `useTranslations("namespace")` 获取翻译函数
+3. 确保所有 5 种语言文件都有对应翻译
+
 ### 页面标题样式
 
 **H1 大标题**（页面主标题）:
@@ -248,8 +352,8 @@ pnpm dlx shadcn@latest add <component-name>
 
   {/* 主内容区：左侧导航 + 右侧卡片 */}
   <div className="flex flex-1 min-h-0 pt-4 gap-6">
-    {/* 左侧分类导航 - 固定不滚动 */}
-    <nav className="shrink-0 w-40">
+    {/* 左侧分类导航 - 固定不滚动，宽度自适应 */}
+    <nav className="shrink-0 min-w-40 max-w-[200px] w-fit">
       <div className="space-y-1">
         {/* 分类按钮 */}
       </div>
@@ -301,12 +405,13 @@ const categoryIcons: Record<string, React.ReactNode> = {
   )}
 >
   <span className={cn(
-    "transition-colors",
+    "transition-colors shrink-0",
     isActive ? "text-primary" : "text-muted-foreground/70"
   )}>
     {Icon}
   </span>
-  <span className="truncate">{label}</span>
+  {/* 使用 whitespace-nowrap 而非 truncate，让容器自适应宽度 */}
+  <span className="whitespace-nowrap">{t(labelKey)}</span>
 </button>
 ```
 

@@ -41,7 +41,7 @@ export function ThemeSwitcher() {
           <span className="hidden sm:inline">{currentTheme?.name}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align="end" className="w-fit min-w-48">
         <DropdownMenuLabel className="text-xs text-muted-foreground">
           选择主题
         </DropdownMenuLabel>

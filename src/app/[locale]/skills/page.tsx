@@ -229,7 +229,7 @@ export default function SkillsPage() {
           <div className="flex items-center gap-4 mt-4 flex-wrap">
             {/* 阶段筛选 */}
             <Select value={stageFilter} onValueChange={handleStageChange}>
-              <SelectTrigger className="w-28">
+              <SelectTrigger className="w-auto min-w-24">
                 <SelectValue placeholder={tCommon("allStages")} />
               </SelectTrigger>
               <SelectContent>
@@ -243,7 +243,7 @@ export default function SkillsPage() {
 
             {/* 来源筛选 */}
             <Select value={visibilityFilter} onValueChange={handleVisibilityChange}>
-              <SelectTrigger className="w-28">
+              <SelectTrigger className="w-auto min-w-24">
                 <SelectValue placeholder={tCommon("allSources")} />
               </SelectTrigger>
               <SelectContent>
@@ -308,7 +308,7 @@ export default function SkillsPage() {
         {/* 主内容区：左侧导航 + 右侧卡片 */}
         <div className="flex flex-1 min-h-0 pt-4 gap-6">
           {/* 左侧分类导航（固定不滚动） */}
-          <nav className="shrink-0 w-40">
+          <nav className="shrink-0 min-w-40 max-w-[200px] w-fit">
             <div className="space-y-1">
               {SKILL_CATEGORY_OPTIONS.map((option) => {
                 const isActive = categoryFilter === option.value;
@@ -332,7 +332,7 @@ export default function SkillsPage() {
                     )}>
                       {Icon}
                     </span>
-                    <span className="truncate">{t(option.labelKey)}</span>
+                    <span className="whitespace-nowrap">{t(option.labelKey)}</span>
                   </button>
                 );
               })}

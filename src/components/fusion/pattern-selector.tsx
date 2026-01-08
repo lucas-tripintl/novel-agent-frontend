@@ -256,7 +256,7 @@ export function PatternSelector({
           value={typeFilter}
           onValueChange={(v) => setTypeFilter(v as EntityType | "all")}
         >
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-auto min-w-32">
             <SelectValue placeholder={t("types.all")} />
           </SelectTrigger>
           <SelectContent>

@@ -43,7 +43,7 @@ export function LocaleSwitcher() {
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-40">
+      <DropdownMenuContent align="end" className="w-fit min-w-36">
         {routing.locales.map((loc) => (
           <DropdownMenuItem
             key={loc}

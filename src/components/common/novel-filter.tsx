@@ -104,12 +104,12 @@ export function NovelFilter({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-[200px] justify-between gap-2 bg-card/50 border-border/50 hover:bg-accent/50",
+            "w-full justify-between gap-2 bg-card/50 border-border/50 hover:bg-accent/50",
             className
           )}
         >
           {selectedNovel ? (
-            <div className="flex items-center gap-2 truncate">
+            <div className="flex items-center gap-2 truncate" title={selectedNovel.title}>
               <div
                 className="h-2.5 w-2.5 rounded-full shrink-0"
                 style={{ backgroundColor: selectedNovel.color }}

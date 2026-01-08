@@ -237,7 +237,7 @@ export function SkillBrowserDialog({
         {/* 主内容区 */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* 左侧分类导航 */}
-          <nav className="w-32 shrink-0 border-r border-border/50 py-3 overflow-y-auto">
+          <nav className="min-w-32 w-fit shrink-0 border-r border-border/50 py-3 overflow-y-auto">
             <div className="space-y-1 px-2">
               {SKILL_CATEGORY_OPTIONS.map((option) => {
                 const isActive = categoryFilter === option.value;

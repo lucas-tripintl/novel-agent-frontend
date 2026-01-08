@@ -285,7 +285,7 @@ export function EntityBrowserDialog({
         {/* 主内容区 */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* 左侧分类导航 */}
-          <nav className="w-32 shrink-0 border-r border-border/50 py-3 overflow-y-auto">
+          <nav className="min-w-32 w-fit shrink-0 border-r border-border/50 py-3 overflow-y-auto">
             <div className="space-y-1 px-2">
               {typeOptions.map((option) => {
                 const isActive = typeFilter === option.value;

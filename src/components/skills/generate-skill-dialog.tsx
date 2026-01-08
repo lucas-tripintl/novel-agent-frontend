@@ -440,7 +440,7 @@ export function GenerateSkillDialog({
                         setPatternTypeFilter(v as EntityType | "all")
                       }
                     >
-                      <SelectTrigger className="w-36">
+                      <SelectTrigger className="w-auto min-w-28">
                         <SelectValue placeholder="模式类型" />
                       </SelectTrigger>
                       <SelectContent>
@@ -518,7 +518,7 @@ export function GenerateSkillDialog({
                         setEntityTypeFilter(v as EntityType | "all")
                       }
                     >
-                      <SelectTrigger className="w-36">
+                      <SelectTrigger className="w-auto min-w-28">
                         <SelectValue placeholder="设定类型" />
                       </SelectTrigger>
                       <SelectContent>

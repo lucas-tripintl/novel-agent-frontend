@@ -167,7 +167,7 @@ export default function ElementsPage() {
               selectedId={selectedProjectId}
               onSelectionChange={setSelectedProjectId}
               useGlobalStore={false}
-              className="w-48"
+              className="w-auto min-w-48 max-w-[240px]"
             />
 
             {/* 搜索 */}
@@ -193,7 +193,7 @@ export default function ElementsPage() {
         {/* 主内容区：左侧导航 + 右侧卡片 */}
         <div className="flex flex-1 min-h-0 pt-4 gap-6">
           {/* 左侧分类导航（固定不滚动） */}
-          <nav className="shrink-0 w-40">
+          <nav className="shrink-0 min-w-40 max-w-[200px] w-fit">
             <div className="space-y-1">
               {PATTERN_TYPE_OPTIONS.map((option) => {
                 const isActive = typeFilter === option.value;
@@ -217,7 +217,7 @@ export default function ElementsPage() {
                     )}>
                       {Icon}
                     </span>
-                    <span className="truncate">{t(option.labelKey)}</span>
+                    <span className="whitespace-nowrap">{t(option.labelKey)}</span>
                   </button>
                 );
               })}
