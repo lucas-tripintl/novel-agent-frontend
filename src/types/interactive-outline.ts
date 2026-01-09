@@ -131,9 +131,13 @@ export interface SSEStateData {
  * 后端需要将 outcome/state/interrupt 包装到 result 字段中
  */
 export interface OutlineRunResult {
-  outcome: "success" | "interrupt";
+  outcome: "success" | "interrupt" | "error";
   state?: SSEStateData;
   interrupt?: InterruptInfo;
+  error?: {
+    code: string;
+    message: string;
+  };
 }
 
 // ============ 生成模式配置 ============

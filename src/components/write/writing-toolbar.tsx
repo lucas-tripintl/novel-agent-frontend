@@ -4,7 +4,8 @@ import { useState, useMemo } from "react";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import type { ProjectRead } from "@/types/api";
-import { useWritingStore, useStreamingState } from "@/stores/writing-store";
+import { useWritingStore, useStreamingState, useInteractiveContentState } from "@/stores/writing-store";
+import { useInteractiveChapterWriting } from "@/hooks/use-interactive-chapter-writing";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -13,6 +14,16 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   ArrowLeft,
   Play,
@@ -24,6 +35,7 @@ import {
   PanelRightOpen,
   Wand2,
   FileText,
+  AlertCircle,
 } from "lucide-react";
 import { EditorSettings } from "./editor/editor-settings";
 import { WriteChapterDialog } from "./write-chapter-dialog";
@@ -50,6 +62,25 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
 
   const content = useWritingStore((state) => state.content);
   const { isStreaming } = useStreamingState();
+
+  // 交互式正文生成
+  const {
+    startGeneration,
+    isGenerating: isContentGenerating,
+    error: contentGenerationError,
+    clearError: clearContentGenerationError,
+  } = useInteractiveChapterWriting(project.id, chapterNumber);
+
+  const { contentGenerationCollabMode } = useInteractiveContentState();
+
+  // 判断错误类型，是否是缺少细纲的错误
+  const isOutlineRequiredError = contentGenerationError?.code === "OUTLINE_REQUIRED";
+
+  // 处理错误对话框的"生成细纲"按钮
+  const handleGenerateOutlineFromError = () => {
+    clearContentGenerationError();
+    setOutlineDialogOpen(true);
+  };
 
   // 计算字数
   const wordCount = useMemo(() => {
@@ -131,6 +162,7 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
               size="sm"
               className="gap-1.5 glow-primary"
               onClick={() => setDialogOpen(true)}
+              disabled={!chapterNumber || contentGenerationCollabMode}
             >
               <Play className="h-3.5 w-3.5" />
               <span>{t("generateContent")}</span>
@@ -234,6 +266,8 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
         chapterNumber={chapterNumber}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        onStartGeneration={startGeneration}
+        isGenerating={isContentGenerating}
       />
 
       {/* 生成设定对话框 */}
@@ -250,6 +284,33 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
         open={outlineDialogOpen}
         onOpenChange={setOutlineDialogOpen}
       />
+
+      {/* 正文生成错误对话框 */}
+      <AlertDialog
+        open={!!contentGenerationError}
+        onOpenChange={(open) => !open && clearContentGenerationError()}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              生成失败
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base">
+              {contentGenerationError?.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>关闭</AlertDialogCancel>
+            {isOutlineRequiredError && (
+              <AlertDialogAction onClick={handleGenerateOutlineFromError}>
+                <FileText className="mr-2 h-4 w-4" />
+                去生成细纲
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }

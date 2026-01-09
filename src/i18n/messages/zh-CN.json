@@ -383,7 +383,9 @@
     "skipUseRecommended": "跳过（使用推荐）",
     "confirmSelection": "确认选择",
     "waitingDecisionArrow": "等待决策 →",
-    "generatingBadge": "生成中"
+    "generatingBadge": "生成中",
+    "contentCreating": "AI 正在创作正文...",
+    "generationCompleted": "生成完成"
   },
   "login": {
     "title": "Astra Codex",

@@ -5,6 +5,7 @@
  */
 
 import { useCallback, useRef } from "react";
+import { toast } from "sonner";
 import type {
   AgentSubscriber,
   RunStartedEvent,
@@ -136,17 +137,36 @@ export function useInteractiveOutline(
             setStreamingOutline(finalContent);
             loadChapterOutline(finalContent);
           }
+        } else if (result.outcome === "error") {
+          // 打印错误信息便于调试（使用 warn 因为是业务错误）
+          console.warn("[OutlineGeneration] 生成错误:", JSON.stringify(result, null, 2));
+
+          // 提取错误消息并显示 toast
+          const errorObj = (result as { error?: { message?: unknown } }).error;
+          const errorMsg = errorObj?.message;
+          let displayMsg = "细纲生成失败";
+          if (typeof errorMsg === "string") {
+            displayMsg = errorMsg;
+          } else if (typeof errorMsg === "object" && errorMsg !== null) {
+            displayMsg = (errorMsg as { message?: string }).message || displayMsg;
+          }
+          toast.error(displayMsg);
+
+          setOutlineGenerationStatus("error");
+          exitGenerationCollabMode();
         } else {
-          // 其他 outcome (如 failure) 重置为 idle
-          console.warn("细纲生成结束，未知 outcome:", result.outcome);
+          // 其他 outcome 重置为 idle
+          console.warn("[OutlineGeneration] 未知 outcome:", result.outcome, result);
           setOutlineGenerationStatus("idle");
         }
       },
 
       onRunErrorEvent: ({ event }) => {
         const e = event as RunErrorEvent;
-        console.error("细纲生成错误:", e.message);
+        console.error("[OutlineGeneration] RunError:", e.message);
+        toast.error(e.message || "细纲生成失败");
         setOutlineGenerationStatus("error");
+        exitGenerationCollabMode();
       },
     }),
     [
@@ -156,6 +176,7 @@ export function useInteractiveOutline(
       setCurrentDecisionPoint,
       setOutlineGenerationStatus,
       loadChapterOutline,
+      exitGenerationCollabMode,
     ]
   );
 

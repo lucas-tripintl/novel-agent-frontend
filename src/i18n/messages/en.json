@@ -383,7 +383,9 @@
     "skipUseRecommended": "Skip (use recommended)",
     "confirmSelection": "Confirm",
     "waitingDecisionArrow": "Waiting →",
-    "generatingBadge": "Generating"
+    "generatingBadge": "Generating",
+    "contentCreating": "AI is writing content...",
+    "generationCompleted": "Completed"
   },
   "login": {
     "title": "Astra Codex",

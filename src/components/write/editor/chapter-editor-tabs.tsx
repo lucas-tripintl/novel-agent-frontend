@@ -6,6 +6,7 @@ import {
   useChapterOutlineState,
   useStreamingState,
   useInteractiveOutlineState,
+  useInteractiveContentState,
 } from "@/stores/writing-store";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { useInlineEdit } from "@/hooks/use-inline-edit";
 import { useGenerateChapterSummary } from "@/hooks/use-generate-summary";
 import { useTasks } from "@/hooks/use-tasks";
 import { useInteractiveOutline } from "@/hooks/use-interactive-outline";
+import { useInteractiveChapterWriting } from "@/hooks/use-interactive-chapter-writing";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, FileText, BookOpen, AlignLeft, Loader2 } from "lucide-react";
@@ -53,6 +55,16 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
     isGenerating: isInteractiveGenerating,
     isWaitingDecision,
   } = useInteractiveOutline(projectId, chapterNumber);
+
+  // 交互式正文生成状态
+  const { streamingContentText } = useInteractiveContentState();
+
+  // 交互式正文生成 hook
+  const {
+    isGenerating: isContentGenerating,
+    isWaitingDecision: isContentWaitingDecision,
+    isCompleted: isContentCompleted,
+  } = useInteractiveChapterWriting(projectId, chapterNumber);
 
   // 获取当前项目的任务列表
   const { data: tasksData } = useTasks(projectId);
@@ -232,13 +244,50 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
       </div>
 
       {/* 正文 Tab */}
-      <TabsContent value="content" className="flex-1 m-0 mt-0 min-h-0">
-        {isChapterWriting ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-4 min-h-[400px]">
+      <TabsContent value="content" className="flex-1 m-0 mt-0 min-h-0 p-4 flex flex-col">
+        {/* 交互式正文生成中（决策交互在右侧面板） */}
+        {isContentGenerating || isContentWaitingDecision || isContentCompleted ? (
+          <div className="flex-1 flex flex-col">
+            {/* 状态栏 */}
+            <div className="flex items-center gap-2 mb-3 shrink-0">
+              {isContentWaitingDecision ? (
+                <Badge variant="outline" className="text-amber-600 border-amber-500/30 gap-1.5">
+                  <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  {t("waitingDecisionArrow")}
+                </Badge>
+              ) : isContentCompleted ? (
+                <Badge variant="outline" className="text-green-600 border-green-500/30 gap-1.5">
+                  <Sparkles className="h-3 w-3" />
+                  {t("generationCompleted") || "生成完成"}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-primary border-primary/30 gap-1.5">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  {t("generatingBadge")}
+                </Badge>
+              )}
+            </div>
+
+            {/* 流式正文展示 - 只读 */}
+            <SimpleTiptapEditor
+              value={streamingContentText || ""}
+              onChange={() => {}}
+              targetType="content"
+              mode="multi-line"
+              markdown={false}
+              placeholder={t("contentCreating") || "AI 正在创作正文..."}
+              className="flex-1 min-h-[300px]"
+              enableInlineEdit={false}
+            />
+          </div>
+        ) : isChapterWriting ? (
+          /* 任务队列写作中（兼容旧方式） */
+          <div className="flex-1 flex flex-col items-center justify-center gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">{t("aiWriting")}</p>
           </div>
         ) : (
+          /* 正常编辑模式 */
           <TiptapEditor
             content={content}
             onChange={setContent}
@@ -250,6 +299,7 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
             onOpenCustomEdit={handleContentCustomEdit}
             onAcceptEdit={handleAcceptEdit}
             onRejectEdit={handleRejectEdit}
+            className="flex-1"
           />
         )}
       </TabsContent>

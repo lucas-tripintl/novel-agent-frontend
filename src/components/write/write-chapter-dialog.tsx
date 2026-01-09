@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,246 +11,337 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Loader2, Sparkles, ShieldCheck, RotateCcw, Hash } from "lucide-react";
-import { useWriteChapter } from "@/hooks/use-tasks";
-import { cn } from "@/lib/utils";
+  Loader2,
+  Sparkles,
+  Zap,
+  ChevronRight,
+  X,
+  Play,
+  PenLine,
+} from "lucide-react";
+import { EntityBrowserDialog } from "@/components/browser/entity-browser-dialog";
+import { SkillBrowserDialog } from "@/components/browser/skill-browser-dialog";
+import type { EntityRead } from "@/types/api";
+import type { SkillBrief } from "@/types/skills";
+import type {
+  ChapterGenerationMode,
+  ChapterDecisionDensity,
+  StartChapterWritingRequest,
+} from "@/types/chapter-writing";
+import {
+  chapterGenerationModes,
+  chapterDensityOptions,
+} from "@/types/chapter-writing";
 
 interface WriteChapterDialogProps {
   projectId: string;
   chapterNumber: number | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onStartGeneration: (
+    params: Omit<StartChapterWritingRequest, "chapter_number">
+  ) => Promise<void>;
+  isGenerating?: boolean;
 }
 
-const MAX_PROMPT_LENGTH = 2000;
-const DEFAULT_SCORE_THRESHOLD = 80;
-const DEFAULT_MAX_RETRIES = 3;
+const MAX_GUIDANCE_LENGTH = 2000;
 
 export function WriteChapterDialog({
   projectId,
-  chapterNumber: defaultChapterNumber,
+  chapterNumber,
   open,
   onOpenChange,
+  onStartGeneration,
+  isGenerating = false,
 }: WriteChapterDialogProps) {
   // Form state
-  const [chapterNumber, setChapterNumber] = useState<number | null>(defaultChapterNumber);
-  const [prompt, setPrompt] = useState("");
-  const [skipReview, setSkipReview] = useState(false);
-  const [scoreThreshold, setScoreThreshold] = useState(DEFAULT_SCORE_THRESHOLD);
-  const [maxRetries, setMaxRetries] = useState(DEFAULT_MAX_RETRIES.toString());
+  const [guidance, setGuidance] = useState("");
+  const [mode, setMode] = useState<ChapterGenerationMode>("interactive");
+  const [density, setDensity] = useState<ChapterDecisionDensity>("simple");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const writeChapterMutation = useWriteChapter();
+  // Entity/Skill selection state
+  const [selectedEntities, setSelectedEntities] = useState<EntityRead[]>([]);
+  const [selectedSkills, setSelectedSkills] = useState<SkillBrief[]>([]);
+  const [entityBrowserOpen, setEntityBrowserOpen] = useState(false);
+  const [skillBrowserOpen, setSkillBrowserOpen] = useState(false);
 
-  // Generate default prompt based on chapter number
-  const getDefaultPrompt = (num: number | null) => {
-    return num ? `完成第${num}章` : "续写当前章节";
-  };
+  // Sync with external props when dialog opens
+  useEffect(() => {
+    if (open) {
+      setGuidance("");
+      setMode("interactive");
+      setDensity("simple");
+      setSelectedEntities([]);
+      setSelectedSkills([]);
+    }
+  }, [open]);
 
   // Reset form and handle dialog state
   const handleOpenChange = (newOpen: boolean) => {
-    if (writeChapterMutation.isPending) return;
-
-    if (newOpen) {
-      // Reset form when opening
-      setChapterNumber(defaultChapterNumber);
-      setPrompt(getDefaultPrompt(defaultChapterNumber));
-      setSkipReview(false);
-      setScoreThreshold(DEFAULT_SCORE_THRESHOLD);
-      setMaxRetries(DEFAULT_MAX_RETRIES.toString());
-    }
+    if (isSubmitting || isGenerating) return;
     onOpenChange(newOpen);
   };
 
-  // Update prompt when chapter number changes
-  const handleChapterNumberChange = (value: string) => {
-    const num = value === "" ? null : parseInt(value);
-    if (num !== null && (isNaN(num) || num < 1)) return;
-    setChapterNumber(num);
-    // Update prompt to match new chapter number
-    setPrompt(getDefaultPrompt(num));
-  };
-
   const handleSubmit = async () => {
-    const finalPrompt = prompt.trim() || getDefaultPrompt(chapterNumber);
+    if (!chapterNumber) return;
 
+    setIsSubmitting(true);
     try {
-      await writeChapterMutation.mutateAsync({
-        projectId,
-        params: {
-          prompt: finalPrompt,
-          skip_review: skipReview,
-          chapter_number: chapterNumber ?? undefined,
-          max_retries: skipReview ? undefined : parseInt(maxRetries),
-          score_threshold: skipReview ? undefined : scoreThreshold,
-        },
+      await onStartGeneration({
+        mode,
+        density,
+        writing_guidance: guidance.trim() || undefined,
+        selected_entities:
+          selectedEntities.length > 0
+            ? selectedEntities.map((e) => e.id)
+            : undefined,
+        selected_skills:
+          selectedSkills.length > 0
+            ? selectedSkills.map((s) => s.id)
+            : undefined,
       });
-
-      handleOpenChange(false);
-    } catch {
-      // Error handled by mutation
+      // 关闭对话框（生成开始后）
+      onOpenChange(false);
+    } catch (err) {
+      console.error("启动生成失败:", err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const isPending = writeChapterMutation.isPending;
+  const isPending = isSubmitting || isGenerating;
+  const canSubmit = chapterNumber !== null && !isPending;
+
+  // 移除参考设定
+  const removeEntity = (entityId: string) => {
+    setSelectedEntities((prev) => prev.filter((e) => e.id !== entityId));
+  };
+
+  // 移除技能
+  const removeSkill = (skillId: string) => {
+    setSelectedSkills((prev) => prev.filter((s) => s.id !== skillId));
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[560px] h-[85vh] max-h-[700px] overflow-hidden flex flex-col">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            开始书写
+            <PenLine className="h-5 w-5 text-primary" />
+            生成正文
           </DialogTitle>
           <DialogDescription>
-            配置写作参数，AI 将为你完成章节创作
+            {chapterNumber
+              ? `配置第 ${chapterNumber} 章的正文生成参数`
+              : "请先选择一个章节"}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 py-4">
-          {/* Chapter Number */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Hash className="h-3.5 w-3.5 text-muted-foreground" />
-              <Label htmlFor="chapter-number">章节号</Label>
-            </div>
-            <Input
-              id="chapter-number"
-              type="number"
-              min={1}
-              placeholder="输入章节号"
-              value={chapterNumber ?? ""}
-              onChange={(e) => handleChapterNumberChange(e.target.value)}
-              disabled={isPending}
-              className="w-[120px]"
-            />
-            <p className="text-xs text-muted-foreground">
-              指定要写作的章节号，留空则续写当前章节
-            </p>
-          </div>
-
-          {/* Writing Prompt */}
-          <div className="space-y-2">
-            <Label htmlFor="write-prompt">写作提示</Label>
-            <Textarea
-              id="write-prompt"
-              placeholder="描述本章的写作目标或特殊要求..."
-              className="min-h-[100px] resize-none"
-              value={prompt}
-              onChange={(e) => {
-                if (e.target.value.length <= MAX_PROMPT_LENGTH) {
-                  setPrompt(e.target.value);
-                }
-              }}
-              disabled={isPending}
-            />
-            <p className="text-xs text-muted-foreground text-right">
-              {prompt.length}/{MAX_PROMPT_LENGTH}
-            </p>
-          </div>
-
-          {/* Skip Review Toggle */}
-          <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 p-4">
-            <div className="space-y-0.5">
-              <Label
-                htmlFor="skip-review"
-                className="text-sm font-medium cursor-pointer"
-              >
-                跳过审核流程
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                开启后直接生成，不进行一致性检查
-              </p>
-            </div>
-            <Switch
-              id="skip-review"
-              checked={skipReview}
-              onCheckedChange={setSkipReview}
-              disabled={isPending}
-            />
-          </div>
-
-          {/* Review Settings (shown when not skipping) */}
-          <div
-            className={cn(
-              "space-y-4 rounded-lg border border-border/50 p-4 transition-all duration-200",
-              skipReview
-                ? "opacity-40 pointer-events-none bg-muted/10"
-                : "bg-background"
-            )}
-          >
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <ShieldCheck className="h-4 w-4" />
-              审核设置
-            </div>
-
-            {/* Score Threshold Slider */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="score-threshold" className="text-sm">
-                  一致性评分阈值
-                </Label>
-                <span className="font-mono text-sm font-semibold text-primary">
-                  {scoreThreshold}分
-                </span>
-              </div>
-              <Slider
-                id="score-threshold"
-                value={[scoreThreshold]}
-                onValueChange={(value) => setScoreThreshold(value[0])}
-                min={0}
-                max={100}
-                step={5}
-                disabled={isPending || skipReview}
-                className="py-1"
-              />
-              <p className="text-xs text-muted-foreground">
-                低于此分数将触发改写，分数越高要求越严格
-              </p>
-            </div>
-
-            {/* Max Retries Select */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
-                <Label htmlFor="max-retries" className="text-sm">
-                  最大重试次数
-                </Label>
-              </div>
-              <Select
-                value={maxRetries}
-                onValueChange={setMaxRetries}
-                disabled={isPending || skipReview}
-              >
-                <SelectTrigger id="max-retries" className="w-[120px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[0, 1, 2, 3, 4, 5].map((n) => (
-                    <SelectItem key={n} value={n.toString()}>
-                      {n} 次
-                    </SelectItem>
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="space-y-5 py-4 pl-1 pr-4">
+              {/* 生成模式选择 */}
+              <div className="space-y-3">
+                <Label>生成模式</Label>
+                <RadioGroup
+                  value={mode}
+                  onValueChange={(v) => setMode(v as ChapterGenerationMode)}
+                  className="grid grid-cols-3 gap-2"
+                  disabled={isPending}
+                >
+                  {chapterGenerationModes.map((modeConfig) => (
+                    <label
+                      key={modeConfig.id}
+                      className={`
+                        flex flex-col items-center gap-1.5 p-3 rounded-lg border cursor-pointer
+                        transition-all hover:border-primary/50
+                        ${
+                          mode === modeConfig.id
+                            ? "border-primary bg-primary/5"
+                            : "border-border"
+                        }
+                        ${isPending ? "opacity-50 cursor-not-allowed" : ""}
+                      `}
+                    >
+                      <RadioGroupItem
+                        value={modeConfig.id}
+                        className="sr-only"
+                      />
+                      <span className="text-sm font-medium">
+                        {modeConfig.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground text-center leading-tight">
+                        {modeConfig.description}
+                      </span>
+                    </label>
                   ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                审核不通过时的最大改写尝试次数
-              </p>
+                </RadioGroup>
+              </div>
+
+              {/* 决策密度选择 */}
+              <div className="space-y-3">
+                <Label>决策密度</Label>
+                <RadioGroup
+                  value={density}
+                  onValueChange={(v) => setDensity(v as ChapterDecisionDensity)}
+                  className="grid grid-cols-2 gap-2"
+                  disabled={isPending}
+                >
+                  {chapterDensityOptions.map((densityConfig) => (
+                    <label
+                      key={densityConfig.id}
+                      className={`
+                        flex items-center gap-3 p-3 rounded-lg border cursor-pointer
+                        transition-all hover:border-primary/50
+                        ${
+                          density === densityConfig.id
+                            ? "border-primary bg-primary/5"
+                            : "border-border"
+                        }
+                        ${isPending ? "opacity-50 cursor-not-allowed" : ""}
+                      `}
+                    >
+                      <RadioGroupItem
+                        value={densityConfig.id}
+                        className="shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium">
+                          {densityConfig.name}
+                        </span>
+                        <p className="text-xs text-muted-foreground">
+                          {densityConfig.description}
+                        </p>
+                      </div>
+                    </label>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              {/* 创意指导 */}
+              <div className="space-y-2">
+                <Label htmlFor="guidance">创意指导（选填）</Label>
+                <Textarea
+                  id="guidance"
+                  placeholder="描述写作风格、重点内容、特殊要求...&#10;例如：本章重点描写主角的心理变化，节奏放缓，多用内心独白"
+                  className="min-h-[80px] resize-none"
+                  value={guidance}
+                  onChange={(e) => {
+                    if (e.target.value.length <= MAX_GUIDANCE_LENGTH) {
+                      setGuidance(e.target.value);
+                    }
+                  }}
+                  disabled={isPending}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {guidance.length}/{MAX_GUIDANCE_LENGTH} 字符
+                </p>
+              </div>
+
+              {/* 参考设定（选填） */}
+              <div className="space-y-2">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-between px-3 h-9 text-sm border border-border/50 hover:border-primary/30"
+                  onClick={() => setEntityBrowserOpen(true)}
+                  disabled={isPending}
+                >
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    参考设定（选填）
+                    {selectedEntities.length > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        已选 {selectedEntities.length}
+                      </Badge>
+                    )}
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Button>
+
+                {/* 已选设定预览 */}
+                {selectedEntities.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 p-2 bg-muted/50 rounded-md">
+                    {selectedEntities.slice(0, 5).map((entity) => (
+                      <Badge
+                        key={entity.id}
+                        variant="secondary"
+                        className="gap-1 pr-1 text-xs"
+                      >
+                        {entity.name}
+                        <button
+                          onClick={() => removeEntity(entity.id)}
+                          className="ml-0.5 hover:bg-muted rounded"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                    {selectedEntities.length > 5 && (
+                      <span className="text-xs text-muted-foreground">
+                        +{selectedEntities.length - 5} 个
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* 使用技能（选填） */}
+              <div className="space-y-2">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-between px-3 h-9 text-sm border border-border/50 hover:border-primary/30"
+                  onClick={() => setSkillBrowserOpen(true)}
+                  disabled={isPending}
+                >
+                  <span className="flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    使用技能（选填）
+                    {selectedSkills.length > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        已选 {selectedSkills.length}
+                      </Badge>
+                    )}
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Button>
+
+                {/* 已选技能预览 */}
+                {selectedSkills.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 p-2 bg-muted/50 rounded-md">
+                    {selectedSkills.slice(0, 5).map((skill) => (
+                      <Badge
+                        key={skill.id}
+                        variant="secondary"
+                        className="gap-1 pr-1 text-xs"
+                      >
+                        {skill.name}
+                        <button
+                          onClick={() => removeSkill(skill.id)}
+                          className="ml-0.5 hover:bg-muted rounded"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                    {selectedSkills.length > 5 && (
+                      <span className="text-xs text-muted-foreground">
+                        +{selectedSkills.length - 5} 个
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </ScrollArea>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="pt-4 border-t shrink-0">
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}
@@ -260,23 +351,42 @@ export function WriteChapterDialog({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isPending}
-            className="gap-1.5 glow-primary"
+            disabled={!canSubmit}
+            className="gap-1.5"
           >
             {isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                提交中...
-              </>
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                开始书写
-              </>
+              <Play className="h-4 w-4" />
             )}
+            {isPending ? "启动中..." : "开始生成"}
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* 设定浏览器对话框 */}
+      <EntityBrowserDialog
+        projectId={projectId}
+        open={entityBrowserOpen}
+        onOpenChange={setEntityBrowserOpen}
+        initialSelected={selectedEntities}
+        selectionMode="multiple"
+        onConfirm={setSelectedEntities}
+        title="选择参考设定"
+        description="选择用于正文生成的参考设定"
+      />
+
+      {/* 技能浏览器对话框 */}
+      <SkillBrowserDialog
+        open={skillBrowserOpen}
+        onOpenChange={setSkillBrowserOpen}
+        initialSelected={selectedSkills}
+        stageFilter="writing"
+        selectionMode="multiple"
+        onConfirm={setSelectedSkills}
+        title="选择技能"
+        description="选择用于正文生成的写作技能"
+      />
     </Dialog>
   );
 }

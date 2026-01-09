@@ -47,6 +47,7 @@ import { SessionHistory } from "../assistant/session-history";
 import { ModelSelector } from "../assistant/model-selector";
 import { DecisionPanel } from "../assistant/decision-panel";
 import { useInteractiveOutline } from "@/hooks/use-interactive-outline";
+import { useInteractiveChapterWriting } from "@/hooks/use-interactive-chapter-writing";
 import type { ChatMessage as ChatMessageType } from "@/types/writing";
 import type { SendChatMessageRequest } from "@/types/chat";
 
@@ -88,9 +89,14 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
   const chapterNumber = useWritingStore((state) => state.chapterNumber);
   const generationCollabMode = useWritingStore((state) => state.generationCollabMode);
   const exitGenerationCollabMode = useWritingStore((state) => state.exitGenerationCollabMode);
+  const contentGenerationCollabMode = useWritingStore((state) => state.contentGenerationCollabMode);
+  const exitContentGenerationCollabMode = useWritingStore((state) => state.exitContentGenerationCollabMode);
 
   // 交互式细纲生成 hook
   const interactiveOutline = useInteractiveOutline(projectId, chapterNumber);
+
+  // 交互式正文生成 hook
+  const interactiveContent = useInteractiveChapterWriting(projectId, chapterNumber);
 
   // 获取会话列表（用于自动创建会话）
   const { data: sessionsData } = useChatSessions(projectId, { status: "active" });
@@ -364,7 +370,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
     }
   }, [createSession, isCreatingSession, isStreaming, selectedModelId, setCurrentChatSession]);
 
-  // 生成协作模式 - 显示决策面板
+  // 细纲生成协作模式 - 显示决策面板
   if (generationCollabMode) {
     return (
       <DecisionPanel
@@ -379,6 +385,30 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
         }}
         onComplete={() => {
           exitGenerationCollabMode();
+        }}
+      />
+    );
+  }
+
+  // 正文生成协作模式 - 显示决策面板
+  if (contentGenerationCollabMode) {
+    return (
+      <DecisionPanel
+        status={interactiveContent.status}
+        decision={interactiveContent.currentDecision}
+        onSelectOption={interactiveContent.selectOption}
+        onSkip={interactiveContent.skipDecision}
+        onCustomInput={interactiveContent.submitCustomInput}
+        onStop={() => {
+          interactiveContent.stopGeneration();
+        }}
+        onComplete={async () => {
+          // 确认保存正文
+          try {
+            await interactiveContent.confirmCompletion();
+          } catch (err) {
+            console.error("保存正文失败:", err);
+          }
         }}
       />
     );

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo, useEffect, useRef, memo } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef, memo, startTransition } from "react";
 import { useProjectChapters, useDeleteChapter, useCreateChapter } from "@/hooks/use-projects";
 import { useWritingStore, useEntityEditing, useEditorContent, useOutlineEditing, useChapterOutlineState, useChapterSaveState } from "@/stores/writing-store";
 import { updateChapter } from "@/lib/api/projects";
@@ -158,14 +158,18 @@ const ChapterListItem = memo(
       </div>
     );
   },
-  // 自定义比较函数：只在关键属性改变时才 re-render
+  // 自定义比较函数：检查所有影响渲染的 props
+  // 由于 onSelect/onEdit/onDelete 现在使用 useCallback 稳定化，它们的引用稳定
   (prev, next) =>
     prev.chapter.id === next.chapter.id &&
     prev.chapter.title === next.chapter.title &&
     prev.chapter.word_count === next.chapter.word_count &&
     prev.chapter.analyzed === next.chapter.analyzed &&
     prev.isActive === next.isActive &&
-    prev.isSwitchingTo === next.isSwitchingTo
+    prev.isSwitchingTo === next.isSwitchingTo &&
+    prev.onSelect === next.onSelect &&
+    prev.onEdit === next.onEdit &&
+    prev.onDelete === next.onDelete
 );
 
 export function ChapterList({ projectId }: ChapterListProps) {
@@ -215,17 +219,39 @@ export function ChapterList({ projectId }: ChapterListProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  // 编辑/删除处理
-  const handleEditClick = (chapter: ChapterRead) => {
+  // 使用 ref 存储最新状态，避免 memo 子组件使用陈旧的闭包
+  const stateRef = useRef({
+    chapterId,
+    editingEntity,
+    editingOutline,
+    isEntityDirty,
+    isChapterDirty,
+    isChapterOutlineDirty,
+  });
+
+  // 保持 ref 与最新状态同步
+  useEffect(() => {
+    stateRef.current = {
+      chapterId,
+      editingEntity,
+      editingOutline,
+      isEntityDirty,
+      isChapterDirty,
+      isChapterOutlineDirty,
+    };
+  });
+
+  // 编辑/删除处理 - 使用 useCallback 稳定化回调
+  const handleEditClick = useCallback((chapter: ChapterRead) => {
     setChapterToEdit(chapter);
     setEditSheetOpen(true);
-  };
+  }, []);
 
-  const handleDeleteClick = (chapter: ChapterRead) => {
+  const handleDeleteClick = useCallback((chapter: ChapterRead) => {
     setChapterToDelete(chapter);
     setKeepOutline(true);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
   const handleDeleteConfirm = async () => {
     if (chapterToDelete) {
@@ -272,32 +298,48 @@ export function ChapterList({ projectId }: ChapterListProps) {
 
   // 执行章节切换
   const doSwitchChapter = useCallback((targetChapterId: string, targetChapterNumber: number) => {
-    // 设置正在切换的章节ID（用于即时视觉反馈）
+    // 设置正在切换的章节ID（用于即时视觉反馈）- 这是紧急更新
     setSwitchingToChapterId(targetChapterId);
-    // 先关闭设定编辑器
-    if (editingEntity) {
-      closeEntityEditor();
-    }
-    // 关闭大纲编辑器
-    if (editingOutline) {
-      closeOutlineEditor();
-    }
-    // 使用轻量级的章节切换（不清空编辑器内容，减少 re-render）
-    setChapterContext(targetChapterId, targetChapterNumber);
+
+    // 使用 startTransition 将非紧急更新标记为低优先级，避免阻塞 UI
+    startTransition(() => {
+      // 先关闭设定编辑器
+      if (stateRef.current.editingEntity) {
+        closeEntityEditor();
+      }
+      // 关闭大纲编辑器
+      if (stateRef.current.editingOutline) {
+        closeOutlineEditor();
+      }
+      // 使用轻量级的章节切换
+      setChapterContext(targetChapterId, targetChapterNumber);
+    });
+
     // 切换完成后清除加载状态（使用 requestAnimationFrame 让动画更平滑）
     requestAnimationFrame(() => {
       setTimeout(() => setSwitchingToChapterId(null), 150);
     });
-  }, [editingEntity, closeEntityEditor, editingOutline, closeOutlineEditor, setChapterContext]);
+  }, [closeEntityEditor, closeOutlineEditor, setChapterContext]);
 
   const [pendingChapterNumber, setPendingChapterNumber] = useState<number | null>(null);
 
-  const handleSelectChapter = (selectedChapterId: string, selectedChapterNumber: number) => {
+  // 使用 useCallback 稳定化回调，从 ref 读取最新状态避免陈旧闭包问题
+  const handleSelectChapter = useCallback((selectedChapterId: string, selectedChapterNumber: number) => {
+    // 从 ref 读取最新状态
+    const {
+      chapterId: currentChapterId,
+      editingEntity: currentEditingEntity,
+      editingOutline: currentEditingOutline,
+      isEntityDirty: currentIsEntityDirty,
+      isChapterDirty: currentIsChapterDirty,
+      isChapterOutlineDirty: currentIsChapterOutlineDirty,
+    } = stateRef.current;
+
     // 如果点击的是当前章节，且不在设定/大纲编辑模式，不做任何操作
-    if (selectedChapterId === chapterId && !editingEntity && !editingOutline) return;
+    if (selectedChapterId === currentChapterId && !currentEditingEntity && !currentEditingOutline) return;
 
     // 检查是否有未保存的更改（设定编辑、章节编辑或细纲编辑）
-    const hasUnsavedChanges = isEntityDirty || ((isChapterDirty || isChapterOutlineDirty) && !editingEntity);
+    const hasUnsavedChanges = currentIsEntityDirty || ((currentIsChapterDirty || currentIsChapterOutlineDirty) && !currentEditingEntity);
 
     if (hasUnsavedChanges) {
       setPendingChapterId(selectedChapterId);
@@ -306,7 +348,7 @@ export function ChapterList({ projectId }: ChapterListProps) {
     } else {
       doSwitchChapter(selectedChapterId, selectedChapterNumber);
     }
-  };
+  }, [doSwitchChapter]);
 
   // 保存当前章节并切换
   const handleSaveAndSwitch = async () => {

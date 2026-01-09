@@ -28,6 +28,7 @@ import type {
   OutlineGenerationStatus,
   DecisionPoint,
 } from "@/types/interactive-outline";
+import type { ContentGenerationStatus } from "@/types/chapter-writing";
 import {
   initialInlineEditContext,
   defaultQuickActionsConfig,
@@ -184,6 +185,23 @@ interface WritingState {
   outlineDraftId: string | null;
   /** 是否处于生成协作模式（右侧面板显示决策面板而非聊天） */
   generationCollabMode: boolean;
+
+  // ============ 交互式正文生成 ============
+  /** 正文生成状态 */
+  contentGenerationStatus: ContentGenerationStatus;
+  /** 流式生成的正文内容 */
+  streamingContentText: string;
+  /** 当前正文决策点 */
+  contentDecisionPoint: DecisionPoint | null;
+  /** 正文草稿 ID */
+  contentDraftId: string | null;
+  /** 是否处于正文生成协作模式 */
+  contentGenerationCollabMode: boolean;
+  /** 正文生成错误（用于显示错误对话框） */
+  contentGenerationError: {
+    code: string;
+    message: string;
+  } | null;
 
   // ============ Actions ============
   /** 设置当前项目和章节（完整重置，用于首次进入或项目切换） */
@@ -344,6 +362,28 @@ interface WritingState {
   /** 退出生成协作模式 */
   exitGenerationCollabMode: () => void;
 
+  // ============ 交互式正文生成 Actions ============
+  /** 设置正文生成状态 */
+  setContentGenerationStatus: (status: ContentGenerationStatus) => void;
+  /** 设置流式正文内容 */
+  setStreamingContentText: (content: string) => void;
+  /** 追加流式正文内容 */
+  appendStreamingContentText: (delta: string) => void;
+  /** 设置当前正文决策点 */
+  setContentDecisionPoint: (point: DecisionPoint | null) => void;
+  /** 设置正文草稿 ID */
+  setContentDraftId: (id: string | null) => void;
+  /** 重置正文生成状态 */
+  resetContentGeneration: () => void;
+  /** 进入正文生成协作模式 */
+  enterContentGenerationCollabMode: () => void;
+  /** 退出正文生成协作模式 */
+  exitContentGenerationCollabMode: () => void;
+  /** 设置正文生成错误 */
+  setContentGenerationError: (error: { code: string; message: string } | null) => void;
+  /** 清除正文生成错误 */
+  clearContentGenerationError: () => void;
+
   /** 重置状态 */
   reset: () => void;
 }
@@ -416,6 +456,13 @@ const initialState = {
   currentDecisionPoint: null,
   outlineDraftId: null,
   generationCollabMode: false,
+  // 交互式正文生成
+  contentGenerationStatus: "idle" as ContentGenerationStatus,
+  streamingContentText: "",
+  contentDecisionPoint: null,
+  contentDraftId: null,
+  contentGenerationCollabMode: false,
+  contentGenerationError: null,
 };
 
 export const useWritingStore = create<WritingState>()(
@@ -791,6 +838,7 @@ export const useWritingStore = create<WritingState>()(
       enterGenerationCollabMode: () =>
         set({
           generationCollabMode: true,
+          contentGenerationCollabMode: false, // 互斥：退出正文生成协作模式
           isRightPaneCollapsed: false, // 自动展开右侧面板
         }),
 
@@ -798,6 +846,51 @@ export const useWritingStore = create<WritingState>()(
         set({
           generationCollabMode: false,
         }),
+
+      // ============ 交互式正文生成 Actions 实现 ============
+      setContentGenerationStatus: (status) =>
+        set({ contentGenerationStatus: status }),
+
+      setStreamingContentText: (content) =>
+        set({ streamingContentText: content }),
+
+      appendStreamingContentText: (delta) =>
+        set((state) => ({
+          streamingContentText: state.streamingContentText + delta,
+        })),
+
+      setContentDecisionPoint: (point) =>
+        set({ contentDecisionPoint: point }),
+
+      setContentDraftId: (id) =>
+        set({ contentDraftId: id }),
+
+      resetContentGeneration: () =>
+        set({
+          contentGenerationStatus: "idle" as ContentGenerationStatus,
+          streamingContentText: "",
+          contentDecisionPoint: null,
+          contentDraftId: null,
+          contentGenerationError: null,
+        }),
+
+      enterContentGenerationCollabMode: () =>
+        set({
+          contentGenerationCollabMode: true,
+          generationCollabMode: false, // 互斥：退出细纲生成协作模式
+          isRightPaneCollapsed: false, // 自动展开右侧面板
+        }),
+
+      exitContentGenerationCollabMode: () =>
+        set({
+          contentGenerationCollabMode: false,
+        }),
+
+      setContentGenerationError: (error) =>
+        set({ contentGenerationError: error }),
+
+      clearContentGenerationError: () =>
+        set({ contentGenerationError: null }),
 
       reset: () => set(initialState),
     }),
@@ -1062,6 +1155,33 @@ export function useInteractiveOutlineState() {
       // 关联的 actions
       setActiveEditorTab: state.setActiveEditorTab,
       loadChapterOutline: state.loadChapterOutline,
+    }))
+  );
+}
+
+/** 获取交互式正文生成状态 */
+export function useInteractiveContentState() {
+  return useWritingStore(
+    useShallow((state) => ({
+      contentGenerationStatus: state.contentGenerationStatus,
+      streamingContentText: state.streamingContentText,
+      contentDecisionPoint: state.contentDecisionPoint,
+      contentDraftId: state.contentDraftId,
+      contentGenerationCollabMode: state.contentGenerationCollabMode,
+      contentGenerationError: state.contentGenerationError,
+      setContentGenerationStatus: state.setContentGenerationStatus,
+      setStreamingContentText: state.setStreamingContentText,
+      appendStreamingContentText: state.appendStreamingContentText,
+      setContentDecisionPoint: state.setContentDecisionPoint,
+      setContentDraftId: state.setContentDraftId,
+      resetContentGeneration: state.resetContentGeneration,
+      enterContentGenerationCollabMode: state.enterContentGenerationCollabMode,
+      exitContentGenerationCollabMode: state.exitContentGenerationCollabMode,
+      setContentGenerationError: state.setContentGenerationError,
+      clearContentGenerationError: state.clearContentGenerationError,
+      // 关联的 actions
+      setActiveEditorTab: state.setActiveEditorTab,
+      setContent: state.setContent,
     }))
   );
 }
