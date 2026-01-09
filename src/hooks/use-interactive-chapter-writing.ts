@@ -13,6 +13,7 @@ import type {
   RunErrorEvent,
   StateDeltaEvent,
   StateSnapshotEvent,
+  TextMessageContentEvent,
 } from "@ag-ui/client";
 import { useInteractiveContentState } from "@/stores/writing-store";
 import { ChapterWritingAgent } from "@/lib/api/chapter-writing-agent";
@@ -22,6 +23,7 @@ import {
   abandonChapterDraft,
   confirmChapterDraft,
 } from "@/lib/api/chapter-writing";
+import { projectKeys } from "@/hooks/use-projects";
 import type {
   StartChapterWritingRequest,
   ChapterWritingDraft,
@@ -86,6 +88,15 @@ export function useInteractiveChapterWriting(
         }
       },
 
+      // 处理 TEXT_MESSAGE_CONTENT 事件（流式文本）
+      onTextMessageContentEvent: ({ event }) => {
+        const e = event as TextMessageContentEvent;
+        if (e.delta) {
+          appendStreamingContentText(e.delta);
+        }
+      },
+
+      // 处理 STATE_DELTA 事件（兼容旧格式）
       onStateDeltaEvent: ({ event }) => {
         const e = event as StateDeltaEvent;
         if (e.delta) {
@@ -392,14 +403,15 @@ export function useInteractiveChapterWriting(
     try {
       const result = await confirmChapterDraft(projectId, contentDraftId);
 
-      if (result.success && result.result?.content) {
-        // 更新编辑器内容
-        setContent(result.result.content);
+      // 更新编辑器内容：优先使用后端返回的内容，否则使用流式积累的内容
+      const finalContent = result.result?.content || streamingContentText;
+      if (finalContent) {
+        setContent(finalContent);
       }
 
-      // 刷新章节数据
-      queryClient.invalidateQueries({ queryKey: ["chapters", projectId] });
-      queryClient.invalidateQueries({ queryKey: ["chapterDetail"] });
+      // 刷新章节数据（使用正确的 queryKey）
+      queryClient.invalidateQueries({ queryKey: projectKeys.chapters(projectId) });
+      queryClient.invalidateQueries({ queryKey: projectKeys.chapter(projectId, chapterNumber!) });
 
       // 重置生成状态
       resetContentGeneration();
@@ -413,6 +425,7 @@ export function useInteractiveChapterWriting(
   }, [
     projectId,
     contentDraftId,
+    streamingContentText,
     setContent,
     queryClient,
     resetContentGeneration,

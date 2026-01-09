@@ -357,6 +357,7 @@
     "generateSummary": "生成摘要",
     "waitingDecision": "等待決策...",
     "generatingOutline": "正在生成細綱...",
+    "generatingContent": "正在生成正文...",
     "contentPlaceholder": "開始創作你的故事...",
     "outlineCreating": "AI 正在創作細綱...",
     "outlinePlaceholder": "輸入章節細綱：劇情設計、情緒節奏、衝突設計、爽點伏筆...",

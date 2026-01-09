@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect, useRef } from "react";
 import {
   useWritingStore,
   useChapterOutlineState,
@@ -12,7 +12,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { TiptapEditor } from "./tiptap-editor";
-import { SimpleTiptapEditor } from "./simple-tiptap-editor";
+import {
+  SimpleTiptapEditor,
+  type SimpleTiptapEditorController,
+} from "./simple-tiptap-editor";
 import { useInlineEdit } from "@/hooks/use-inline-edit";
 import { useGenerateChapterSummary } from "@/hooks/use-generate-summary";
 import { useTasks } from "@/hooks/use-tasks";
@@ -58,7 +61,11 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
   } = useInteractiveOutline(projectId, chapterNumber);
 
   // 交互式正文生成状态
-  const { streamingContentText } = useInteractiveContentState();
+  const {
+    streamingContentText,
+    registerStreamingContentEditorAppend,
+    unregisterStreamingContentEditorAppend,
+  } = useInteractiveContentState();
 
   // 编辑器设置（字体等）
   const { settings: editorSettings } = useEditorSettings();
@@ -201,6 +208,28 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
   // 是否显示生成摘要按钮（仅在摘要 Tab）
   const showGenerateButton = activeEditorTab === "summary";
 
+  // ========== 流式正文编辑器控制器 ==========
+  const contentEditorControllerRef = useRef<SimpleTiptapEditorController | null>(null);
+
+  // 编辑器就绪时保存控制器并注册增量插入回调
+  const handleContentEditorReady = useCallback(
+    (controller: SimpleTiptapEditorController) => {
+      contentEditorControllerRef.current = controller;
+      // 注册增量插入回调到 store
+      registerStreamingContentEditorAppend(controller.appendContent);
+    },
+    [registerStreamingContentEditorAppend]
+  );
+
+  // 正文生成结束时取消注册回调
+  useEffect(() => {
+    // 当不再是生成状态时，取消注册回调
+    if (!isContentGenerating && !isContentWaitingDecision && !isContentCompleted) {
+      unregisterStreamingContentEditorAppend();
+      contentEditorControllerRef.current = null;
+    }
+  }, [isContentGenerating, isContentWaitingDecision, isContentCompleted, unregisterStreamingContentEditorAppend]);
+
   return (
     <Tabs
       value={activeEditorTab}
@@ -272,9 +301,9 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
               )}
             </div>
 
-            {/* 流式正文展示 - 只读 */}
+            {/* 流式正文展示 - 生成中用增量插入，决策/完成时显示已有内容 */}
             <SimpleTiptapEditor
-              value={streamingContentText || ""}
+              value={isContentGenerating ? "" : streamingContentText || ""}
               onChange={() => {}}
               targetType="content"
               mode="multi-line"
@@ -283,6 +312,8 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
               className="flex-1 min-h-[300px]"
               enableInlineEdit={false}
               editorSettings={editorSettings}
+              streamingMode={isContentGenerating}
+              onEditorReady={handleContentEditorReady}
             />
           </div>
         ) : isChapterWriting ? (

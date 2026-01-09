@@ -25,6 +25,14 @@ import { InlineEditDecoration } from "./extensions/inline-edit-decoration";
 import { SelectionToolbar } from "./selection-toolbar";
 import { FloatingInlineEditActions } from "./inline-edit-actions";
 
+/** 编辑器控制器接口 */
+export interface SimpleTiptapEditorController {
+  /** 增量追加内容到末尾 */
+  appendContent: (text: string) => void;
+  /** 清空内容 */
+  clearContent: () => void;
+}
+
 export interface SimpleTiptapEditorProps {
   /** 内容（纯文本或 Markdown） */
   value: string;
@@ -48,6 +56,13 @@ export interface SimpleTiptapEditorProps {
   disabled?: boolean;
   /** 是否只读（与 disabled 区别：只读仍可选中文本） */
   readOnly?: boolean;
+  /**
+   * 流式模式：启用后禁用 value 同步，改用 onEditorReady 提供的 appendContent 进行增量插入
+   * 适用于 SSE 流式内容生成场景
+   */
+  streamingMode?: boolean;
+  /** 编辑器就绪回调，返回控制器用于增量插入 */
+  onEditorReady?: (controller: SimpleTiptapEditorController) => void;
   /** 快捷操作回调 */
   onQuickAction?: (
     action: QuickAction,
@@ -91,6 +106,8 @@ export function SimpleTiptapEditor({
   enableInlineEdit = true,
   disabled = false,
   readOnly = false,
+  streamingMode = false,
+  onEditorReady,
   onQuickAction,
   onOpenCustomEdit,
   onAcceptEdit,
@@ -211,9 +228,9 @@ export function SimpleTiptapEditor({
     },
   });
 
-  // 同步外部 value 变化到编辑器
+  // 同步外部 value 变化到编辑器（流式模式下跳过，改用增量插入）
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || streamingMode) return;
 
     // 获取当前编辑器内容用于比较
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -234,7 +251,53 @@ export function SimpleTiptapEditor({
         isSettingContentRef.current = false;
       }, 0);
     }
-  }, [editor, value, markdown]);
+  }, [editor, value, markdown, streamingMode]);
+
+  // 流式模式：提供编辑器控制器
+  useEffect(() => {
+    if (!editor || !onEditorReady) return;
+
+    const controller: SimpleTiptapEditorController = {
+      appendContent: (text: string) => {
+        // 获取文档末尾的有效插入位置
+        const { state, view } = editor;
+        // 文档末尾位置 = doc.content.size（不含结束标签）
+        // 但需要在最后一个段落内部插入，所以减 1
+        const endPos = state.doc.content.size - 1;
+
+        // 处理换行符：\n\n 创建新段落，\n 插入 <br>
+        if (text.includes("\n\n")) {
+          // 包含段落分隔，使用 HTML 插入
+          const html = text
+            .split(/\n\n+/)
+            .map((para, i) => {
+              const content = para.replace(/\n/g, "<br>");
+              return i === 0 ? content : `</p><p>${content}`;
+            })
+            .join("");
+
+          editor.commands.insertContentAt(endPos, html, {
+            updateSelection: true,
+          });
+        } else if (text.includes("\n")) {
+          // 只有单换行，转换为 <br>
+          const html = text.replace(/\n/g, "<br>");
+          editor.commands.insertContentAt(endPos, html, {
+            updateSelection: true,
+          });
+        } else {
+          // 纯文本直接插入，不创建新节点
+          const tr = state.tr.insertText(text, endPos);
+          view.dispatch(tr);
+        }
+      },
+      clearContent: () => {
+        editor.commands.clearContent();
+      },
+    };
+
+    onEditorReady(controller);
+  }, [editor, onEditorReady]);
 
   // 同步 editable 状态
   useEffect(() => {

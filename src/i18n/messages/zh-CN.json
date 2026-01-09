@@ -356,6 +356,7 @@
     "generateSummary": "生成摘要",
     "waitingDecision": "等待决策...",
     "generatingOutline": "正在生成细纲...",
+    "generatingContent": "正在生成正文...",
     "contentPlaceholder": "开始创作你的故事...",
     "outlineCreating": "AI 正在创作细纲...",
     "outlinePlaceholder": "输入章节细纲：剧情设计、情绪节奏、冲突设计、爽点伏笔...",

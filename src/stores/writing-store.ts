@@ -197,6 +197,8 @@ interface WritingState {
   contentDraftId: string | null;
   /** 是否处于正文生成协作模式 */
   contentGenerationCollabMode: boolean;
+  /** 编辑器增量插入回调（用于流式生成优化） */
+  streamingContentEditorAppend: ((text: string) => void) | null;
   /** 正文生成错误（用于显示错误对话框） */
   contentGenerationError: {
     code: string;
@@ -383,6 +385,10 @@ interface WritingState {
   setContentGenerationError: (error: { code: string; message: string } | null) => void;
   /** 清除正文生成错误 */
   clearContentGenerationError: () => void;
+  /** 注册编辑器增量插入回调 */
+  registerStreamingContentEditorAppend: (callback: (text: string) => void) => void;
+  /** 取消注册编辑器增量插入回调 */
+  unregisterStreamingContentEditorAppend: () => void;
 
   /** 重置状态 */
   reset: () => void;
@@ -462,6 +468,7 @@ const initialState = {
   contentDecisionPoint: null,
   contentDraftId: null,
   contentGenerationCollabMode: false,
+  streamingContentEditorAppend: null,
   contentGenerationError: null,
 };
 
@@ -512,6 +519,20 @@ export const useWritingStore = create<WritingState>()(
           // 清空细纲
           chapterOutline: "",
           isChapterOutlineDirty: false,
+          // 重置细纲生成状态
+          outlineGenerationStatus: "idle" as OutlineGenerationStatus,
+          streamingOutline: "",
+          currentDecisionPoint: null,
+          outlineDraftId: null,
+          generationCollabMode: false,
+          // 重置正文生成状态
+          contentGenerationStatus: "idle" as ContentGenerationStatus,
+          streamingContentText: "",
+          contentDecisionPoint: null,
+          contentDraftId: null,
+          contentGenerationCollabMode: false,
+          streamingContentEditorAppend: null,
+          contentGenerationError: null,
         }),
 
       setMode: (mode) => {
@@ -854,10 +875,17 @@ export const useWritingStore = create<WritingState>()(
       setStreamingContentText: (content) =>
         set({ streamingContentText: content }),
 
-      appendStreamingContentText: (delta) =>
+      appendStreamingContentText: (delta) => {
+        const { streamingContentEditorAppend } = get();
+        // 优先使用编辑器增量插入回调（高效）
+        if (streamingContentEditorAppend) {
+          streamingContentEditorAppend(delta);
+        }
+        // 同时累积到字符串（用于完整内容记录）
         set((state) => ({
           streamingContentText: state.streamingContentText + delta,
-        })),
+        }));
+      },
 
       setContentDecisionPoint: (point) =>
         set({ contentDecisionPoint: point }),
@@ -891,6 +919,12 @@ export const useWritingStore = create<WritingState>()(
 
       clearContentGenerationError: () =>
         set({ contentGenerationError: null }),
+
+      registerStreamingContentEditorAppend: (callback) =>
+        set({ streamingContentEditorAppend: callback }),
+
+      unregisterStreamingContentEditorAppend: () =>
+        set({ streamingContentEditorAppend: null }),
 
       reset: () => set(initialState),
     }),
@@ -1179,6 +1213,8 @@ export function useInteractiveContentState() {
       exitContentGenerationCollabMode: state.exitContentGenerationCollabMode,
       setContentGenerationError: state.setContentGenerationError,
       clearContentGenerationError: state.clearContentGenerationError,
+      registerStreamingContentEditorAppend: state.registerStreamingContentEditorAppend,
+      unregisterStreamingContentEditorAppend: state.unregisterStreamingContentEditorAppend,
       // 关联的 actions
       setActiveEditorTab: state.setActiveEditorTab,
       setContent: state.setContent,

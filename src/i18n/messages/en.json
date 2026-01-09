@@ -356,6 +356,7 @@
     "generateSummary": "Generate Summary",
     "waitingDecision": "Waiting for decision...",
     "generatingOutline": "Generating outline...",
+    "generatingContent": "Generating content...",
     "contentPlaceholder": "Start writing your story...",
     "outlineCreating": "AI is creating outline...",
     "outlinePlaceholder": "Enter chapter outline: plot design, pacing, conflicts, highlights...",
