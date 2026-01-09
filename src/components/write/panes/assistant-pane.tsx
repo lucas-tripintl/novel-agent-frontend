@@ -410,6 +410,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
             console.error("保存正文失败:", err);
           }
         }}
+        generationType="content"
       />
     );
   }

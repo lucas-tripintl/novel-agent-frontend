@@ -42,6 +42,8 @@ interface DecisionPanelProps {
     question: string;
     chosenLabel: string;
   }>;
+  /** 生成类型：细纲或正文（用于显示不同完成消息） */
+  generationType?: "outline" | "content";
 }
 
 /**
@@ -62,6 +64,7 @@ export function DecisionPanel({
   onStop,
   onComplete,
   decisionsForDisplay = [],
+  generationType = "outline",
 }: DecisionPanelProps) {
   const t = useTranslations("write");
 
@@ -167,7 +170,9 @@ export function DecisionPanel({
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-green-500/5">
           <CheckCircle2 className="h-5 w-5 text-green-500" />
           <div className="flex-1">
-            <p className="text-sm font-medium">{t("outlineCompleted")}</p>
+            <p className="text-sm font-medium">
+              {generationType === "content" ? t("contentCompleted") : t("outlineCompleted")}
+            </p>
             <p className="text-xs text-muted-foreground">{t("autoSaved")}</p>
           </div>
         </div>
@@ -195,7 +200,9 @@ export function DecisionPanel({
               <div className="text-center py-8">
                 <CheckCircle2 className="h-10 w-10 text-green-500/50 mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground">
-                  {t("outlineGeneratedSuccessfully")}
+                  {generationType === "content"
+                    ? t("contentGeneratedSuccessfully")
+                    : t("outlineGeneratedSuccessfully")}
                 </p>
               </div>
             )}

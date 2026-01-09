@@ -20,6 +20,7 @@ import { Markdown } from "tiptap-markdown";
 import { cn } from "@/lib/utils";
 import { useInlineEditState } from "@/stores/writing-store";
 import type { QuickAction, EditTargetType } from "@/types/inline-edit";
+import { fontFamilies, type EditorFontFamily, type EditorSettings } from "@/types/writing";
 import { InlineEditDecoration } from "./extensions/inline-edit-decoration";
 import { SelectionToolbar } from "./selection-toolbar";
 import { FloatingInlineEditActions } from "./inline-edit-actions";
@@ -68,6 +69,14 @@ export interface SimpleTiptapEditorProps {
   onFocus?: () => void;
   /** 失焦回调 */
   onBlur?: () => void;
+  /** 编辑器样式设置（可选，用于流式显示时应用字体） */
+  editorSettings?: EditorSettings;
+}
+
+/** 获取字体 CSS 类名 */
+function getFontClass(fontFamily: EditorFontFamily): string {
+  const font = fontFamilies.find((f) => f.id === fontFamily);
+  return font?.fontClass ?? "font-sans";
 }
 
 export function SimpleTiptapEditor({
@@ -89,6 +98,7 @@ export function SimpleTiptapEditor({
   onRegenerateEdit,
   onFocus,
   onBlur,
+  editorSettings,
 }: SimpleTiptapEditorProps) {
   // 读写分离状态：是否处于编辑模式
   const [isEditing, setIsEditing] = useState(false);
@@ -134,6 +144,7 @@ export function SimpleTiptapEditor({
       baseExtensions.push(
         Markdown.configure({
           html: true,
+          breaks: true, // 将 \n 转换为 <br>
           transformCopiedText: true,
           transformPastedText: true,
         })
@@ -325,6 +336,16 @@ export function SimpleTiptapEditor({
     inlineEdit.targetType === targetType &&
     (inlineEdit.status === "streaming" || inlineEdit.status === "previewing");
 
+  // 编辑器样式（字体大小、行高、段落间距）
+  const editorStyle = useMemo(() => {
+    if (!editorSettings) return undefined;
+    return {
+      "--editor-font-size": `${editorSettings.fontSize}px`,
+      "--editor-line-height": `${editorSettings.lineHeight}`,
+      "--editor-paragraph-spacing": `${editorSettings.paragraphSpacing}px`,
+    } as React.CSSProperties;
+  }, [editorSettings]);
+
   return (
     <div
       ref={containerRef}
@@ -339,8 +360,11 @@ export function SimpleTiptapEditor({
         isEditing && "simple-tiptap-editing",
         // 状态样式
         disabled && "opacity-50 cursor-not-allowed",
+        // 字体样式
+        editorSettings && getFontClass(editorSettings.fontFamily),
         className
       )}
+      style={editorStyle}
       onClick={handleClick}
     >
       <EditorContent

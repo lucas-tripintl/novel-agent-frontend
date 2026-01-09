@@ -6,7 +6,7 @@
 
 import { getApiLocale } from "./locale";
 
-// 开发环境通过 rewrites 代理，生产环境直接调用（需后端配 CORS）
+// 后端已配置 CORS，直接调用
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
 
 // 获取存储的 token

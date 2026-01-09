@@ -7,6 +7,7 @@ import {
   useStreamingState,
   useInteractiveOutlineState,
   useInteractiveContentState,
+  useEditorSettings,
 } from "@/stores/writing-store";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,9 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
 
   // 交互式正文生成状态
   const { streamingContentText } = useInteractiveContentState();
+
+  // 编辑器设置（字体等）
+  const { settings: editorSettings } = useEditorSettings();
 
   // 交互式正文生成 hook
   const {
@@ -274,10 +278,11 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
               onChange={() => {}}
               targetType="content"
               mode="multi-line"
-              markdown={false}
+              markdown={true}
               placeholder={t("contentCreating") || "AI 正在创作正文..."}
               className="flex-1 min-h-[300px]"
               enableInlineEdit={false}
+              editorSettings={editorSettings}
             />
           </div>
         ) : isChapterWriting ? (
