@@ -125,7 +125,8 @@ export function TiptapEditor({
     onUpdate: ({ editor }) => {
       // 只有用户真正输入时才触发 onChange，程序设置内容时不触发
       if (!isSettingContentRef.current) {
-        onChange(editor.getText());
+        // 规范化：将 Tiptap 段落间的双换行转为单换行，保持 store 格式一致
+        onChange(editor.getText().replace(/\n\n+/g, "\n"));
       }
     },
   });
@@ -140,12 +141,18 @@ export function TiptapEditor({
       .join("");
   };
 
+  // 规范化文本：将段落间的双换行转为单换行，以匹配 store 中的格式
+  // Tiptap 的 getText() 返回的段落间用 \n\n 分隔，而 store 中是 \n
+  const normalizeText = (text: string): string => {
+    return text.replace(/\n\n+/g, "\n");
+  };
+
   // 同步外部内容变化
   useEffect(() => {
-    if (editor && content !== editor.getText()) {
-      // 只有当内容真正不同时才更新，避免光标跳动
-      const currentContent = editor.getText();
-      if (content !== currentContent) {
+    if (editor) {
+      // 将编辑器文本规范化后再比较，避免格式差异导致的误判
+      const editorTextNormalized = normalizeText(editor.getText());
+      if (content !== editorTextNormalized) {
         // 标记为程序设置内容，避免触发 onChange
         isSettingContentRef.current = true;
         // 将纯文本转换为 HTML 格式，保留换行
