@@ -181,15 +181,32 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
   });
 
   // 合并消息逻辑：
-  // - 基础：显示服务器历史消息
-  // - 流式期间：追加本地用户消息 + 流式 AI 回复
-  // - 流式结束：React Query 刷新后，服务器消息会包含最新内容
+  // - 如果没有当前会话，显示空状态（不显示旧对话）
+  // - 有会话时：显示服务器历史消息 + 本地消息 + 流式回复
   const displayMessages = useMemo(() => {
-    // 基础消息：服务器历史
+    // 没有当前会话时，不显示任何历史消息
+    if (!currentSessionId) {
+      // 只显示本地消息（用户刚输入的）和流式回复
+      const messages = [...localMessages];
+      
+      if (streamingContent) {
+        messages.push({
+          id: "streaming",
+          role: "assistant" as const,
+          type: "text" as const,
+          content: streamingContent,
+          timestamp: new Date(),
+          isComplete: false,
+        });
+      }
+      
+      return messages;
+    }
+
+    // 有会话时的正常逻辑：基础消息 + 本地消息 + 流式回复
     const messages = [...serverMessages];
 
     // 追加本地消息（过滤掉已存在于服务器的消息）
-    // 使用消息内容+角色来匹配，因为本地 id 和服务器 id 不同
     if (localMessages.length > 0) {
       const serverMsgContents = new Set(
         serverMessages.map((m) => `${m.role}:${m.content}`)
@@ -213,7 +230,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
     }
 
     return messages;
-  }, [serverMessages, localMessages, streamingContent]);
+  }, [currentSessionId, serverMessages, localMessages, streamingContent]);
 
   // 自动滚动到底部（使用 requestAnimationFrame 防止过于频繁的滚动）
   const scrollTimeoutRef = useRef<number | null>(null);
@@ -231,41 +248,25 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
     };
   }, [displayMessages.length]);
 
-  // 每次进入项目时自动创建新会话（不再复用旧会话）
-  // 使用 ref 存储 mutation 函数，避免依赖数组变化导致重复执行
+  // 进入写作面板时不自动创建会话，等用户发送消息时再创建
+  // 这样可以确保每次进入都是全新的对话状态
   const [isInitializing, setIsInitializing] = useState(false);
-  const hasInitializedRef = useRef(false);
-  const createSessionRef = useRef(createSession);
-  createSessionRef.current = createSession;
 
+  // 每次进入写作面板时清空当前会话，确保不显示旧对话
   useEffect(() => {
-    // 只在首次进入且没有当前会话时创建新会话
-    if (!hasInitializedRef.current && !currentSessionId && !isInitializing) {
-      hasInitializedRef.current = true;
-      setIsInitializing(true);
-
-      createSessionRef.current.mutateAsync({ model_id: selectedModelId ?? undefined })
-        .then((newSession) => {
-          setCurrentChatSession(newSession.id);
-        })
-        .catch((error) => {
-          console.error("自动创建会话失败:", error);
-          // 重置标志以允许重试
-          hasInitializedRef.current = false;
-        })
-        .finally(() => {
-          setIsInitializing(false);
-        });
-    }
-  }, [currentSessionId, isInitializing, selectedModelId, setCurrentChatSession]);
+    // 清空当前会话 ID，这样就不会显示旧的对话历史
+    setCurrentChatSession(null);
+    setLocalMessages([]);
+  }, [projectId, setCurrentChatSession]); // 依赖 projectId，确保切换项目时也会重置
 
   const handleSend = useCallback(async () => {
     if (!inputValue.trim() || isStreaming) return;
 
     let sessionId = currentSessionId;
 
-    // 如果没有会话，先创建一个
+    // 如果没有会话，先创建一个（用户首次发送消息时）
     if (!sessionId) {
+      setIsInitializing(true);
       try {
         const newSession = await createSession.mutateAsync({
           model_id: selectedModelId ?? undefined,
@@ -275,6 +276,8 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
       } catch (error) {
         console.error("创建会话失败:", error);
         return;
+      } finally {
+        setIsInitializing(false);
       }
     }
 
@@ -348,6 +351,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
     createSession,
     setCurrentChatSession,
     sendMessage,
+    setIsInitializing,
   ]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -361,10 +365,9 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
   const [isCreatingSession, setIsCreatingSession] = useState(false);
 
   // 按钮是否应该禁用（正在初始化、正在手动创建会话、或正在流式输出）
-  // 注意：不使用 createSession.isPending，因为它在某些情况下不会正确重置
   const isSessionBusy = isInitializing || isCreatingSession || isStreaming;
 
-  // 创建新对话
+  // 创建新对话（手动点击按钮）
   const handleCreateNewSession = useCallback(async () => {
     if (isCreatingSession || isStreaming) return;
     setIsCreatingSession(true);
