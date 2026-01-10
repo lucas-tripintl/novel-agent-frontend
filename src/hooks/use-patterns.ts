@@ -4,6 +4,7 @@
 
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { listPatterns, getPattern, type PatternsParams } from "@/lib/api/patterns";
+import { PAGE_SIZES } from "@/components/common/pagination";
 import type { EntityType } from "@/types/api";
 
 // Query keys
@@ -28,8 +29,8 @@ export function usePatterns(params?: PatternsParams) {
 /** 无限滚动参数（不含分页参数） */
 export type InfinitePatternsParams = Omit<PatternsParams, "skip" | "limit">;
 
-/** 每页加载数量 */
-const PAGE_SIZE = 20;
+/** 每页加载数量 - 使用标准化常量 */
+const PAGE_SIZE = PAGE_SIZES.MEDIUM;
 
 /**
  * 无限滚动获取抽象模式列表

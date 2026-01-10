@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useSelectedSkill } from "@/stores/writing-store";
 import { getSkillCategoryKey } from "@/hooks/use-skills";
 import { cn } from "@/lib/utils";
+import { DESIGN_TOKENS } from "@/lib/design-tokens";
 import { Wand2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -58,8 +59,8 @@ export function SkillSelector({ className }: SkillSelectorProps) {
               )}
               onClick={() => setDialogOpen(true)}
             >
-              <Wand2 className="h-3 w-3 text-amber-500" />
-              <span className="max-w-[100px] truncate text-amber-600 dark:text-amber-400">
+              <Wand2 className={`h-3 w-3 ${DESIGN_TOKENS.colors.warning}`} />
+              <span className={`max-w-[100px] truncate ${DESIGN_TOKENS.colors.warning} dark:text-amber-400`}>
                 {selectedSkillInfo.name}
               </span>
               <span
@@ -81,8 +82,8 @@ export function SkillSelector({ className }: SkillSelectorProps) {
           <HoverCardContent side="bottom" className="w-64 p-3">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-md bg-amber-500/10 flex items-center justify-center">
-                  <Wand2 className="h-3.5 w-3.5 text-amber-500" />
+                <div className={`h-6 w-6 rounded-md ${DESIGN_TOKENS.backgrounds.warning} flex items-center justify-center`}>
+                  <Wand2 className={`h-3.5 w-3.5 ${DESIGN_TOKENS.colors.warning}`} />
                 </div>
                 <span className="font-semibold text-sm">
                   {selectedSkillInfo.name}

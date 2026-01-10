@@ -23,6 +23,7 @@ import { useInteractiveOutline } from "@/hooks/use-interactive-outline";
 import { useInteractiveChapterWriting } from "@/hooks/use-interactive-chapter-writing";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
+import { DESIGN_TOKENS, getStatusBadgeClasses } from "@/lib/design-tokens";
 import { Sparkles, FileText, BookOpen, AlignLeft, Loader2 } from "lucide-react";
 import type { QuickAction } from "@/types/inline-edit";
 
@@ -285,12 +286,12 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
             {/* 状态栏 */}
             <div className="flex items-center gap-2 mb-3 shrink-0">
               {isContentWaitingDecision ? (
-                <Badge variant="outline" className="text-amber-600 border-amber-500/30 gap-1.5">
+                <Badge variant="outline" className={`${getStatusBadgeClasses('warning')} gap-1.5`}>
                   <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                   {t("waitingDecisionArrow")}
                 </Badge>
               ) : isContentCompleted ? (
-                <Badge variant="outline" className="text-green-600 border-green-500/30 gap-1.5">
+                <Badge variant="outline" className={`${getStatusBadgeClasses('success')} gap-1.5`}>
                   <Sparkles className="h-3 w-3" />
                   {t("generationCompleted") || "生成完成"}
                 </Badge>
@@ -349,7 +350,7 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
             {/* 简化的状态栏 - 详细交互在右侧面板 */}
             <div className="flex items-center gap-2 mb-3 shrink-0">
               {isWaitingDecision ? (
-                <Badge variant="outline" className="text-amber-600 border-amber-500/30 gap-1.5">
+                <Badge variant="outline" className={`${getStatusBadgeClasses('warning')} gap-1.5`}>
                   <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                   {t("waitingDecisionArrow")}
                 </Badge>

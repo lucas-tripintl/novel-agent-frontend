@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonList } from "@/components/common/skeleton-card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
@@ -25,6 +26,7 @@ import {
 import { ConfirmLeaveDialog } from "../confirm-leave-dialog";
 import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
 import { ChapterEditSheet } from "@/components/chapters/chapter-edit-sheet";
+import { DESIGN_TOKENS } from "@/lib/design-tokens";
 import { cn } from "@/lib/utils";
 import {
   FileText,
@@ -74,8 +76,8 @@ const ChapterListItem = memo(
         className={cn(
           "flex items-center gap-1 rounded-lg transition-all duration-150 group",
           "hover:bg-muted/50",
-          isSwitchingTo && "bg-primary/5 border border-primary/20 scale-[0.99]",
-          isActive && !isSwitchingTo && "bg-primary/10 border border-primary/30"
+          isSwitchingTo && cn("bg-primary/5 scale-[0.99]", "border", "border-primary/20"),
+          isActive && !isSwitchingTo && cn("bg-primary/10", "border", "border-primary/30")
         )}
       >
         <button
@@ -431,11 +433,7 @@ export function ChapterList({ projectId }: ChapterListProps) {
 
   if (isLoading) {
     return (
-      <div className="p-3 space-y-2">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <Skeleton key={i} className="h-12 w-full" />
-        ))}
-      </div>
+      <SkeletonList count={5} itemHeight={48} />
     );
   }
 
@@ -460,7 +458,7 @@ export function ChapterList({ projectId }: ChapterListProps) {
       />
       <div className="flex h-full flex-col min-h-0">
         {/* 新建章节按钮 */}
-        <div className="p-3 border-b border-border/50">
+        <div className={cn("p-3", "border-b", DESIGN_TOKENS.borders.default)}>
           <Button
             variant="outline"
             size="sm"
@@ -479,7 +477,7 @@ export function ChapterList({ projectId }: ChapterListProps) {
 
         {/* 排序控制栏 */}
         {totalCount > 0 && (
-          <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
+          <div className={cn("flex items-center justify-between px-3 py-2", "border-b", "border-border/30")}>
             <span className="text-xs text-muted-foreground">
               共 {totalCount} 章
             </span>

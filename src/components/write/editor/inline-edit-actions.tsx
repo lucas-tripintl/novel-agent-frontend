@@ -9,6 +9,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { DESIGN_TOKENS, getStatusButtonClasses } from "@/lib/design-tokens";
 import { Check, X, RotateCcw, Loader2 } from "lucide-react";
 import type { Editor } from "@tiptap/react";
 
@@ -59,7 +60,7 @@ export function InlineEditActions({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-xs gap-1 text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/30"
+            className={cn("h-7 px-2 text-xs gap-1", getStatusButtonClasses('success'))}
             onClick={onAccept}
             disabled={!isComplete || isStreaming}
           >
@@ -78,7 +79,7 @@ export function InlineEditActions({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-xs gap-1 text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30"
+            className={cn("h-7 px-2 text-xs gap-1", getStatusButtonClasses('error'))}
             onClick={onReject}
           >
             <X className="h-3.5 w-3.5" />

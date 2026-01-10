@@ -4,6 +4,7 @@
 
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { listEntitiesCrossProject } from "@/lib/api/projects";
+import { PAGE_SIZES } from "@/components/common/pagination";
 import type { EntityType } from "@/types/api";
 
 // Query keys
@@ -23,8 +24,8 @@ export interface InfiniteEntitiesParams {
   keyword?: string;
 }
 
-/** 每页加载数量 */
-const PAGE_SIZE = 20;
+/** 每页加载数量 - 使用标准化常量 */
+const PAGE_SIZE = PAGE_SIZES.MEDIUM;
 
 /**
  * 无限滚动获取设定列表

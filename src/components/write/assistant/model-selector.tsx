@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSelectedModel, useChatSessionState } from "@/stores/writing-store";
 import { useModels, useUpdateChatSession } from "@/hooks/use-chat";
 import { cn } from "@/lib/utils";
+import { DESIGN_TOKENS } from "@/lib/design-tokens";
 import { Cpu, ChevronDown, Loader2, Check, Brain } from "lucide-react";
 import {
   DropdownMenu,
@@ -22,11 +23,11 @@ interface ModelSelectorProps {
 
 // 提供商图标/颜色映射
 const providerStyles: Record<string, { color: string; label: string }> = {
-  openai: { color: "text-green-500", label: "OpenAI" },
-  anthropic: { color: "text-orange-500", label: "Anthropic" },
-  google: { color: "text-blue-500", label: "Google" },
-  deepseek: { color: "text-cyan-500", label: "DeepSeek" },
-  default: { color: "text-muted-foreground", label: "Other" },
+  openai: { color: DESIGN_TOKENS.colors.success, label: "OpenAI" },
+  anthropic: { color: DESIGN_TOKENS.colors.warning, label: "Anthropic" },
+  google: { color: DESIGN_TOKENS.colors.info, label: "Google" },
+  deepseek: { color: "text-cyan-500", label: "DeepSeek" }, // Keep cyan as it's not in our standard tokens
+  default: { color: DESIGN_TOKENS.colors.muted, label: "Other" },
 };
 
 function getProviderStyle(providerType: string) {

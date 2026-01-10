@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, Terminal } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DESIGN_TOKENS } from "@/lib/design-tokens";
 
 interface LogEntry {
   id: string;
@@ -49,7 +50,7 @@ export function TerminalLog() {
       case "analysis":
         return "text-neon-cyan";
       case "warn":
-        return "text-yellow-500";
+        return DESIGN_TOKENS.colors.warning;
       case "error":
         return "text-destructive";
       case "success":

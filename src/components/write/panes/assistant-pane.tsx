@@ -25,6 +25,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { DESIGN_TOKENS } from "@/lib/design-tokens";
 import { cn } from "@/lib/utils";
 import {
   Bot,
@@ -430,16 +431,17 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
   }
 
   return (
-    <div className="flex h-full flex-col border-l border-border/50 bg-card/30 min-h-0">
+    <div className={cn("flex h-full flex-col bg-card/30 min-h-0", "border-l", DESIGN_TOKENS.borders.default)}>
       {/* 头部 */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
-        <div className="flex items-center gap-2">
+      <div className={cn("flex items-center justify-between", "border-b", DESIGN_TOKENS.borders.default, DESIGN_TOKENS.padding.md)}>
+        <div className={cn("flex items-center", DESIGN_TOKENS.gaps.sm)}>
           <Bot className="h-4 w-4 text-primary" />
-          <span className="font-semibold text-sm">{t("aiAssistant")}</span>
+          <span className={cn(DESIGN_TOKENS.fontWeight.semibold, DESIGN_TOKENS.typography.sm)}>{t("aiAssistant")}</span>
           <Badge
             variant="outline"
             className={cn(
-              "text-[10px] gap-1",
+              DESIGN_TOKENS.typography.xs,
+              DESIGN_TOKENS.gaps.xs,
               mode === "auto" ? "text-primary" : "text-amber-500"
             )}
           >
@@ -457,7 +459,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
           </Badge>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className={cn("flex items-center", DESIGN_TOKENS.gaps.sm)}>
           <ModelSelector projectId={projectId} />
           <Button
             variant="ghost"
@@ -481,7 +483,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
       <SelectedContext entities={contextEntities} mode={mode} />
 
       {/* 附加上下文（文本 + 技能） */}
-      <div className="px-4 py-2 border-b border-border/50 flex flex-wrap gap-2">
+      <div className={cn("flex flex-wrap", "border-b", DESIGN_TOKENS.borders.default, DESIGN_TOKENS.padding.sm, DESIGN_TOKENS.gaps.sm)}>
         <TextContextChip />
         <EnableTextContextButton />
         <SkillSelector />
@@ -492,14 +494,14 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
 
       {/* 对话区域 */}
       <ScrollArea className="flex-1 min-h-0">
-        <div className="p-4 space-y-4">
+        <div className={cn(DESIGN_TOKENS.spacing.md, "space-y-4")}>
           {displayMessages.length === 0 ? (
             <div className="flex flex-col items-center py-8 text-center">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+              <div className={cn("h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center", DESIGN_TOKENS.margin.md)}>
                 <Bot className="h-6 w-6 text-primary" />
               </div>
-              <p className="text-sm font-medium">{t("startConversation")}</p>
-              <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
+              <p className={cn(DESIGN_TOKENS.typography.sm, DESIGN_TOKENS.fontWeight.medium)}>{t("startConversation")}</p>
+              <p className={cn(DESIGN_TOKENS.typography.xs, DESIGN_TOKENS.colors.secondary, "mt-1 max-w-[200px]")}>
                 {t("conversationHint")}
               </p>
             </div>
@@ -513,7 +515,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
       </ScrollArea>
 
       {/* 输入区域 */}
-      <div className="p-3 border-t border-border/50">
+      <div className={cn("border-t", DESIGN_TOKENS.borders.default, DESIGN_TOKENS.padding.sm)}>
         <div className="relative">
           <Textarea
             ref={textareaRef}
@@ -555,7 +557,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
             </Button>
           )}
         </div>
-        <p className="mt-2 text-[10px] text-muted-foreground text-center">
+        <p className={cn("mt-2 text-center", DESIGN_TOKENS.typography.xs, DESIGN_TOKENS.colors.secondary)}>
           {t("sendHint")}
         </p>
       </div>

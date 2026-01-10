@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { EntityBrowserDialog } from "@/components/browser/entity-browser-dialog";
 import { SkillBrowserDialog } from "@/components/browser/skill-browser-dialog";
+import { DESIGN_TOKENS } from "@/lib/design-tokens";
+import { cn } from "@/lib/utils";
 import type { EntityRead } from "@/types/api";
 import type { SkillBrief } from "@/types/skills";
 import type {
@@ -158,16 +160,13 @@ export function WriteChapterDialog({
                   {chapterGenerationModes.map((modeConfig) => (
                     <label
                       key={modeConfig.id}
-                      className={`
-                        flex flex-col items-center gap-1.5 p-3 rounded-lg border cursor-pointer
-                        transition-all hover:border-primary/50
-                        ${
-                          mode === modeConfig.id
-                            ? "border-primary bg-primary/5"
-                            : "border-border"
-                        }
-                        ${isPending ? "opacity-50 cursor-not-allowed" : ""}
-                      `}
+                      className={cn(
+                        "flex flex-col items-center gap-1.5 p-3 rounded-lg border cursor-pointer transition-all hover:border-primary/50",
+                        mode === modeConfig.id
+                          ? "border-primary bg-primary/5"
+                          : DESIGN_TOKENS.borders.default,
+                        isPending && "opacity-50 cursor-not-allowed"
+                      )}
                     >
                       <RadioGroupItem
                         value={modeConfig.id}
@@ -196,16 +195,13 @@ export function WriteChapterDialog({
                   {chapterDensityOptions.map((densityConfig) => (
                     <label
                       key={densityConfig.id}
-                      className={`
-                        flex items-center gap-3 p-3 rounded-lg border cursor-pointer
-                        transition-all hover:border-primary/50
-                        ${
-                          density === densityConfig.id
-                            ? "border-primary bg-primary/5"
-                            : "border-border"
-                        }
-                        ${isPending ? "opacity-50 cursor-not-allowed" : ""}
-                      `}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all hover:border-primary/50",
+                        density === densityConfig.id
+                          ? "border-primary bg-primary/5"
+                          : DESIGN_TOKENS.borders.default,
+                        isPending && "opacity-50 cursor-not-allowed"
+                      )}
                     >
                       <RadioGroupItem
                         value={densityConfig.id}
@@ -248,7 +244,7 @@ export function WriteChapterDialog({
               <div className="space-y-2">
                 <Button
                   variant="ghost"
-                  className="w-full justify-between px-3 h-9 text-sm border border-border/50 hover:border-primary/30"
+                  className={cn("w-full justify-between px-3 h-9", DESIGN_TOKENS.typography.sm, "border", DESIGN_TOKENS.borders.default, "hover:border-primary/30")}
                   onClick={() => setEntityBrowserOpen(true)}
                   disabled={isPending}
                 >
@@ -295,7 +291,7 @@ export function WriteChapterDialog({
               <div className="space-y-2">
                 <Button
                   variant="ghost"
-                  className="w-full justify-between px-3 h-9 text-sm border border-border/50 hover:border-primary/30"
+                  className={cn("w-full justify-between px-3 h-9", DESIGN_TOKENS.typography.sm, "border", DESIGN_TOKENS.borders.default, "hover:border-primary/30")}
                   onClick={() => setSkillBrowserOpen(true)}
                   disabled={isPending}
                 >
@@ -341,7 +337,7 @@ export function WriteChapterDialog({
           </ScrollArea>
         </div>
 
-        <DialogFooter className="pt-4 border-t shrink-0">
+        <DialogFooter className={cn("pt-4 shrink-0", "border-t", DESIGN_TOKENS.borders.default)}>
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}

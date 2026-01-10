@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { DESIGN_TOKENS } from "@/lib/design-tokens";
 import { Textarea } from "@/components/ui/textarea";
 import { SimpleTiptapEditor } from "@/components/write/editor/simple-tiptap-editor";
 import { Input } from "@/components/ui/input";
@@ -45,21 +46,12 @@ import {
   getSkillCategoryKey,
   getSkillStageKey,
 } from "@/hooks/use-skills";
+import { useDeleteWithConfirmation } from "@/hooks/use-delete-with-confirmation";
 import type {
   SkillBrief,
   SkillCategory,
   SkillStage,
 } from "@/types/skills";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 interface SkillDialogProps {
   /** 技能简要信息（用于展示）或 null（创建模式） */
@@ -182,7 +174,6 @@ function SkillDialogContent({
     initialValues?.tags ?? []
   );
   const [newTag, setNewTag] = useState("");
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // 当 skillDetail 加载完成后，如果表单为空则更新
   const shouldUpdateFromDetail =
@@ -212,10 +203,29 @@ function SkillDialogContent({
   const updateMutation = useUpdateSkill();
   const deleteMutation = useDeleteSkill();
 
+  // 删除操作 - 使用 useDeleteWithConfirmation 进行标准化删除流程
+  const {
+    showConfirmDialog,
+    setShowConfirmDialog,
+    isDeleting,
+    ConfirmDialog,
+  } = useDeleteWithConfirmation({
+    targetName: skill ? `技能「${skill.name}」` : "",
+    deleteFn: async () => {
+      if (!skill) throw new Error("No skill selected");
+      await deleteMutation.mutateAsync(skill.id);
+    },
+    onSuccess: () => {
+      onOpenChange(false);
+      onSave?.();
+    },
+  });
+
   const isPending =
     createMutation.isPending ||
     updateMutation.isPending ||
-    deleteMutation.isPending;
+    deleteMutation.isPending ||
+    isDeleting;
 
   const handleStartEdit = useCallback(() => {
     // 进入编辑模式时，如果表单为空，从 skillDetail 初始化
@@ -303,15 +313,6 @@ function SkillDialogContent({
     onSave,
   ]);
 
-  const handleDelete = useCallback(async () => {
-    if (skill) {
-      await deleteMutation.mutateAsync(skill.id);
-      setShowDeleteConfirm(false);
-      onOpenChange(false);
-      onSave?.();
-    }
-  }, [skill, deleteMutation, onOpenChange, onSave]);
-
   const handleAddTag = useCallback(() => {
     const tag = newTag.trim();
     const currentTags = isEditing ? editedTags : displayTags;
@@ -360,7 +361,7 @@ function SkillDialogContent({
                       </Badge>
                     )}
                     {skill.is_featured && (
-                      <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 shrink-0" />
+                      <Star className={`h-4 w-4 ${DESIGN_TOKENS.colors.featured} fill-yellow-500 shrink-0`} />
                     )}
                   </>
                 )}
@@ -553,7 +554,8 @@ function SkillDialogContent({
                   variant="ghost"
                   size="sm"
                   className="text-destructive hover:text-destructive"
-                  onClick={() => setShowDeleteConfirm(true)}
+                  onClick={() => setShowConfirmDialog(true)}
+                  disabled={isPending}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   删除
@@ -600,31 +602,8 @@ function SkillDialogContent({
         </DialogContent>
       </Dialog>
 
-      {/* 删除确认对话框 */}
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认删除</AlertDialogTitle>
-            <AlertDialogDescription>
-              确定要删除技能「{skill?.name}」吗？此操作无法撤销。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Trash2 className="mr-2 h-4 w-4" />
-              )}
-              删除
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* 删除确认对话框 - 使用标准化的删除确认组件 */}
+      <ConfirmDialog />
     </>
   );
 }

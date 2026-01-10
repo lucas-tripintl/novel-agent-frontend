@@ -11,6 +11,7 @@ import {
   useInfiniteQuery,
 } from "@tanstack/react-query";
 import type { AgentSubscriber } from "@ag-ui/client";
+import { PAGE_SIZES } from "@/components/common/pagination";
 import {
   createChatSession,
   listChatSessions,
@@ -50,8 +51,8 @@ export const chatKeys = {
 
 // ============ 常量 ============
 
-const SESSIONS_PAGE_SIZE = 20;
-const MESSAGES_PAGE_SIZE = 50;
+const SESSIONS_PAGE_SIZE = PAGE_SIZES.MEDIUM;
+const MESSAGES_PAGE_SIZE = PAGE_SIZES.EXTRA_LARGE;
 
 // ============ 会话 Hooks ============
 

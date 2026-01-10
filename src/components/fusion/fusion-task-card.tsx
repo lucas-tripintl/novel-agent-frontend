@@ -16,7 +16,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { FusionStatusBadge } from "@/components/common/status-badge";
+import { EnumBadge } from "@/components/common/enum-label";
 import { cn } from "@/lib/utils";
+import { DESIGN_TOKENS } from "@/lib/design-tokens";
 import { formatTimeAgo } from "@/lib/utils/time";
 import {
   MoreHorizontal,
@@ -28,69 +30,31 @@ import {
 import Link from "next/link";
 import type { FusionTaskListWithPatterns, SourcePatternBrief } from "@/types/fusion";
 
-// ============ Entity Type 样式映射 ============
-
-interface EntityTypeStyle {
-  /** 类型缩写（单字） */
-  abbr: string;
-  /** 标签颜色类 */
-  colorClass: string;
-  /** 背景色类 */
-  bgClass: string;
-}
-
-const entityTypeStyles: Record<string, EntityTypeStyle> = {
-  power_system: {
-    abbr: "力",
-    colorClass: "text-neon-purple",
-    bgClass: "bg-neon-purple/10 border-neon-purple/20",
-  },
-  plot_pattern: {
-    abbr: "剧",
-    colorClass: "text-neon-cyan",
-    bgClass: "bg-neon-cyan/10 border-neon-cyan/20",
-  },
-  character_archetype: {
-    abbr: "人",
-    colorClass: "text-amber-500",
-    bgClass: "bg-amber-500/10 border-amber-500/20",
-  },
-  worldview: {
-    abbr: "观",
-    colorClass: "text-emerald-500",
-    bgClass: "bg-emerald-500/10 border-emerald-500/20",
-  },
-  chapter_structure: {
-    abbr: "章",
-    colorClass: "text-blue-500",
-    bgClass: "bg-blue-500/10 border-blue-500/20",
-  },
-};
-
-const defaultStyle: EntityTypeStyle = {
-  abbr: "元",
-  colorClass: "text-muted-foreground",
-  bgClass: "bg-muted/50 border-border",
-};
-
 // ============ 子组件 ============
 
 /** 来源模式类型标签 */
 function PatternTypeBadge({ entityType }: { entityType: string }) {
-  const style = entityTypeStyles[entityType] || defaultStyle;
+  // Color mapping for entity types to maintain visual consistency
+  const colorMapping: Record<string, string> = {
+    power_system: "text-neon-purple bg-neon-purple/10 border-neon-purple/20",
+    plot_pattern: "text-neon-cyan bg-neon-cyan/10 border-neon-cyan/20", 
+    character_archetype: `${DESIGN_TOKENS.colors.warning} ${DESIGN_TOKENS.backgrounds.warning} ${DESIGN_TOKENS.borders.warning}`,
+    worldview: `${DESIGN_TOKENS.colors.success} ${DESIGN_TOKENS.backgrounds.success} ${DESIGN_TOKENS.borders.success}`,
+    chapter_structure: `${DESIGN_TOKENS.colors.info} ${DESIGN_TOKENS.backgrounds.info} ${DESIGN_TOKENS.borders.info}`,
+  };
 
   return (
-    <span
+    <EnumBadge
+      enumName="EntityType"
+      value={entityType}
+      variant="outline"
       className={cn(
-        "inline-flex items-center justify-center",
-        "w-5 h-5 rounded text-xs font-bold",
-        "border shrink-0",
-        style.bgClass,
-        style.colorClass
+        "w-5 h-5 rounded text-xs font-bold border shrink-0 flex items-center justify-center p-0",
+        colorMapping[entityType] || "text-muted-foreground bg-muted/50 border-border"
       )}
-    >
-      {style.abbr}
-    </span>
+      fallback={entityType.charAt(0).toUpperCase()}
+      colorMapping={colorMapping}
+    />
   );
 }
 

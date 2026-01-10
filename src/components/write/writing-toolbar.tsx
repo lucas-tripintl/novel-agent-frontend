@@ -37,7 +37,9 @@ import {
   FileText,
   AlertCircle,
 } from "lucide-react";
+import { DESIGN_TOKENS } from "@/lib/design-tokens";
 import { EditorSettings } from "./editor/editor-settings";
+import { cn } from "@/lib/utils";
 import { WriteChapterDialog } from "./write-chapter-dialog";
 import { GenerateEntityDialog } from "./generate-entity-dialog";
 import { GenerateOutlineDialog } from "./generate-outline-dialog";
@@ -110,9 +112,9 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b border-border/50 bg-background/80 backdrop-blur-sm px-4">
+    <header className={cn("sticky top-0 z-50 flex h-14 items-center bg-background/80 backdrop-blur-sm", "border-b", DESIGN_TOKENS.borders.default, DESIGN_TOKENS.gaps.lg, DESIGN_TOKENS.padding.md)}>
       {/* 左侧：返回 + 项目名 */}
-      <div className="flex items-center gap-3">
+      <div className={cn("flex items-center", DESIGN_TOKENS.gaps.md)}>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" asChild>
@@ -124,9 +126,9 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
           <TooltipContent>{t("backToProjects")}</TooltipContent>
         </Tooltip>
 
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-sm">{project.name}</span>
-          <Badge variant="outline" className="text-xs font-mono">
+        <div className={cn("flex items-center", DESIGN_TOKENS.gaps.sm)}>
+          <span className={cn(DESIGN_TOKENS.fontWeight.semibold, DESIGN_TOKENS.typography.sm)}>{project.name}</span>
+          <Badge variant="outline" className={cn(DESIGN_TOKENS.typography.xs, "font-mono")}>
             {t("writing")}
           </Badge>
         </div>
@@ -135,7 +137,7 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
       <Separator orientation="vertical" className="h-6" />
 
       {/* 操作按钮 */}
-      <div className="flex items-center gap-2">
+      <div className={cn("flex items-center", DESIGN_TOKENS.gaps.sm)}>
         {isStreaming ? (
           <Button
             variant="destructive"
@@ -212,9 +214,9 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
       </div>
 
       {/* 右侧：状态 + 面板控制 */}
-      <div className="ml-auto flex items-center gap-4">
+      <div className={cn("ml-auto flex items-center", DESIGN_TOKENS.gaps.lg)}>
         {/* 字数统计 */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className={cn("flex items-center", DESIGN_TOKENS.gaps.sm, DESIGN_TOKENS.typography.sm, DESIGN_TOKENS.colors.secondary)}>
           <span className="font-mono">{wordCount.toLocaleString()}</span>
           <span>{t("words")}</span>
         </div>
@@ -222,7 +224,7 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
         <Separator orientation="vertical" className="h-6" />
 
         {/* 面板折叠控制 */}
-        <div className="flex items-center gap-1">
+        <div className={cn("flex items-center", DESIGN_TOKENS.gaps.xs)}>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -300,11 +302,11 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
+            <AlertDialogTitle className={cn("flex items-center", DESIGN_TOKENS.gaps.sm)}>
               <AlertCircle className="h-5 w-5 text-destructive" />
               生成失败
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-base">
+            <AlertDialogDescription className={DESIGN_TOKENS.typography.base}>
               {contentGenerationError?.message}
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -14,6 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
+import { EmptyState } from "@/components/common/empty-state";
+import { SkeletonCard } from "@/components/common/skeleton-card";
 import { ProjectEditDialog } from "@/components/project/project-edit-dialog";
 import { CreateProjectDialog } from "@/components/project/create-project-dialog";
 import {
@@ -40,62 +42,42 @@ import type { ProjectList } from "@/types/api";
 // 项目卡片骨架屏
 function ProjectCardSkeleton() {
   return (
-    <Card className="bg-card/50 border-border/50 backdrop-blur-sm overflow-hidden p-4">
-      <div className="space-y-3">
-        <div className="flex items-start justify-between">
-          <Skeleton className="h-5 w-2/3" />
-          <Skeleton className="h-5 w-5 rounded" />
-        </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-4 w-12 rounded-full" />
-          <Skeleton className="h-4 w-16 rounded-full" />
-        </div>
-        <div className="flex gap-2 pt-2">
-          <Skeleton className="h-8 flex-1" />
-          <Skeleton className="h-8 flex-1" />
-        </div>
-      </div>
-    </Card>
+    <SkeletonCard showHeader showFooter lines={2} />
   );
 }
 
 // 空状态组件
-function EmptyState({ t }: { t: (key: string) => string }) {
+function DashboardEmptyState({ t }: { t: (key: string) => string }) {
   return (
-    <Card className="bg-card/30 border-dashed border-2 border-border/50">
-      <CardContent className="flex flex-col items-center justify-center py-16">
-        <BookOpen className="h-12 w-12 text-muted-foreground/50 mb-4" />
-        <h3 className="text-lg font-semibold mb-2">{t("empty")}</h3>
-        <p className="text-muted-foreground text-center max-w-sm mb-6">
-          {t("emptyDescription")}
-        </p>
-        <Button asChild className="glow-green">
-          <Link href="/analyze">
-            <Plus className="mr-2 h-4 w-4" />
-            {t("upload")}
-          </Link>
-        </Button>
-      </CardContent>
-    </Card>
+    <EmptyState
+      icon={BookOpen}
+      title={t("empty")}
+      description={t("emptyDescription")}
+      action={{
+        label: t("upload"),
+        onClick: () => {
+          // This will be handled by the Link component
+        },
+        variant: "default"
+      }}
+    />
   );
 }
 
 // 错误状态组件
 function ErrorState({ onRetry, t, tCommon }: { onRetry: () => void; t: (key: string) => string; tCommon: (key: string) => string }) {
   return (
-    <Card className="bg-card/30 border-destructive/30">
-      <CardContent className="flex flex-col items-center justify-center py-16">
-        <AlertCircle className="h-12 w-12 text-destructive/50 mb-4" />
-        <h3 className="text-lg font-semibold mb-2">{tCommon("loadFailed")}</h3>
-        <p className="text-muted-foreground text-center max-w-sm mb-6">
-          {t("checkNetwork")}
-        </p>
-        <Button variant="outline" onClick={onRetry}>
-          <RefreshCw className="mr-2 h-4 w-4" />
-          {tCommon("retry")}
-        </Button>
-      </CardContent>
-    </Card>
+    <EmptyState
+      icon={AlertCircle}
+      title={tCommon("loadFailed")}
+      description={t("checkNetwork")}
+      action={{
+        label: tCommon("retry"),
+        onClick: onRetry,
+        variant: "outline"
+      }}
+      className="bg-card/30 border-destructive/30"
+    />
   );
 }
 
@@ -313,24 +295,18 @@ export function DashboardContent() {
         ) : isError ? (
           <ErrorState onRetry={() => refetch()} t={t} tCommon={tCommon} />
         ) : projects.length === 0 ? (
-          <EmptyState t={t} />
+          <DashboardEmptyState t={t} />
         ) : filteredProjects.length === 0 ? (
-          <Card className="bg-card/30 border-dashed border-2 border-border/50">
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">{t("noMatchingProjects")}</h3>
-              <p className="text-muted-foreground text-center max-w-sm">
-                {tCommon("tryDifferentKeywords")}
-              </p>
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => setSearchQuery("")}
-              >
-                {tCommon("clearSearch")}
-              </Button>
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={Search}
+            title={t("noMatchingProjects")}
+            description={tCommon("tryDifferentKeywords")}
+            action={{
+              label: tCommon("clearSearch"),
+              onClick: () => setSearchQuery(""),
+              variant: "outline"
+            }}
+          />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {filteredProjects.map((project) => (

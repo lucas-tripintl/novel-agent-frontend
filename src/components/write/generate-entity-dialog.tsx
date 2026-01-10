@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EnumSelect } from "@/components/common/enum-label";
 import {
   Loader2,
   Wand2,
@@ -53,18 +54,6 @@ const ENTITY_TYPES: { value: EntityType; label: string; icon: React.ReactNode }[
   { value: "golden_finger", label: "金手指", icon: <Sparkles className="h-4 w-4" /> },
   { value: "plotline", label: "剧情线", icon: <Layers className="h-4 w-4" /> },
   { value: "foreshadowing", label: "伏笔", icon: <BookOpen className="h-4 w-4" /> },
-];
-
-// 世界观类别
-const WORLDVIEW_CATEGORIES = [
-  { value: "power_system", label: "力量体系" },
-  { value: "organization", label: "组织势力" },
-  { value: "geography", label: "地理环境" },
-  { value: "history", label: "历史事件" },
-  { value: "culture", label: "文化习俗" },
-  { value: "rule", label: "世界规则" },
-  { value: "race", label: "种族设定" },
-  { value: "economy", label: "经济体系" },
 ];
 
 type DialogState = "idle" | "generating" | "preview" | "saving";
@@ -232,18 +221,15 @@ export function GenerateEntityDialog({
                   {entityType === "worldview" && (
                     <div className="space-y-2">
                       <Label htmlFor="category">世界观类别（选填）</Label>
-                      <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger id="category">
-                          <SelectValue placeholder="选择类别" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {WORLDVIEW_CATEGORIES.map((cat) => (
-                            <SelectItem key={cat.value} value={cat.value}>
-                              {cat.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <EnumSelect
+                        enumName="WorldviewCategory"
+                        value={category}
+                        onChange={setCategory}
+                        placeholder="选择类别"
+                        allowEmpty={true}
+                        emptyLabel="不指定类别"
+                        className="w-full"
+                      />
                     </div>
                   )}
 

@@ -15,6 +15,8 @@ import {
 import { ChapterList } from "../settings/chapter-list";
 import { EntityBrowser } from "../settings/entity-browser";
 import { SkillBrowser } from "../settings/skill-browser";
+import { DESIGN_TOKENS } from "@/lib/design-tokens";
+import { cn } from "@/lib/utils";
 import { OutlineTab } from "../outline";
 import { useProjectSkills } from "@/hooks/use-skills";
 
@@ -33,11 +35,11 @@ export function SettingsPane({ projectId }: SettingsPaneProps) {
   const skillCount = projectSkills?.length ?? 0;
 
   return (
-    <div className="flex h-full flex-col border-r border-border/50 bg-card/30 min-h-0">
+    <div className={cn("flex h-full flex-col bg-card/30 min-h-0", "border-r", DESIGN_TOKENS.borders.default)}>
       {/* 头部 */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50">
+      <div className={cn("flex items-center", DESIGN_TOKENS.gaps.sm, DESIGN_TOKENS.padding.md, "border-b", DESIGN_TOKENS.borders.default)}>
         <BookOpen className="h-4 w-4 text-primary" />
-        <span className="font-semibold text-sm">{t("library")}</span>
+        <span className={cn(DESIGN_TOKENS.fontWeight.semibold, DESIGN_TOKENS.typography.sm)}>{t("library")}</span>
       </div>
 
       {/* Tabs */}

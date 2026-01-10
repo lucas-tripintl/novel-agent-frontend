@@ -4,19 +4,12 @@ import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Sparkles, Plus, Loader2 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { BaseFormDialog } from "@/components/base/base-form-dialog";
+import { FormInput } from "@/components/forms/form-input";
+import { FormTextarea } from "@/components/forms/form-textarea";
 import { useCreateProject } from "@/hooks/use-projects";
+import { useMutationLoading } from "@/hooks/use-mutation-loading";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -34,27 +27,28 @@ export function CreateProjectDialog({
   const [name, setName] = useState("");
   const [projectType, setProjectType] = useState("");
   const [description, setDescription] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
-  const mutation = useCreateProject();
+  const createProjectMutation = useCreateProject();
+
+  // Use useMutationLoading for reliable loading state management
+  const { mutate: createProject, isLoading } = useMutationLoading({
+    mutationFn: async (data: { name: string; project_type?: string; description?: string }) => {
+      return createProjectMutation.mutateAsync(data);
+    },
+    onSuccess: (result) => {
+      handleOpenChange(false);
+      router.push(`/write/${result.id}`);
+    },
+  });
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
 
-    setIsLoading(true);
-    try {
-      const result = await mutation.mutateAsync({
-        name: name.trim(),
-        project_type: projectType.trim() || undefined,
-        description: description.trim() || undefined,
-      });
-      handleOpenChange(false);
-      router.push(`/write/${result.id}`);
-    } catch {
-      // 错误由 React Query 处理
-    } finally {
-      setIsLoading(false);
-    }
+    await createProject({
+      name: name.trim(),
+      project_type: projectType.trim() || undefined,
+      description: description.trim() || undefined,
+    });
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -66,86 +60,23 @@ export function CreateProjectDialog({
     onOpenChange(open);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey && name.trim()) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
+  const isSubmitDisabled = !name.trim() || isLoading;
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[440px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg">
-            <Sparkles className="h-5 w-5 text-primary" />
-            {t("createDialog.title")}
-          </DialogTitle>
-          <DialogDescription className="text-muted-foreground">
-            {t("createDialog.description")}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-5 py-4">
-          {/* 作品名称 */}
-          <div className="space-y-2">
-            <Label htmlFor="project-name">
-              {t("createDialog.nameLabel")}
-              <span className="text-destructive ml-1">*</span>
-            </Label>
-            <Input
-              id="project-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={t("createDialog.namePlaceholder")}
-              className="bg-background/50"
-              autoFocus
-              disabled={isLoading}
-            />
-          </div>
-
-          {/* 小说类型 */}
-          <div className="space-y-2">
-            <Label htmlFor="project-type">
-              {t("createDialog.typeLabel")}
-            </Label>
-            <Input
-              id="project-type"
-              value={projectType}
-              onChange={(e) => setProjectType(e.target.value.slice(0, 20))}
-              onKeyDown={handleKeyDown}
-              placeholder={t("createDialog.typePlaceholder")}
-              className="bg-background/50"
-              maxLength={20}
-              disabled={isLoading}
-            />
-            <p className="text-xs text-muted-foreground">
-              {t("createDialog.typeHint")}
-            </p>
-          </div>
-
-          {/* 简介 */}
-          <div className="space-y-2">
-            <Label htmlFor="project-description">
-              {t("createDialog.descriptionLabel")}
-            </Label>
-            <Textarea
-              id="project-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t("createDialog.descriptionPlaceholder")}
-              className="bg-background/50 min-h-[100px] resize-none"
-              maxLength={500}
-              disabled={isLoading}
-            />
-            <p className="text-xs text-muted-foreground text-right">
-              {description.length}/500
-            </p>
-          </div>
-        </div>
-
-        <DialogFooter>
+    <BaseFormDialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      title={t("createDialog.title")}
+      description={t("createDialog.description")}
+      icon={Sparkles}
+      maxWidth="md"
+      loading={isLoading}
+      onSubmit={handleSubmit}
+      cancelText={tCommon("cancel")}
+      submitText={tCommon("create")}
+      submitVariant="default"
+      footer={
+        <>
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}
@@ -155,7 +86,7 @@ export function CreateProjectDialog({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!name.trim() || isLoading}
+            disabled={isSubmitDisabled}
             className="glow-primary"
           >
             {isLoading ? (
@@ -170,8 +101,45 @@ export function CreateProjectDialog({
               </>
             )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className="space-y-5">
+        {/* 作品名称 */}
+        <FormInput
+          id="project-name"
+          label={t("createDialog.nameLabel")}
+          value={name}
+          onChange={setName}
+          placeholder={t("createDialog.namePlaceholder")}
+          required
+          disabled={isLoading}
+        />
+
+        {/* 小说类型 */}
+        <FormInput
+          id="project-type"
+          label={t("createDialog.typeLabel")}
+          value={projectType}
+          onChange={(value) => setProjectType(value.slice(0, 20))}
+          placeholder={t("createDialog.typePlaceholder")}
+          description={t("createDialog.typeHint")}
+          disabled={isLoading}
+        />
+
+        {/* 简介 */}
+        <FormTextarea
+          id="project-description"
+          label={t("createDialog.descriptionLabel")}
+          value={description}
+          onChange={setDescription}
+          placeholder={t("createDialog.descriptionPlaceholder")}
+          maxLength={500}
+          showCharCount
+          rows={4}
+          disabled={isLoading}
+        />
+      </div>
+    </BaseFormDialog>
   );
 }

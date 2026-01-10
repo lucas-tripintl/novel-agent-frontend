@@ -2,6 +2,7 @@
 
 import type { ToolCallState } from "@/types/chat";
 import { cn } from "@/lib/utils";
+import { DESIGN_TOKENS } from "@/lib/design-tokens";
 import { Wrench, Check, Loader2 } from "lucide-react";
 
 // 工具名称到中文的映射
@@ -47,7 +48,7 @@ export function ToolCallIndicator({
               className={cn(
                 "inline-flex items-center gap-1 px-1.5 py-0.5 rounded",
                 tc.isComplete
-                  ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                  ? `${DESIGN_TOKENS.backgrounds.success} ${DESIGN_TOKENS.colors.success} dark:text-green-400`
                   : "bg-primary/10 text-primary"
               )}
             >

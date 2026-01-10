@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonList } from "@/components/common/skeleton-card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -366,13 +367,6 @@ function EmptyOutline({ onGenerate }: { onGenerate: () => void }) {
 
 function OutlineTabSkeleton() {
   return (
-    <div className="p-3 space-y-2">
-      <Skeleton className="h-8 w-full rounded-md" />
-      <div className="pl-6 space-y-1.5">
-        <Skeleton className="h-7 w-full rounded-md" />
-        <Skeleton className="h-7 w-full rounded-md" />
-        <Skeleton className="h-7 w-3/4 rounded-md" />
-      </div>
-    </div>
+    <SkeletonList count={4} itemHeight={32} />
   );
 }

@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/common/empty-state";
 import { cancelTask } from "@/lib/api/tasks";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Sparkles, AlertCircle, X } from "lucide-react";
@@ -48,26 +49,22 @@ export function ProcessingList() {
 
     if (error) {
         return (
-            <Card className="bg-destructive/10 border-destructive/20">
-                <CardContent className="flex flex-col items-center justify-center py-8 text-destructive">
-                    <AlertCircle className="h-8 w-8 mb-2" />
-                    <p>加载任务列表失败</p>
-                </CardContent>
-            </Card>
+            <EmptyState
+                icon={AlertCircle}
+                title="加载任务列表失败"
+                description="请检查网络连接后重试"
+                className="bg-destructive/10 border-destructive/20"
+            />
         );
     }
 
     if (extractTasks.length === 0) {
         return (
-            <Card className="bg-card/30 border-dashed border-2 border-border/50">
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                    <Sparkles className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">暂无进行中的任务</h3>
-                    <p className="text-muted-foreground text-center max-w-sm">
-                        新建提取任务后，将在此处显示进度
-                    </p>
-                </CardContent>
-            </Card>
+            <EmptyState
+                icon={Sparkles}
+                title="暂无进行中的任务"
+                description="新建提取任务后，将在此处显示进度"
+            />
         );
     }
 

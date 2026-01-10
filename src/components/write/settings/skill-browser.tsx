@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonList } from "@/components/common/skeleton-card";
 import {
   Collapsible,
   CollapsibleContent,
@@ -137,19 +138,7 @@ export function SkillBrowser({ projectId }: SkillBrowserProps) {
         <div className="p-2 space-y-1.5">
           {/* 加载状态 */}
           {isLoading && (
-            <>
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className="p-2 rounded border border-border/50 bg-card/30"
-                >
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="h-3.5 w-3.5" />
-                    <Skeleton className="h-4 flex-1" />
-                  </div>
-                </div>
-              ))}
-            </>
+            <SkeletonList count={5} itemHeight={40} />
           )}
 
           {/* 错误状态 */}

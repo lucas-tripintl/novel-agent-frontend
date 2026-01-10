@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { useInfiniteEntities } from "@/hooks/use-entities";
 import { useEnumStore } from "@/stores/enum-store";
+import { SkeletonCard } from "@/components/common/skeleton-card";
 import type { EntityType, EntityRead } from "@/types/api";
 import { cn } from "@/lib/utils";
 
@@ -330,11 +331,11 @@ export function EntityBrowserDialog({
             {/* 设定列表 */}
             <ScrollArea ref={scrollRef} className="flex-1 overflow-hidden">
               <div className="p-4 space-y-2">
-                {/* 加载状态 */}
+                {/* 加载状态 - 使用标准化 SkeletonCard */}
                 {isLoading && (
                   <div className="space-y-2">
                     {[...Array(5)].map((_, i) => (
-                      <Skeleton key={i} className="h-16 w-full rounded-lg" />
+                      <SkeletonCard key={i} showHeader={false} lines={2} className="h-16" />
                     ))}
                   </div>
                 )}

@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { DESIGN_TOKENS, getStatusBadgeClasses } from "@/lib/design-tokens";
 import {
   ArrowLeft,
   Save,
@@ -77,19 +78,19 @@ export function EditorStatusBar({
       <div className="flex items-center gap-2 shrink-0">
         {/* 保存状态提示 */}
         {saveStatus === "success" && (
-          <Badge variant="outline" className="text-green-500 border-green-500/50">
+          <Badge variant="outline" className={getStatusBadgeClasses('success')}>
             <CheckCircle2 className="h-3 w-3 mr-1" />
             {t("saved")}
           </Badge>
         )}
         {saveStatus === "error" && (
-          <Badge variant="outline" className="text-red-500 border-red-500/50">
+          <Badge variant="outline" className={getStatusBadgeClasses('error')}>
             <XCircle className="h-3 w-3 mr-1" />
             {t("saveFailed")}
           </Badge>
         )}
         {saveStatus === "idle" && isDirty && (
-          <Badge variant="outline" className="text-orange-500 border-orange-500/50">
+          <Badge variant="outline" className={getStatusBadgeClasses('warning')}>
             <AlertCircle className="h-3 w-3 mr-1" />
             {t("unsaved")}
           </Badge>

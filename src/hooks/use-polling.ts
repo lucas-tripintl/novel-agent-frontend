@@ -53,7 +53,7 @@ export function usePolling<T>({
   const retriesRef = useRef(0);
   const enabledRef = useRef(enabled);
   const stoppedRef = useRef(false);
-  const pollRef = useRef<() => Promise<void>>();
+  const pollRef = useRef<() => Promise<void>>(async () => {});
 
   // 更新 enabled ref
   useEffect(() => {

@@ -38,6 +38,7 @@ import {
   SKILL_SORT_OPTIONS,
   SKILL_STAGE_OPTIONS,
 } from "@/hooks/use-skills";
+import { PAGE_SIZES } from "@/components/common/pagination";
 import {
   Select,
   SelectContent,
@@ -64,8 +65,8 @@ interface AddSkillToStageDialogProps {
   onSuccess?: () => void;
 }
 
-/** 每页显示数量 */
-const PAGE_SIZE = 20;
+/** 每页显示数量 - 使用标准化常量 */
+const PAGE_SIZE = PAGE_SIZES.MEDIUM;
 
 /** 阶段选项（不含"全部"） */
 const STAGE_OPTIONS = SKILL_STAGE_OPTIONS.filter((o) => o.value !== "all") as {

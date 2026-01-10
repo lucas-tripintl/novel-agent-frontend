@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
+import { EmptyState } from "@/components/common/empty-state";
 import { FusionTaskEditSheet } from "@/components/fusion/fusion-task-edit-sheet";
 import { FusionTaskCard } from "@/components/fusion/fusion-task-card";
 import { Blend, Plus, AlertCircle, Search } from "lucide-react";
@@ -179,41 +180,32 @@ export default function FusionPage() {
 
         {/* 搜索无结果 */}
         {!isLoading && !isError && tasks.length > 0 && filteredTasks.length === 0 && (
-          <Card className="bg-card/30 border-dashed border-2 border-border/50">
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">{t("noMatchingTasks")}</h3>
-              <p className="text-muted-foreground text-center max-w-sm">
-                {tCommon("tryDifferentKeywords")}
-              </p>
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => setSearchQuery("")}
-              >
-                {tCommon("clearSearch")}
-              </Button>
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={Search}
+            title={t("noMatchingTasks")}
+            description={tCommon("tryDifferentKeywords")}
+            action={{
+              label: tCommon("clearSearch"),
+              onClick: () => setSearchQuery(""),
+              variant: "outline"
+            }}
+          />
         )}
 
         {/* 空状态 */}
         {!isLoading && !isError && tasks.length === 0 && (
-          <Card className="bg-card/30 border-dashed border-2 border-border/50">
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <Blend className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">{t("empty")}</h3>
-              <p className="text-muted-foreground text-center max-w-sm mb-6">
-                {t("emptyDescription")}
-              </p>
-              <Button asChild className="glow-green">
-                <Link href="/fusion/create">
-                  <Plus className="mr-2 h-4 w-4" />
-                  {t("createTask")}
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={Blend}
+            title={t("empty")}
+            description={t("emptyDescription")}
+            action={{
+              label: t("createTask"),
+              onClick: () => {
+                // This will be handled by the Link component
+              },
+              variant: "default"
+            }}
+          />
         )}
       </div>
 

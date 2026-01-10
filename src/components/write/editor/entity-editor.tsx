@@ -23,9 +23,10 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ConfirmLeaveDialog } from "../confirm-leave-dialog";
-import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
+import { useDeleteWithConfirmation } from "@/hooks/use-delete-with-confirmation";
 import { CharacterAttributesEditor } from "@/components/common/character-attributes-editor";
 import { cn } from "@/lib/utils";
+import { DESIGN_TOKENS, getStatusBadgeClasses } from "@/lib/design-tokens";
 import {
   ArrowLeft,
   ChevronRight,
@@ -145,7 +146,6 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
   const [attributes, setAttributes] = useState<Record<string, unknown>>(entity.attributes || {});
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [shouldCloseAfterSave, setShouldCloseAfterSave] = useState(false);
 
   // 计算本地脏状态（检测 name/tags/attributes 变化）
@@ -223,22 +223,22 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
     },
   });
 
-  // 删除设定的 mutation
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      return deleteEntity(projectId, entity.id);
+  // 删除操作 - 使用 useDeleteWithConfirmation 进行标准化删除流程
+  const {
+    showConfirmDialog: showDeleteDialog,
+    setShowConfirmDialog: setShowDeleteDialog,
+    isDeleting,
+    ConfirmDialog: DeleteConfirmDialog,
+  } = useDeleteWithConfirmation({
+    targetName: `设定「${entity.name}」`,
+    deleteFn: async () => {
+      await deleteEntity(projectId, entity.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project-elements", projectId] });
       closeEntityEditor();
     },
   });
-
-  // 处理删除确认
-  const handleDeleteConfirm = async () => {
-    await deleteMutation.mutateAsync();
-    setShowDeleteDialog(false);
-  };
 
 
 
@@ -361,13 +361,7 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
         onDiscard={handleDiscardAndClose}
         isSaving={updateMutation.isPending}
       />
-      <ConfirmDeleteDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        targetName={`设定「${entity.name}」`}
-        onConfirm={handleDeleteConfirm}
-        isPending={deleteMutation.isPending}
-      />
+      <DeleteConfirmDialog />
       <div className="flex h-full flex-col bg-background">
         {/* 头部 */}
         <div className="flex items-center gap-3 px-6 py-4 border-b border-border/50">
@@ -414,19 +408,19 @@ export function EntityEditor({ entity, projectId }: EntityEditorProps) {
           <div className="flex items-center gap-2 shrink-0">
             {/* 保存状态提示 */}
             {saveStatus === "success" && (
-              <Badge variant="outline" className="text-green-500 border-green-500/50">
+              <Badge variant="outline" className={getStatusBadgeClasses('success')}>
                 <CheckCircle2 className="h-3 w-3 mr-1" />
                 已保存
               </Badge>
             )}
             {saveStatus === "error" && (
-              <Badge variant="outline" className="text-red-500 border-red-500/50">
+              <Badge variant="outline" className={getStatusBadgeClasses('error')}>
                 <XCircle className="h-3 w-3 mr-1" />
                 保存失败
               </Badge>
             )}
             {saveStatus === "idle" && hasUnsavedChanges && (
-              <Badge variant="outline" className="text-orange-500 border-orange-500/50">
+              <Badge variant="outline" className={getStatusBadgeClasses('warning')}>
                 <AlertCircle className="h-3 w-3 mr-1" />
                 未保存
               </Badge>

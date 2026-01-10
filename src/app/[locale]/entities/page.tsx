@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { EmptyState } from "@/components/common/empty-state";
 import {
   Database,
   Search,
@@ -32,6 +33,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { useInfiniteEntities, ENTITY_LIBRARY_TYPE_OPTIONS } from "@/hooks/use-entities";
 import { useProjects } from "@/hooks/use-projects";
+import { SkeletonCard } from "@/components/common/skeleton-card";
 import type { EntityType, EntityRead } from "@/types/api";
 import { formatTimeAgo } from "@/lib/utils/time";
 import { NovelFilter } from "@/components/common/novel-filter";
@@ -282,26 +284,11 @@ export default function EntitiesPage() {
           <div className="flex-1 min-w-0">
             <ScrollArea ref={scrollRef} className="h-full">
               <div className="pr-4">
-                {/* 加载状态 */}
+                {/* 加载状态 - 使用标准化 SkeletonCard */}
                 {isLoading && (
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {[...Array(6)].map((_, i) => (
-                      <Card key={i} className="bg-card/50 border-border/50">
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
-                            <Skeleton className="h-5 w-20" />
-                            <Skeleton className="h-4 w-24" />
-                          </div>
-                          <Skeleton className="h-6 w-40 mt-2" />
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <Skeleton className="h-16 w-full" />
-                          <div className="flex gap-2">
-                            <Skeleton className="h-6 w-16" />
-                            <Skeleton className="h-6 w-16" />
-                          </div>
-                        </CardContent>
-                      </Card>
+                      <SkeletonCard key={i} showHeader showFooter lines={3} />
                     ))}
                   </div>
                 )}
@@ -415,34 +402,19 @@ export default function EntitiesPage() {
 
                 {/* 空状态 */}
                 {!isLoading && !isError && entities.length === 0 && (
-                  <Card className="bg-card/30 border-dashed border-2">
-                    <CardContent className="flex flex-col items-center justify-center py-16">
-                      <Database className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">
-                        {searchQuery || typeFilter !== "all" || selectedProjectId
-                          ? tCommon("noMatchingResults")
-                          : t("empty")}
-                      </h3>
-                      <p className="text-muted-foreground text-center max-w-sm">
-                        {searchQuery || typeFilter !== "all" || selectedProjectId
-                          ? tCommon("tryDifferentKeywords")
-                          : t("emptyDescription")}
-                      </p>
-                      {(searchQuery || typeFilter !== "all" || selectedProjectId) && (
-                        <Button
-                          variant="outline"
-                          className="mt-4"
-                          onClick={() => {
-                            setSearchQuery("");
-                            setTypeFilter("all");
-                            setSelectedProjectId(null);
-                          }}
-                        >
-                          {tCommon("clearSearch")}
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <EmptyState
+                    icon={Database}
+                    title={
+                      searchQuery || typeFilter !== "all" || selectedProjectId
+                        ? tCommon("noMatchingResults")
+                        : t("empty")
+                    }
+                    description={
+                      searchQuery || typeFilter !== "all" || selectedProjectId
+                        ? tCommon("tryDifferentKeywords")
+                        : t("emptyDescription")
+                    }
+                  />
                 )}
               </div>
             </ScrollArea>

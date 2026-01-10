@@ -16,6 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonForm } from "@/components/common/skeleton-card";
 import {
   Accordion,
   AccordionContent,
@@ -160,12 +161,7 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
 
   if (isLoading) {
     return (
-      <div className="p-3 space-y-3">
-        <Skeleton className="h-9 w-full" />
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-10 w-full" />
-        ))}
-      </div>
+      <SkeletonForm fieldCount={3} showHeader={false} showFooter={false} />
     );
   }
 

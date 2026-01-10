@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { SimpleTiptapEditor } from "./simple-tiptap-editor";
 import { cn } from "@/lib/utils";
+import { DESIGN_TOKENS, getStatusBadgeClasses } from "@/lib/design-tokens";
 import {
   ArrowLeft,
   BookText,
@@ -268,19 +269,19 @@ function NovelOutlineEditor({
         {/* 状态和保存 */}
         <div className="flex items-center gap-2 shrink-0">
           {saveStatus === "success" && (
-            <Badge variant="outline" className="text-green-500 border-green-500/50">
+            <Badge variant="outline" className={getStatusBadgeClasses('success')}>
               <CheckCircle2 className="h-3 w-3 mr-1" />
               已保存
             </Badge>
           )}
           {saveStatus === "error" && (
-            <Badge variant="outline" className="text-red-500 border-red-500/50">
+            <Badge variant="outline" className={getStatusBadgeClasses('error')}>
               <XCircle className="h-3 w-3 mr-1" />
               保存失败
             </Badge>
           )}
           {isDirty && saveStatus === "idle" && (
-            <Badge variant="outline" className="text-orange-500 border-orange-500/50">
+            <Badge variant="outline" className={getStatusBadgeClasses('warning')}>
               <AlertCircle className="h-3 w-3 mr-1" />
               未保存
             </Badge>
@@ -655,19 +656,19 @@ function VolumeOutlineEditor({
         {/* 状态和保存 */}
         <div className="flex items-center gap-2 shrink-0">
           {saveStatus === "success" && (
-            <Badge variant="outline" className="text-green-500 border-green-500/50">
+            <Badge variant="outline" className={getStatusBadgeClasses('success')}>
               <CheckCircle2 className="h-3 w-3 mr-1" />
               已保存
             </Badge>
           )}
           {saveStatus === "error" && (
-            <Badge variant="outline" className="text-red-500 border-red-500/50">
+            <Badge variant="outline" className={getStatusBadgeClasses('error')}>
               <XCircle className="h-3 w-3 mr-1" />
               保存失败
             </Badge>
           )}
           {isDirty && saveStatus === "idle" && (
-            <Badge variant="outline" className="text-orange-500 border-orange-500/50">
+            <Badge variant="outline" className={getStatusBadgeClasses('warning')}>
               <AlertCircle className="h-3 w-3 mr-1" />
               未保存
             </Badge>

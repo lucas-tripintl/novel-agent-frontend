@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonCard } from "@/components/common/skeleton-card";
 import {
   Select,
   SelectContent,
@@ -48,6 +49,7 @@ import {
   SKILL_SORT_OPTIONS,
   getSkillCategoryKey,
 } from "@/hooks/use-skills";
+import { PAGE_SIZES } from "@/components/common/pagination";
 import type {
   SkillBrief,
   SkillCategory,
@@ -67,8 +69,8 @@ const categoryIcons: Record<string, React.ReactNode> = {
   other: <MoreHorizontal className="h-4 w-4" />,
 };
 
-/** 每页显示数量 */
-const PAGE_SIZE = 20;
+/** 每页显示数量 - 使用标准化常量 */
+const PAGE_SIZE = PAGE_SIZES.MEDIUM;
 
 export interface SkillBrowserDialogProps {
   /** 控制对话框开关 */
@@ -313,11 +315,11 @@ export function SkillBrowserDialog({
             {/* 技能列表 */}
             <ScrollArea className="flex-1 overflow-hidden">
               <div className="p-4 space-y-2">
-                {/* 加载状态 */}
+                {/* 加载状态 - 使用标准化 SkeletonCard */}
                 {isLoading && (
                   <div className="space-y-2">
                     {[...Array(5)].map((_, i) => (
-                      <Skeleton key={i} className="h-16 w-full rounded-lg" />
+                      <SkeletonCard key={i} showHeader={false} lines={2} className="h-16" />
                     ))}
                   </div>
                 )}

@@ -5,6 +5,7 @@ import {
   type ContextSourceType,
 } from "@/stores/writing-store";
 import { cn } from "@/lib/utils";
+import { DESIGN_TOKENS } from "@/lib/design-tokens";
 import { FileText, BookOpen, AlignLeft, Layers, Map, X } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -42,14 +43,14 @@ export function TextContextChip({ className }: TextContextChipProps) {
     <div
       className={cn(
         "flex items-center gap-1.5 px-2 py-1 rounded-md",
-        "bg-blue-500/10 border border-blue-500/20",
+        `${DESIGN_TOKENS.backgrounds.info} border ${DESIGN_TOKENS.borders.info}`,
         "text-xs font-medium",
         "transition-colors hover:bg-blue-500/15",
         className
       )}
     >
-      <Icon className="h-3 w-3 text-blue-500" />
-      <span className="text-blue-600 dark:text-blue-400">
+      <Icon className={`h-3 w-3 ${DESIGN_TOKENS.colors.info}`} />
+      <span className={`${DESIGN_TOKENS.colors.info} dark:text-blue-400`}>
         {activeContextSource.label}
         {activeContextSource.charCount > 0 &&
           ` (${activeContextSource.charCount}字)`}

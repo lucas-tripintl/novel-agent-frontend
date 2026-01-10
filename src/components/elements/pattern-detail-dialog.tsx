@@ -20,7 +20,7 @@ import { formatTimeAgo } from "@/lib/utils/time";
 import { updatePattern, deletePattern } from "@/lib/api/patterns";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { patternKeys } from "@/hooks/use-patterns";
-import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
+import { useDeleteWithConfirmation } from "@/hooks/use-delete-with-confirmation";
 import type { PatternRead } from "@/types/pattern";
 
 interface PatternDetailDialogProps {
@@ -41,7 +41,6 @@ export function PatternDetailDialog({
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState("");
   const [editedContent, setEditedContent] = useState("");
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const queryClient = useQueryClient();
 
   // 当 pattern 改变时，重置编辑状态
@@ -67,15 +66,20 @@ export function PatternDetailDialog({
     },
   });
 
-  // 删除 mutation
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
+  // 删除操作 - 使用 useDeleteWithConfirmation 进行标准化删除流程
+  const {
+    showConfirmDialog,
+    setShowConfirmDialog,
+    isDeleting,
+    ConfirmDialog,
+  } = useDeleteWithConfirmation({
+    targetName: pattern ? `模式「${pattern.name}」` : "",
+    deleteFn: async () => {
       if (!pattern) throw new Error("No pattern selected");
-      return deletePattern(pattern.id);
+      await deletePattern(pattern.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: patternKeys.all });
-      setShowDeleteDialog(false);
       onOpenChange(false);
       onDelete?.();
     },
@@ -99,10 +103,6 @@ export function PatternDetailDialog({
       content: editedContent,
     });
   }, [editedName, editedContent, updateMutation]);
-
-  const handleDelete = useCallback(async () => {
-    await deleteMutation.mutateAsync();
-  }, [deleteMutation]);
 
   if (!pattern) return null;
 
@@ -196,13 +196,14 @@ export function PatternDetailDialog({
               <>
                 <Button
                   variant="outline"
-                  onClick={() => setShowDeleteDialog(true)}
+                  onClick={() => setShowConfirmDialog(true)}
+                  disabled={isDeleting}
                   className="text-destructive hover:text-destructive"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   删除
                 </Button>
-                <Button variant="outline" onClick={handleStartEdit}>
+                <Button variant="outline" onClick={handleStartEdit} disabled={isDeleting}>
                   <Pencil className="mr-2 h-4 w-4" />
                   编辑
                 </Button>
@@ -212,14 +213,8 @@ export function PatternDetailDialog({
         </DialogContent>
       </Dialog>
 
-      {/* 删除确认对话框 */}
-      <ConfirmDeleteDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        targetName={`模式「${pattern.name}」`}
-        onConfirm={handleDelete}
-        isPending={deleteMutation.isPending}
-      />
+      {/* 删除确认对话框 - 使用标准化的删除确认组件 */}
+      <ConfirmDialog />
     </>
   );
 }

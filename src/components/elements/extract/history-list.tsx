@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/common/empty-state";
 import { CheckCircle2, AlertCircle, FileText, Calendar, Box } from "lucide-react";
 import { formatTimeAgo } from "@/lib/utils/time";
 import Link from "next/link";
@@ -57,15 +58,12 @@ export function HistoryList() {
 
     if (error) {
         return (
-            <Card className="bg-card/30 border-dashed border-2 border-border/50">
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                    <AlertCircle className="h-12 w-12 text-destructive/50 mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">加载失败</h3>
-                    <p className="text-muted-foreground text-center max-w-sm">
-                        无法加载历史记录，请稍后重试
-                    </p>
-                </CardContent>
-            </Card>
+            <EmptyState
+                icon={AlertCircle}
+                title="加载失败"
+                description="无法加载历史记录，请稍后重试"
+                className="bg-card/30 border-dashed border-2 border-border/50"
+            />
         );
     }
 
@@ -73,15 +71,11 @@ export function HistoryList() {
 
     if (tasks.length === 0) {
         return (
-            <Card className="bg-card/30 border-dashed border-2 border-border/50">
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                    <FileText className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">暂无提取历史</h3>
-                    <p className="text-muted-foreground text-center max-w-sm">
-                        完成的提取任务将在此处显示
-                    </p>
-                </CardContent>
-            </Card>
+            <EmptyState
+                icon={FileText}
+                title="暂无提取历史"
+                description="完成的提取任务将在此处显示"
+            />
         );
     }
 

@@ -3,6 +3,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
+import { PAGE_SIZES } from "@/components/common/pagination";
 import {
   listProjects,
   createProject,
@@ -68,7 +69,7 @@ export function useProject(projectId: string) {
   });
 }
 
-const CHAPTERS_PAGE_SIZE = 20;
+const CHAPTERS_PAGE_SIZE = PAGE_SIZES.MEDIUM;
 
 /**
  * 获取项目章节列表（无限滚动）

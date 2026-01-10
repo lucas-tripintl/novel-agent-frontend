@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { EmptyState } from "@/components/common/empty-state";
+import { PAGE_SIZES } from "@/components/common/pagination";
 import {
   Wand2,
   Search,
@@ -56,8 +58,8 @@ import { SkillDialog } from "@/components/skills/skill-dialog";
 import { GenerateSkillDialog } from "@/components/skills/generate-skill-dialog";
 import { cn } from "@/lib/utils";
 
-/** 每页显示数量 */
-const PAGE_SIZE = 12;
+/** 每页显示数量 - 使用标准化常量 */
+const PAGE_SIZE = PAGE_SIZES.SMALL;
 
 // 分类图标映射
 const categoryIcons: Record<string, React.ReactNode> = {
@@ -501,33 +503,28 @@ export default function SkillsPage() {
 
                 {/* 空状态 */}
                 {!isLoading && !isError && skills.length === 0 && (
-                  <Card className="bg-card/30 border-dashed border-2 border-border/50">
-                    <CardContent className="flex flex-col items-center justify-center py-16">
-                      <Wand2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">
-                        {hasFilters ? t("noMatchingSkills") : t("empty")}
-                      </h3>
-                      <p className="text-muted-foreground text-center max-w-sm">
-                        {hasFilters
-                          ? tCommon("tryDifferentKeywords")
-                          : t("emptyDescription")}
-                      </p>
-                      {hasFilters ? (
-                        <Button
-                          variant="outline"
-                          className="mt-4"
-                          onClick={clearFilters}
-                        >
-                          {tCommon("clearSearch")}
-                        </Button>
-                      ) : (
-                        <Button className="mt-4" onClick={handleCreateSkill}>
-                          <Plus className="mr-2 h-4 w-4" />
-                          {t("create")}
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <EmptyState
+                    icon={Wand2}
+                    title={hasFilters ? t("noMatchingSkills") : t("empty")}
+                    description={
+                      hasFilters
+                        ? tCommon("tryDifferentKeywords")
+                        : t("emptyDescription")
+                    }
+                    action={
+                      hasFilters
+                        ? {
+                            label: tCommon("clearSearch"),
+                            onClick: clearFilters,
+                            variant: "outline"
+                          }
+                        : {
+                            label: t("create"),
+                            onClick: handleCreateSkill,
+                            variant: "default"
+                          }
+                    }
+                  />
                 )}
               </div>
             </ScrollArea>

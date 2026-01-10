@@ -4,7 +4,7 @@
  * 用于 React Query 的 mutations.onError 配置
  */
 
-import { toast } from "sonner";
+import { errorToast, warningToast } from "@/lib/utils/toast";
 import { ApiError, BusinessError } from "./client";
 
 /** 业务错误码枚举 */
@@ -54,15 +54,15 @@ export function handleApiError(error: unknown): void {
   } else if (error instanceof TypeError && error.message.includes("fetch")) {
     // 网络错误（fetch 失败）
     console.error("Network error:", error);
-    toast.error("Network error. Please check your connection.");
+    errorToast.network();
   } else if (error instanceof Error) {
     // 其他 JS 错误
     console.error("Unexpected error:", error);
-    toast.error(error.message || "An unexpected error occurred");
+    errorToast.general(error.message || "An unexpected error occurred");
   } else {
     // 未知错误类型
     console.error("Unknown error:", error);
-    toast.error("An unexpected error occurred");
+    errorToast.general("An unexpected error occurred");
   }
 }
 
@@ -93,27 +93,27 @@ function handleBusinessError(error: BusinessError): void {
     // 授权错误
     case ErrorCode.AUTHORIZATION_ERROR:
     case ErrorCode.ACCOUNT_DISABLED:
-      toast.error(msg, { duration: 5000 });
+      errorToast.auth(msg);
       break;
 
     // 资源不存在
     case ErrorCode.NOT_FOUND:
-      toast.error(msg);
+      errorToast.general(msg);
       break;
 
     // 资源冲突
     case ErrorCode.CONFLICT:
-      toast.warning(msg);
+      warningToast.general(msg);
       break;
 
     // 验证错误
     case ErrorCode.VALIDATION_ERROR:
-      toast.error(msg, { duration: 5000 });
+      errorToast.validation(msg);
       break;
 
     // 余额不足 - 可以添加充值按钮
     case ErrorCode.INSUFFICIENT_BALANCE:
-      toast.error(msg, {
+      errorToast.general(msg, {
         duration: 8000,
         // TODO: 添加充值按钮
         // action: {
@@ -125,23 +125,23 @@ function handleBusinessError(error: BusinessError): void {
 
     // 配额超限
     case ErrorCode.QUOTA_EXCEEDED:
-      toast.warning(msg, { duration: 5000 });
+      warningToast.quota(msg);
       break;
 
     // 限流
     case ErrorCode.RATE_LIMIT_EXCEEDED:
-      toast.warning(msg);
+      errorToast.rateLimit(msg);
       break;
 
     // 系统错误
     case ErrorCode.SERVICE_UNAVAILABLE:
     case ErrorCode.INTERNAL_ERROR:
-      toast.error(msg, { duration: 5000 });
+      errorToast.service(msg);
       break;
 
     // 其他业务错误
     default:
-      toast.error(msg);
+      errorToast.general(msg);
   }
 }
 
@@ -157,5 +157,5 @@ function handleHttpError(error: ApiError): void {
   }
 
   // 其他 HTTP 错误
-  toast.error(`Request failed: ${status} ${statusText}`);
+  errorToast.general(`Request failed: ${status} ${statusText}`);
 }

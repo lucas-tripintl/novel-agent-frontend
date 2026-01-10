@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { DESIGN_TOKENS } from "@/lib/design-tokens";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -174,7 +175,7 @@ export function DecisionPointDialog({
                               {option.recommended && (
                                 <Badge
                                   variant="secondary"
-                                  className="gap-1 text-xs bg-green-500/10 text-green-600 border-green-500/20"
+                                  className={`gap-1 text-xs ${DESIGN_TOKENS.backgrounds.success} ${DESIGN_TOKENS.colors.success} ${DESIGN_TOKENS.borders.success}`}
                                 >
                                   <Sparkles className="h-3 w-3" />
                                   推荐
@@ -188,8 +189,8 @@ export function DecisionPointDialog({
                             {/* 推荐理由（仅推荐选项显示） */}
                             {option.recommended && option.reason && (
                               <div className="flex items-start gap-2 pt-1">
-                                <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                                <p className="text-xs text-green-600">
+                                <CheckCircle2 className={`h-4 w-4 ${DESIGN_TOKENS.colors.success} mt-0.5 shrink-0`} />
+                                <p className={`text-xs ${DESIGN_TOKENS.colors.success}`}>
                                   {option.reason}
                                 </p>
                               </div>

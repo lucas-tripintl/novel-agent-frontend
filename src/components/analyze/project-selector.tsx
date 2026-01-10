@@ -23,9 +23,10 @@ import {
   Search,
 } from "lucide-react";
 import { listProjects } from "@/lib/api/projects";
+import { PAGE_SIZES } from "@/components/common/pagination";
 import type { ProjectList, ProjectStatus } from "@/types/api";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = PAGE_SIZES.SMALL;
 
 const STATUS_OPTIONS: { value: ProjectStatus | "all"; label: string }[] = [
   { value: "all", label: "全部状态" },

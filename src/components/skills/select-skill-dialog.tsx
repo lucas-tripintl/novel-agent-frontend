@@ -34,6 +34,7 @@ import {
   SKILL_CATEGORY_OPTIONS,
   SKILL_SORT_OPTIONS,
 } from "@/hooks/use-skills";
+import { PAGE_SIZES } from "@/components/common/pagination";
 import {
   Select,
   SelectContent,
@@ -58,8 +59,8 @@ interface SelectSkillDialogProps {
   onSelect: (skill: SkillBrief | null) => void;
 }
 
-/** 每页显示数量 */
-const PAGE_SIZE = 20;
+/** 每页显示数量 - 使用标准化常量 */
+const PAGE_SIZE = PAGE_SIZES.MEDIUM;
 
 /**
  * 选择技能对话框（仅选择，不添加到项目）

@@ -2,21 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { Settings, Loader2, Save, Trash2 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Settings, Save, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { BaseFormDialog } from "@/components/base/base-form-dialog";
+import { FormInput } from "@/components/forms/form-input";
+import { FormTextarea } from "@/components/forms/form-textarea";
 import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog";
 import { useUpdateProject, useDeleteProject } from "@/hooks/use-projects";
+import { useDeleteWithConfirmation } from "@/hooks/use-delete-with-confirmation";
 import type { ProjectList } from "@/types/api";
 
 interface ProjectEditDialogProps {
@@ -37,10 +30,26 @@ export function ProjectEditDialog({
   const [projectType, setProjectType] = useState("");
   const [description, setDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const updateMutation = useUpdateProject();
   const deleteMutation = useDeleteProject();
+
+  // 删除操作 - 使用 useDeleteWithConfirmation 进行标准化删除流程
+  const {
+    showConfirmDialog,
+    setShowConfirmDialog,
+    isDeleting,
+    ConfirmDialog,
+  } = useDeleteWithConfirmation({
+    targetName: project ? t("deleteConfirm", { name: project.name }) : "",
+    deleteFn: async () => {
+      if (!project) throw new Error("No project selected");
+      await deleteMutation.mutateAsync(project.id);
+    },
+    onSuccess: () => {
+      onOpenChange(false);
+    },
+  });
 
   // Reset form when project changes
   useEffect(() => {
@@ -72,14 +81,6 @@ export function ProjectEditDialog({
     }
   };
 
-  const handleDelete = async () => {
-    if (!project) return;
-
-    await deleteMutation.mutateAsync(project.id);
-    setShowDeleteDialog(false);
-    onOpenChange(false);
-  };
-
   const handleOpenChange = (open: boolean) => {
     if (!open && project) {
       // Reset form when closing
@@ -90,93 +91,27 @@ export function ProjectEditDialog({
     onOpenChange(open);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey && name.trim()) {
-      e.preventDefault();
-      handleSave();
-    }
-  };
+  const isSubmitDisabled = !name.trim() || isLoading || isDeleting;
 
   return (
     <>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-[440px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <Settings className="h-5 w-5 text-primary" />
-              {t("editDialog.title")}
-            </DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              {t("editDialog.description")}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-5 py-4">
-            {/* Project name */}
-            <div className="space-y-2">
-              <Label htmlFor="edit-project-name">
-                {t("editDialog.nameLabel")}
-                <span className="text-destructive ml-1">*</span>
-              </Label>
-              <Input
-                id="edit-project-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={t("editDialog.namePlaceholder")}
-                className="bg-background/50"
-                autoFocus
-                disabled={isLoading}
-              />
-            </div>
-
-            {/* Novel type */}
-            <div className="space-y-2">
-              <Label htmlFor="edit-project-type">
-                {t("editDialog.typeLabel")}
-              </Label>
-              <Input
-                id="edit-project-type"
-                value={projectType}
-                onChange={(e) => setProjectType(e.target.value.slice(0, 20))}
-                onKeyDown={handleKeyDown}
-                placeholder={t("editDialog.typePlaceholder")}
-                className="bg-background/50"
-                maxLength={20}
-                disabled={isLoading}
-              />
-              <p className="text-xs text-muted-foreground">
-                {t("editDialog.typeHint")}
-              </p>
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="edit-project-description">
-                {t("editDialog.descriptionLabel")}
-              </Label>
-              <Textarea
-                id="edit-project-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder={t("editDialog.descriptionPlaceholder")}
-                className="bg-background/50 min-h-[100px] resize-none"
-                maxLength={500}
-                disabled={isLoading}
-              />
-              <p className="text-xs text-muted-foreground text-right">
-                {description.length}/500
-              </p>
-            </div>
-          </div>
-
-          <DialogFooter className="flex-row justify-between sm:justify-between">
+      <BaseFormDialog
+        open={open}
+        onOpenChange={handleOpenChange}
+        title={t("editDialog.title")}
+        description={t("editDialog.description")}
+        icon={Settings}
+        maxWidth="md"
+        loading={isLoading || isDeleting}
+        onSubmit={handleSave}
+        footer={
+          <div className="flex justify-between w-full">
             <Button
               variant="ghost"
               size="sm"
               className="text-destructive hover:text-destructive"
-              onClick={() => setShowDeleteDialog(true)}
-              disabled={isLoading}
+              onClick={() => setShowConfirmDialog(true)}
+              disabled={isLoading || isDeleting}
             >
               <Trash2 className="mr-2 h-4 w-4" />
               {tCommon("delete")}
@@ -185,13 +120,13 @@ export function ProjectEditDialog({
               <Button
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
-                disabled={isLoading}
+                disabled={isLoading || isDeleting}
               >
                 {tCommon("cancel")}
               </Button>
               <Button
                 onClick={handleSave}
-                disabled={!name.trim() || isLoading}
+                disabled={isSubmitDisabled}
                 className="glow-primary"
               >
                 {isLoading ? (
@@ -207,17 +142,48 @@ export function ProjectEditDialog({
                 )}
               </Button>
             </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        }
+      >
+        <div className="space-y-5">
+          {/* Project name */}
+          <FormInput
+            id="edit-project-name"
+            label={t("editDialog.nameLabel")}
+            value={name}
+            onChange={setName}
+            placeholder={t("editDialog.namePlaceholder")}
+            required
+            disabled={isLoading || isDeleting}
+          />
 
-      <ConfirmDeleteDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        targetName={t("deleteConfirm", { name: project?.name ?? "" })}
-        onConfirm={handleDelete}
-        isPending={deleteMutation.isPending}
-      />
+          {/* Novel type */}
+          <FormInput
+            id="edit-project-type"
+            label={t("editDialog.typeLabel")}
+            value={projectType}
+            onChange={(value) => setProjectType(value.slice(0, 20))}
+            placeholder={t("editDialog.typePlaceholder")}
+            description={t("editDialog.typeHint")}
+            disabled={isLoading || isDeleting}
+          />
+
+          {/* Description */}
+          <FormTextarea
+            id="edit-project-description"
+            label={t("editDialog.descriptionLabel")}
+            value={description}
+            onChange={setDescription}
+            placeholder={t("editDialog.descriptionPlaceholder")}
+            maxLength={500}
+            showCharCount
+            rows={4}
+            disabled={isLoading || isDeleting}
+          />
+        </div>
+      </BaseFormDialog>
+
+      <ConfirmDialog />
     </>
   );
 }

@@ -13,6 +13,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { DESIGN_TOKENS } from "@/lib/design-tokens";
 import {
   Loader2,
   HelpCircle,
@@ -169,8 +170,8 @@ export function DecisionPanel({
     return (
       <div className="flex h-full flex-col border-l border-border/50 bg-card/30 min-h-0">
         {/* 头部 - 成功提示 */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-green-500/5">
-          <CheckCircle2 className="h-5 w-5 text-green-500" />
+        <div className={`flex items-center gap-3 px-4 py-3 border-b border-border/50 ${DESIGN_TOKENS.backgrounds.success}`}>
+          <CheckCircle2 className={`h-5 w-5 ${DESIGN_TOKENS.colors.success}`} />
           <div className="flex-1">
             <p className="text-sm font-medium">
               {generationType === "content" ? t("contentCompleted") : t("outlineCompleted")}
@@ -200,7 +201,7 @@ export function DecisionPanel({
             )}
             {decisionsForDisplay.length === 0 && (
               <div className="text-center py-8">
-                <CheckCircle2 className="h-10 w-10 text-green-500/50 mx-auto mb-3" />
+                <CheckCircle2 className={`h-10 w-10 ${DESIGN_TOKENS.colors.success}/50 mx-auto mb-3`} />
                 <p className="text-sm text-muted-foreground">
                   {generationType === "content"
                     ? t("contentGeneratedSuccessfully")
@@ -253,8 +254,8 @@ export function DecisionPanel({
       <div className="flex h-full flex-col border-l border-border/50 bg-card/30 min-h-0">
         {/* 头部 - 状态指示 */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50">
-          <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
-            <HelpCircle className="h-4 w-4 text-amber-500" />
+          <div className={`h-8 w-8 rounded-full ${DESIGN_TOKENS.backgrounds.warning} flex items-center justify-center shrink-0`}>
+            <HelpCircle className={`h-4 w-4 ${DESIGN_TOKENS.colors.warning}`} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium">{t("makeSelection")}</p>
@@ -312,7 +313,7 @@ export function DecisionPanel({
                         : "border-border/50 bg-card/30",
                       option.recommended &&
                         selectedOptionId !== option.id &&
-                        "border-green-500/30 bg-green-500/5"
+                        "                        `${DESIGN_TOKENS.borders.success} ${DESIGN_TOKENS.backgrounds.success}`"
                     )}
                   >
                     <div className="flex items-start gap-3">
@@ -326,7 +327,7 @@ export function DecisionPanel({
                             {option.label}
                           </span>
                           {option.recommended && (
-                            <Badge className="text-[10px] bg-green-500/10 text-green-600 border-green-500/20">
+                            <Badge className={`text-[10px] ${DESIGN_TOKENS.backgrounds.success} ${DESIGN_TOKENS.colors.success} ${DESIGN_TOKENS.borders.success}`}>
                               <Sparkles className="h-2.5 w-2.5 mr-0.5" />
                               {t("recommended")}
                             </Badge>
@@ -337,8 +338,8 @@ export function DecisionPanel({
                         </p>
                         {option.recommended && option.reason && (
                           <div className="flex items-start gap-1.5 mt-2">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" />
-                            <p className="text-xs text-green-600">
+                            <CheckCircle2 className={`h-3.5 w-3.5 ${DESIGN_TOKENS.colors.success} mt-0.5 shrink-0`} />
+                            <p className={`text-xs ${DESIGN_TOKENS.colors.success}`}>
                               {option.reason}
                             </p>
                           </div>

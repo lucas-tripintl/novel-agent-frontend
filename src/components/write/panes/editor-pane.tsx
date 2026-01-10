@@ -16,6 +16,7 @@ import { useChapterOutline } from "@/hooks/use-chapter-outline";
 import { useChapterSave } from "@/hooks/use-chapter-save";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonText } from "@/components/common/skeleton-card";
 import { EditorStatusBar } from "../editor/editor-status-bar";
 import { ChapterTitleBar } from "../editor/chapter-title-bar";
 import { ChapterEditorTabs } from "../editor/chapter-editor-tabs";
@@ -239,31 +240,11 @@ function EditorSkeleton() {
         <Skeleton className="h-7 w-16 rounded-md" />
       </div>
 
-      {/* 内容区骨架 - 模拟文本行 */}
-      <div className="space-y-3 pt-2">
-        {/* 段落骨架 */}
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-[95%]" />
-          <Skeleton className="h-4 w-[88%]" />
-        </div>
-
-        <div className="h-4" />
-
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-[92%]" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-[85%]" />
-          <Skeleton className="h-4 w-[78%]" />
-        </div>
-
-        <div className="h-4" />
-
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-[90%]" />
-          <Skeleton className="h-4 w-[96%]" />
-          <Skeleton className="h-4 w-[82%]" />
-        </div>
+      {/* 内容区骨架 - 使用 SkeletonText 组件 */}
+      <div className="space-y-6 pt-2">
+        <SkeletonText lines={3} />
+        <SkeletonText lines={4} />
+        <SkeletonText lines={3} />
       </div>
     </div>
   );
