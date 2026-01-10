@@ -1,7 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useWritingStore } from "@/stores/writing-store";
-import { Badge } from "@/components/ui/badge";
 import { SimpleTiptapEditor } from "./simple-tiptap-editor";
 import { useInlineEdit } from "@/hooks/use-inline-edit";
 import type { QuickAction } from "@/types/inline-edit";
@@ -10,7 +10,8 @@ interface ChapterTitleBarProps {
   chapterNumber: number;
 }
 
-export function ChapterTitleBar({ chapterNumber }: ChapterTitleBarProps) {
+export function ChapterTitleBar({ chapterNumber: _ }: ChapterTitleBarProps) {
+  const t = useTranslations("write");
   const { projectId, title, setTitle } = useWritingStore();
 
   // 内联编辑 hook
@@ -69,7 +70,7 @@ export function ChapterTitleBar({ chapterNumber }: ChapterTitleBarProps) {
         onChange={setTitle}
         targetType="title"
         mode="single-line"
-        placeholder="输入章节标题..."
+        placeholder={t("chapterTitlePlaceholder")}
         className="text-2xl font-bold"
         enableInlineEdit={!!projectId}
         onQuickAction={handleTitleQuickAction}

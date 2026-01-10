@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useReducer } from "react";
 import { useTranslations } from "next-intl";
 import {
   useWritingStore,
@@ -45,8 +45,7 @@ export function EditorPane({ projectId }: EditorPaneProps) {
   const hasUnsavedChanges = isDirty || isChapterOutlineDirty;
   useUnsavedChangesWarning(hasUnsavedChanges);
 
-  // 跟踪章节切换的过渡状态
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  // 跟踪章节切换的 ref
   const prevChapterIdRef = useRef<string | null>(null);
 
   // 使用章节详情 API 获取完整内容
@@ -60,47 +59,57 @@ export function EditorPane({ projectId }: EditorPaneProps) {
     chapterNumber
   );
 
-  // Effect 1: 检测章节切换，触发过渡状态
-  useEffect(() => {
-    if (chapterId && chapterId !== prevChapterIdRef.current) {
-      setIsTransitioning(true);
-      prevChapterIdRef.current = chapterId;
-    }
-  }, [chapterId]);
+  // 使用 useReducer 来跟踪章节变化，避免 React Compiler 警告
+  const [chapterState, dispatch] = useReducer(
+    (state: { lastChapterId: string | null }, action: { type: 'update'; chapterId: string }) => {
+      switch (action.type) {
+        case 'update':
+          return { lastChapterId: action.chapterId };
+        default:
+          return state;
+      }
+    },
+    { lastChapterId: null }
+  );
 
-  // Effect 2: 章节数据加载完成后，一次性处理
+  const isTransitioning = chapterId !== chapterState.lastChapterId && !!chapterId;
+
+  // 当章节数据加载完成时，更新状态
+  useEffect(() => {
+    if (chapterDetail && chapterId) {
+      dispatch({ type: 'update', chapterId });
+    }
+  }, [chapterDetail, chapterId]);
+
+  // Effect 2: 章节数据和细纲数据加载完成后，一次性处理
   // - 加载章节内容到 store
   // - 加载细纲内容到 store
-  // - 延迟结束过渡状态
+  const prevChapterDetailRef = useRef<typeof chapterDetail>(null);
+  const prevChapterOutlineDataRef = useRef<typeof chapterOutlineData>(null);
+
   useEffect(() => {
-    if (!chapterDetail) return;
+    // 检查章节数据是否有变化
+    const chapterDetailChanged = chapterDetail !== prevChapterDetailRef.current;
+    const outlineDataChanged = chapterOutlineData !== prevChapterOutlineDataRef.current;
 
-    // 加载章节内容
-    loadDraft({
-      title: chapterDetail.title || "",
-      outline: chapterDetail.summary || "",
-      content: chapterDetail.content || "",
-    });
+    // 更新 ref
+    prevChapterDetailRef.current = chapterDetail;
+    prevChapterOutlineDataRef.current = chapterOutlineData;
 
-    // 如果细纲数据也已经到达，一起加载
-    if (chapterOutlineData) {
+    // 加载章节内容（仅当章节数据变化时）
+    if (chapterDetail && chapterDetailChanged) {
+      loadDraft({
+        title: chapterDetail.title || "",
+        outline: chapterDetail.summary || "",
+        content: chapterDetail.content || "",
+      });
+    }
+
+    // 加载细纲内容（仅当细纲数据变化时）
+    if (chapterOutlineData && outlineDataChanged) {
       loadChapterOutline(chapterOutlineData.content || "");
     }
-
-    // 数据加载完成后，延迟结束过渡
-    if (isTransitioning) {
-      const timer = setTimeout(() => setIsTransitioning(false), 100);
-      return () => clearTimeout(timer);
-    }
-  }, [chapterDetail, chapterOutlineData, loadDraft, loadChapterOutline, isTransitioning]);
-
-  // Effect 3: 处理细纲单独更新（当细纲数据晚于章节数据到达时）
-  useEffect(() => {
-    // 只在章节数据已加载、细纲数据刚到达时触发
-    if (chapterOutlineData && chapterDetail && !isTransitioning) {
-      loadChapterOutline(chapterOutlineData.content || "");
-    }
-  }, [chapterOutlineData, chapterDetail, isTransitioning, loadChapterOutline]);
+  }, [chapterDetail, chapterOutlineData, loadDraft, loadChapterOutline]);
 
   // 判断是否正在加载章节内容
   const isLoadingContent = isTransitioning || (isChapterFetching && !chapterDetail);

@@ -352,9 +352,9 @@ export function ChapterList({ projectId }: ChapterListProps) {
 
   // 保存当前章节并切换
   const handleSaveAndSwitch = async () => {
-    if (!currentProjectId || !currentChapterId || !currentChapterNumber) {
+    if (!currentProjectId || !currentChapterId || currentChapterNumber == null) {
       // 如果没有当前章节，直接切换
-      if (pendingChapterId && pendingChapterNumber !== null) {
+      if (pendingChapterId && pendingChapterNumber != null) {
         doSwitchChapter(pendingChapterId, pendingChapterNumber);
         setPendingChapterId(null);
         setPendingChapterNumber(null);
@@ -389,7 +389,7 @@ export function ChapterList({ projectId }: ChapterListProps) {
       await Promise.all(tasks);
 
       // 保存成功后切换章节
-      if (pendingChapterId && pendingChapterNumber !== null) {
+      if (pendingChapterId && pendingChapterNumber != null) {
         doSwitchChapter(pendingChapterId, pendingChapterNumber);
         setPendingChapterId(null);
         setPendingChapterNumber(null);
@@ -402,7 +402,7 @@ export function ChapterList({ projectId }: ChapterListProps) {
   };
 
   const handleConfirmDiscard = () => {
-    if (pendingChapterId && pendingChapterNumber !== null) {
+    if (pendingChapterId && pendingChapterNumber != null) {
       doSwitchChapter(pendingChapterId, pendingChapterNumber);
       setPendingChapterId(null);
       setPendingChapterNumber(null);

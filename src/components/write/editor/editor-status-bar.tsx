@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -39,6 +40,7 @@ export function EditorStatusBar({
   disabled,
   extraActions,
 }: EditorStatusBarProps) {
+  const t = useTranslations("write");
   const isSaving = saveStatus === "saving";
   const canSave = isDirty && !isSaving && !disabled;
 
@@ -77,19 +79,19 @@ export function EditorStatusBar({
         {saveStatus === "success" && (
           <Badge variant="outline" className="text-green-500 border-green-500/50">
             <CheckCircle2 className="h-3 w-3 mr-1" />
-            已保存
+            {t("saved")}
           </Badge>
         )}
         {saveStatus === "error" && (
           <Badge variant="outline" className="text-red-500 border-red-500/50">
             <XCircle className="h-3 w-3 mr-1" />
-            保存失败
+            {t("saveFailed")}
           </Badge>
         )}
         {saveStatus === "idle" && isDirty && (
           <Badge variant="outline" className="text-orange-500 border-orange-500/50">
             <AlertCircle className="h-3 w-3 mr-1" />
-            未保存
+            {t("unsaved")}
           </Badge>
         )}
 
@@ -103,12 +105,12 @@ export function EditorStatusBar({
           {isSaving ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              保存中...
+              {t("saving")}
             </>
           ) : (
             <>
               <Save className="h-4 w-4" />
-              保存
+              {t("save")}
             </>
           )}
         </Button>

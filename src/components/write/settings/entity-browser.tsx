@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import {
   useProjectElements,
   elementCategories,
@@ -92,6 +93,7 @@ interface EntityBrowserProps {
 }
 
 export function EntityBrowser({ projectId }: EntityBrowserProps) {
+  const t = useTranslations("write");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
 
@@ -100,7 +102,7 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
   const { selectedEntities, addEntity, removeEntity } = useWritingStore();
   const { setEditingEntity } = useEntityEditing();
   // 订阅 loaded 状态确保枚举加载后重渲染
-  const enumsLoaded = useEnumStore((state) => state.loaded);
+  useEnumStore((state) => state.loaded);
   const getLabel = useEnumStore((state) => state.getLabel);
   const getFieldValueLabel = useEnumStore((state) => state.getFieldValueLabel);
 
@@ -114,12 +116,10 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
     return enumLabel;
   };
 
-  const entities = data?.items ?? [];
-
   // 按分类分组
   const groupedEntities = useMemo(
-    () => groupEntitiesByCategory(entities, searchKeyword),
-    [entities, searchKeyword]
+    () => groupEntitiesByCategory(data?.items ?? [], searchKeyword),
+    [data?.items, searchKeyword]
   );
 
   // 非空分类
@@ -176,7 +176,7 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
         <div className="relative">
           <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="搜索设定..."
+            placeholder={t("searchSettings")}
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             className="pl-7 h-7 text-xs bg-background/50"
@@ -189,7 +189,7 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
         <div className="mx-2 mb-2 p-1.5 rounded-md bg-primary/5 border border-primary/20">
           <p className="text-[11px] text-muted-foreground">
             <Sparkles className="inline h-3 w-3 mr-1 text-primary" />
-            全自动模式下，AI 会自动选择相关设定
+            {t("autoModeHint")}
           </p>
         </div>
       )}
@@ -201,7 +201,7 @@ export function EntityBrowser({ projectId }: EntityBrowserProps) {
             <div className="flex flex-col items-center py-8 text-center">
               <Globe className="h-8 w-8 text-muted-foreground/50 mb-2" />
               <p className="text-xs text-muted-foreground">
-                {searchKeyword ? "没有匹配的设定" : "暂无设定"}
+                {searchKeyword ? t("noMatchingSettings") : t("noSettings")}
               </p>
             </div>
           ) : (

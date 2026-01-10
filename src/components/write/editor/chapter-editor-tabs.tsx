@@ -79,28 +79,29 @@ export function ChapterEditorTabs({ projectId }: ChapterEditorTabsProps) {
 
   // 获取当前项目的任务列表
   const { data: tasksData } = useTasks(projectId);
+  const taskItems = tasksData?.items;
 
   // 检查是否有正在进行的细纲生成任务
   const isOutlineGenerating = useMemo(() => {
-    if (!tasksData?.items || !chapterNumber) return false;
-    return tasksData.items.some(
+    if (!taskItems || !chapterNumber) return false;
+    return taskItems.some(
       (task) =>
         task.job_type === "generate_chapter_outline" &&
         (task.status === "queued" || task.status === "running") &&
         task.meta?.chapter_number === chapterNumber
     );
-  }, [tasksData?.items, chapterNumber]);
+  }, [taskItems, chapterNumber]);
 
   // 检查是否有正在进行的章节写作任务
   const isChapterWriting = useMemo(() => {
-    if (!tasksData?.items || !chapterNumber) return false;
-    return tasksData.items.some(
+    if (!taskItems || !chapterNumber) return false;
+    return taskItems.some(
       (task) =>
         task.job_type === "write_chapter" &&
         (task.status === "queued" || task.status === "running") &&
         task.meta?.chapter_number === chapterNumber
     );
-  }, [tasksData?.items, chapterNumber]);
+  }, [taskItems, chapterNumber]);
 
   // 生成摘要 mutation
   const generateSummaryMutation = useGenerateChapterSummary();

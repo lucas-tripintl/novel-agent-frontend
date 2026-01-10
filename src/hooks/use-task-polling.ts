@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { getTask, listTasks } from "@/lib/api/tasks";
-import type { TaskRead, TaskStatus } from "@/types/api";
+import type { TaskRead } from "@/types/api";
 
 const POLL_INTERVAL = 5000; // 5秒轮询
 
@@ -18,14 +18,17 @@ export function useTaskPolling(
     onFailed?: (task: TaskRead) => void;
   }
 ) {
-  const queryClient = useQueryClient();
   const { enabled = true, onComplete, onFailed } = options ?? {};
 
   // 使用 ref 存储回调，避免闭包陷阱
   const onCompleteRef = useRef(onComplete);
   const onFailedRef = useRef(onFailed);
-  onCompleteRef.current = onComplete;
-  onFailedRef.current = onFailed;
+  
+  // 在 effect 中更新 ref，避免在渲染期间访问
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+    onFailedRef.current = onFailed;
+  });
 
   // 追踪是否已经触发过回调，避免重复调用
   const hasCalledRef = useRef(false);

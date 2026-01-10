@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useReducer } from "react";
 
 interface UsePollingOptions<T> {
   fetcher: () => Promise<T>;
@@ -32,12 +32,28 @@ export function usePolling<T>({
   maxRetries = 3,
 }: UsePollingOptions<T>): UsePollingResult<T> {
   const [data, setData] = useState<T | null>(null);
-  const [isPolling, setIsPolling] = useState(false);
+  // 使用 useReducer 来避免 React Compiler 的 setState 警告
+  const [pollingState, dispatch] = useReducer(
+    (state: { isPolling: boolean }, action: { type: 'start' | 'stop' }) => {
+      switch (action.type) {
+        case 'start':
+          return { isPolling: true };
+        case 'stop':
+          return { isPolling: false };
+        default:
+          return state;
+      }
+    },
+    { isPolling: false }
+  );
+
+  const { isPolling } = pollingState;
   const [error, setError] = useState<Error | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const retriesRef = useRef(0);
   const enabledRef = useRef(enabled);
   const stoppedRef = useRef(false);
+  const pollRef = useRef<() => Promise<void>>();
 
   // 更新 enabled ref
   useEffect(() => {
@@ -46,7 +62,7 @@ export function usePolling<T>({
 
   const poll = useCallback(async () => {
     if (!enabledRef.current || stoppedRef.current) {
-      setIsPolling(false);
+      dispatch({ type: 'stop' });
       return;
     }
 
@@ -58,12 +74,12 @@ export function usePolling<T>({
       onSuccess?.(result);
 
       if (shouldStop?.(result)) {
-        setIsPolling(false);
+        dispatch({ type: 'stop' });
         return;
       }
 
       if (!stoppedRef.current) {
-        timeoutRef.current = setTimeout(poll, interval);
+        timeoutRef.current = setTimeout(() => pollRef.current?.(), interval);
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
@@ -75,38 +91,52 @@ export function usePolling<T>({
         // 指数退避
         const backoffInterval = interval * Math.pow(2, retriesRef.current);
         if (!stoppedRef.current) {
-          timeoutRef.current = setTimeout(poll, backoffInterval);
+          timeoutRef.current = setTimeout(() => pollRef.current?.(), backoffInterval);
         }
       } else {
-        setIsPolling(false);
+        dispatch({ type: 'stop' });
       }
     }
   }, [fetcher, interval, onSuccess, onError, shouldStop, retryOnError, maxRetries]);
+
+  // 保持 pollRef 同步
+  useEffect(() => {
+    pollRef.current = poll;
+  }, [poll]);
 
   const stop = useCallback(() => {
     stoppedRef.current = true;
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    setIsPolling(false);
+    dispatch({ type: 'stop' });
   }, []);
 
   const restart = useCallback(() => {
     stoppedRef.current = false;
     retriesRef.current = 0;
-    setIsPolling(true);
-    poll();
-  }, [poll]);
+    dispatch({ type: 'start' });
+    pollRef.current?.();
+  }, []);
 
+  // 使用单独的 effect 来处理 enabled 状态变化
   useEffect(() => {
     if (!enabled) {
-      stop();
-      return;
+      stoppedRef.current = true;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
     }
+  }, [enabled]);
 
-    stoppedRef.current = false;
-    setIsPolling(true);
-    poll();
+  // 使用单独的 effect 来启动轮询
+  useEffect(() => {
+    if (enabled && !stoppedRef.current) {
+      dispatch({ type: 'start' });
+      pollRef.current?.();
+    } else if (!enabled) {
+      dispatch({ type: 'stop' });
+    }
 
     return () => {
       if (timeoutRef.current) {

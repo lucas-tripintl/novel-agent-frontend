@@ -70,7 +70,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
   const mode = useWritingMode();
   const contextEntities = useContextEntities();
   const { content: editorContent, outline } = useEditorContent();
-  const { chapterOutline, chapterOutline: chapterOutlineContent } = useChapterOutlineState();
+  const { chapterOutline } = useChapterOutlineState();
   const { activeContextSource } = useActiveContextSource();
   const { editingEntity } = useEntityEditing();
   const { editingOutline } = useOutlineEditing();
@@ -79,7 +79,6 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
   const {
     currentSessionId,
     streamingContent,
-    activeToolCalls,
     setCurrentChatSession,
     setStreamingChatContent,
     setActiveToolCalls,
@@ -90,7 +89,6 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
   const generationCollabMode = useWritingStore((state) => state.generationCollabMode);
   const exitGenerationCollabMode = useWritingStore((state) => state.exitGenerationCollabMode);
   const contentGenerationCollabMode = useWritingStore((state) => state.contentGenerationCollabMode);
-  const exitContentGenerationCollabMode = useWritingStore((state) => state.exitContentGenerationCollabMode);
 
   // 交互式细纲生成 hook
   const interactiveOutline = useInteractiveOutline(projectId, chapterNumber);
@@ -100,7 +98,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
 
   // 获取会话列表（用于自动创建会话）
   const { data: sessionsData } = useChatSessions(projectId, { status: "active" });
-  const sessions = useMemo(
+  useMemo(
     () => sessionsData?.items ?? [],
     [sessionsData?.items]
   );
@@ -217,15 +215,28 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
     return messages;
   }, [serverMessages, localMessages, streamingContent]);
 
-  // 自动滚动到底部
+  // 自动滚动到底部（使用 requestAnimationFrame 防止过于频繁的滚动）
+  const scrollTimeoutRef = useRef<number | null>(null);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [displayMessages.length, streamingContent]);
+    if (scrollTimeoutRef.current) {
+      cancelAnimationFrame(scrollTimeoutRef.current);
+    }
+    scrollTimeoutRef.current = requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    });
+    return () => {
+      if (scrollTimeoutRef.current) {
+        cancelAnimationFrame(scrollTimeoutRef.current);
+      }
+    };
+  }, [displayMessages.length]);
 
   // 每次进入项目时自动创建新会话（不再复用旧会话）
-  // 使用本地状态跟踪初始化，避免依赖 createSession 对象导致的竞态条件
+  // 使用 ref 存储 mutation 函数，避免依赖数组变化导致重复执行
   const [isInitializing, setIsInitializing] = useState(false);
   const hasInitializedRef = useRef(false);
+  const createSessionRef = useRef(createSession);
+  createSessionRef.current = createSession;
 
   useEffect(() => {
     // 只在首次进入且没有当前会话时创建新会话
@@ -233,7 +244,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
       hasInitializedRef.current = true;
       setIsInitializing(true);
 
-      createSession.mutateAsync({ model_id: selectedModelId ?? undefined })
+      createSessionRef.current.mutateAsync({ model_id: selectedModelId ?? undefined })
         .then((newSession) => {
           setCurrentChatSession(newSession.id);
         })
@@ -246,7 +257,7 @@ export function AssistantPane({ projectId }: AssistantPaneProps) {
           setIsInitializing(false);
         });
     }
-  }, [currentSessionId, isInitializing, selectedModelId, setCurrentChatSession, createSession]);
+  }, [currentSessionId, isInitializing, selectedModelId, setCurrentChatSession]);
 
   const handleSend = useCallback(async () => {
     if (!inputValue.trim() || isStreaming) return;
