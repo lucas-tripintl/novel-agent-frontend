@@ -519,6 +519,8 @@ export const useWritingStore = create<WritingState>()(
           // 清空细纲
           chapterOutline: "",
           isChapterOutlineDirty: false,
+          // 重置编辑器 Tab 到正文
+          activeEditorTab: "content" as const,
           // 重置细纲生成状态
           outlineGenerationStatus: "idle" as OutlineGenerationStatus,
           streamingOutline: "",

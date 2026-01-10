@@ -71,7 +71,11 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
     clearError: clearContentGenerationError,
   } = useInteractiveChapterWriting(project.id, chapterNumber);
 
-  const { contentGenerationCollabMode } = useInteractiveContentState();
+  const {
+    contentGenerationCollabMode,
+    streamingContentText,
+    contentGenerationStatus,
+  } = useInteractiveContentState();
 
   // 判断错误类型，是否是缺少细纲的错误
   const isOutlineRequiredError = contentGenerationError?.code === "OUTLINE_REQUIRED";
@@ -82,14 +86,18 @@ export function WritingToolbar({ project }: WritingToolbarProps) {
     setOutlineDialogOpen(true);
   };
 
-  // 计算字数
+  // 计算字数：流式生成时用 streamingContentText，否则用 content
   const wordCount = useMemo(() => {
-    if (!content) return 0;
+    const isInGenerationMode = contentGenerationStatus === "generating" ||
+      contentGenerationStatus === "decision" ||
+      contentGenerationStatus === "completed";
+    const textToCount = isInGenerationMode ? streamingContentText : content;
+    if (!textToCount) return 0;
     // 中文字符 + 英文单词
-    const chineseChars = (content.match(/[\u4e00-\u9fa5]/g) || []).length;
-    const englishWords = (content.match(/[a-zA-Z]+/g) || []).length;
+    const chineseChars = (textToCount.match(/[\u4e00-\u9fa5]/g) || []).length;
+    const englishWords = (textToCount.match(/[a-zA-Z]+/g) || []).length;
     return chineseChars + englishWords;
-  }, [content]);
+  }, [content, streamingContentText, contentGenerationStatus]);
 
   const handleStopWrite = () => {
     // TODO: 停止流式写作
